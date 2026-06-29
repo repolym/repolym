@@ -17,7 +17,7 @@ const defaultForm = (): GoalFormData => ({
   target_minutes: 120,
   period: 'week',
   start_date: today(),
-  end_date: null,
+  end_date: '',
 })
 
 const periodOptions = [
@@ -119,7 +119,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ isOpen, onClose, onSubmit, e
           <Input
             label="تاریخ پایان (اختیاری)"
             type="date"
-            value={form.end_date}
+            value={form.end_date ?? ''}
             onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
             min={form.start_date}
             error={errors.end_date}
