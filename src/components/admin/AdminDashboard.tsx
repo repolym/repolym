@@ -1,51 +1,78 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
-import { formatMinutes } from '../../utils/date-utils'
-import { toPersianDigits } from '../../utils/jalali'
+import { formatMinutes, today } from '../../utils/date-utils'
+import { toJalaliLong } from '../../utils/jalali'
 
-interface UserStats {
+interface SessionDetail {
     id: string
-    email: string
-    name: string
-    total_minutes: number
+    user_name: string
+    user_email: string
+    date: string
+    duration_minutes: number
+    subject_name: string | null
+    activities: string
+    wake_time: string
+    sleep_time: string
+    phone_hours: string
+}
+
+const parseNotes = (notes: string | null) => {
+    if (!notes) return { activities: '', wake: '', sleep: '', phone: '' }
+    try {
+        const parsed = JSON.parse(notes)
+        return {
+            activities: parsed.activities || '',
+            wake: parsed.wake || '',
+            sleep: parsed.sleep || '',
+            phone: parsed.phone || '',
+        }
+    } catch {
+        // notes ساده (قدیمی)
+        return { activities: notes, wake: '', sleep: '', phone: '' }
+    }
 }
 
 const AdminDashboard: React.FC = () => {
-    const [users, setUsers] = useState<UserStats[]>([])
+    const [sessions, setSessions] = useState<SessionDetail[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAllSessions = async () => {
             setLoading(true)
             try {
-                // Fetch all users
-                const { data: profiles, error: userError } = await supabase
-                    .from('users')
-                    .select('id, email, name')
-
-                if (userError) throw userError
-
-                // Fetch total study time per user
-                const { data: sessions, error: sessionError } = await supabase
+                const { data, error } = await supabase
                     .from('study_sessions')
-                    .select('user_id, duration_minutes')
+                    .select(`
+            id,
+            user_id,
+            date,
+            duration_minutes,
+            notes,
+            users ( name, email ),
+            subjects ( name )
+          `)
+                    .order('date', { ascending: false })
+                    .limit(500) // افزایش در صورت نیاز
 
-                if (sessionError) throw sessionError
+                if (error) throw error
 
-                // Aggregate
-                const totals: Record<string, number> = {}
-                for (const s of sessions || []) {
-                    totals[s.user_id] = (totals[s.user_id] || 0) + (s.duration_minutes || 0)
-                }
+                const formatted: SessionDetail[] = (data || []).map((s: any) => {
+                    const { activities, wake, sleep, phone } = parseNotes(s.notes)
+                    return {
+                        id: s.id,
+                        user_name: s.users?.name || 'نامشخص',
+                        user_email: s.users?.email || '',
+                        date: s.date,
+                        duration_minutes: s.duration_minutes,
+                        subject_name: s.subjects?.name || null,
+                        activities,
+                        wake_time: wake,
+                        sleep_time: sleep,
+                        phone_hours: phone,
+                    }
+                })
 
-                const combined: UserStats[] = (profiles || []).map(p => ({
-                    ...p,
-                    total_minutes: totals[p.id] || 0,
-                }))
-
-                // Sort by name
-                combined.sort((a, b) => a.name.localeCompare(b.name, 'fa'))
-                setUsers(combined)
+                setSessions(formatted)
             } catch (err) {
                 console.error(err)
             } finally {
@@ -53,42 +80,56 @@ const AdminDashboard: React.FC = () => {
             }
         }
 
-        fetchData()
+        fetchAllSessions()
     }, [])
 
     if (loading) {
         return (
             <div className="p-6 text-center">
-                <p className="text-text-tertiary">در حال بارگذاری اطلاعات کاربران...</p>
+                <p className="text-text-tertiary">در حال بارگذاری جلسات...</p>
             </div>
         )
     }
 
     return (
-        <div className="p-5 md:p-6 max-w-4xl mx-auto" dir="rtl">
-            <h1 className="text-base font-semibold text-text-primary mb-6">مدیریت کاربران</h1>
-            <div className="card p-4 overflow-x-auto">
-                <table className="w-full text-sm">
+        <div className="p-4 md:p-6 max-w-full mx-auto" dir="rtl">
+            <h1 className="text-base font-semibold text-text-primary mb-4">جزئیات جلسات مطالعه</h1>
+
+            <div className="card p-3 overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
                     <thead>
                         <tr className="border-b border-border-subtle text-text-secondary text-xs">
-                            <th className="text-right py-3 px-2">نام</th>
-                            <th className="text-right py-3 px-2">ایمیل</th>
-                            <th className="text-right py-3 px-2">مجموع ساعات مطالعه</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">کاربر</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">تاریخ</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">مدت</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">فعالیت‌ها</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">بیداری</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">خواب</th>
+                            <th className="text-right py-2 px-2 whitespace-nowrap">گوشی (ساعت)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.length === 0 ? (
+                        {sessions.length === 0 ? (
                             <tr>
-                                <td colSpan={3} className="py-8 text-center text-text-tertiary">
-                                    هیچ کاربری یافت نشد
+                                <td colSpan={7} className="py-8 text-center text-text-tertiary">
+                                    هیچ جلسه‌ای ثبت نشده است
                                 </td>
                             </tr>
                         ) : (
-                            users.map((u) => (
-                                <tr key={u.id} className="border-b border-border-subtle last:border-0 hover:bg-surface-2 transition-colors">
-                                    <td className="py-3 px-2 font-medium text-text-primary">{u.name}</td>
-                                    <td className="py-3 px-2 text-text-tertiary text-xs">{u.email}</td>
-                                    <td className="py-3 px-2 font-mono">{formatMinutes(u.total_minutes)}</td>
+                            sessions.map((s) => (
+                                <tr key={s.id} className="border-b border-border-subtle last:border-0 hover:bg-surface-2 transition-colors">
+                                    <td className="py-2 px-2">
+                                        <span className="font-medium text-text-primary">{s.user_name}</span>
+                                        <div className="text-2xs text-text-tertiary">{s.user_email}</div>
+                                    </td>
+                                    <td className="py-2 px-2 text-xs">{toJalaliLong(s.date)}</td>
+                                    <td className="py-2 px-2 font-mono">{formatMinutes(s.duration_minutes)}</td>
+                                    <td className="py-2 px-2 text-xs max-w-[200px] whitespace-pre-wrap break-words">
+                                        {s.activities || '—'}
+                                    </td>
+                                    <td className="py-2 px-2 text-xs">{s.wake_time || '—'}</td>
+                                    <td className="py-2 px-2 text-xs">{s.sleep_time || '—'}</td>
+                                    <td className="py-2 px-2 text-xs">{s.phone_hours || '—'}</td>
                                 </tr>
                             ))
                         )}
