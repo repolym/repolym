@@ -17,7 +17,7 @@ const defaultForm = (): GoalFormData => ({
   target_minutes: 120,
   period: 'week',
   start_date: today(),
-  end_date: '',
+  end_date: null,
 })
 
 const periodOptions = [
