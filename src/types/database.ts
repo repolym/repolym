@@ -83,7 +83,7 @@ export interface GoalFormData {
   target_minutes: number
   period: 'day' | 'week' | 'month'
   start_date: string
-  end_date: string
+  end_date: string | null
 }
 
 export interface TestFormData {
