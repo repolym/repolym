@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import type { Test } from '../../types/database'
 import { formatDateShort } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
-import { Skeleton, EmptyState } from '../common/Loading'
+import { Skeleton } from '../common/Loading'
 import { Link } from 'react-router-dom'
+import { BarChart3, TrendingUp, ArrowLeft } from 'lucide-react'
 
 interface TestScoresChartProps {
   tests: Test[]
@@ -13,11 +15,6 @@ interface TestScoresChartProps {
 export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading }) => {
   const recentTests = useMemo(() => [...tests].slice(0, 8).reverse(), [tests])
 
-  const maxScore = useMemo(() => {
-    if (!recentTests.length) return 100
-    return Math.max(...recentTests.map((t) => t.max_score || 100))
-  }, [recentTests])
-
   const avgScore = useMemo(() => {
     if (!recentTests.length) return 0
     const total = recentTests.reduce((s, t) => s + (t.score / (t.max_score || 100)) * 100, 0)
@@ -26,11 +23,13 @@ export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading
 
   if (loading) {
     return (
-      <div className="card p-5">
-        <p className="label mb-4">نمرات آزمون‌ها</p>
-        <div className="flex items-end gap-2 h-24">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className={`flex-1 rounded-xs`} style={{ height: `${20 + i * 12}%` }} />
+      <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+        <div className="flex items-center gap-2 mb-5">
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <div className="flex items-end gap-2 h-28">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="flex-1 rounded-t-lg" style={{ height: `${15 + i * 12}%` }} />
           ))}
         </div>
       </div>
@@ -39,63 +38,82 @@ export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading
 
   if (tests.length === 0) {
     return (
-      <div className="card p-5">
-        <p className="label mb-4">نمرات آزمون‌ها</p>
-        <EmptyState
-          title="آزمونی ثبت نشده"
-          description="برای پیگیری عملکرد خود نتایج آزمون را اضافه کنید"
-          action={
-            <Link to="/tests" className="btn-secondary text-xs">
-              افزودن آزمون
-            </Link>
-          }
-        />
+      <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-purple-600" />
+          </div>
+          <h3 className="font-semibold text-gray-800">نمرات آزمون‌ها</h3>
+        </div>
+        <div className="flex flex-col items-center py-10 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <TrendingUp className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-gray-600 font-medium mb-1">آزمونی ثبت نشده</p>
+          <p className="text-sm text-gray-400 mb-5 max-w-xs">
+            برای پیگیری عملکرد خود نتایج آزمون را اضافه کنید
+          </p>
+          <Link
+            to="/tests"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-indigo-500/25"
+          >
+            افزودن آزمون
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <p className="label">نمرات آزمون‌ها</p>
+    <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-purple-600" />
+          </div>
+          <h3 className="font-semibold text-gray-800">نمرات آزمون‌ها</h3>
+        </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-text-tertiary">
-            میانگین: <span className="text-text-secondary font-medium">{toPersianDigits(avgScore)}%</span>
+          <span className="text-sm text-gray-500">
+            میانگین: <span className="font-semibold text-gray-700">{toPersianDigits(avgScore)}%</span>
           </span>
-          <Link to="/tests" className="text-xs text-text-tertiary hover:text-accent transition-colors">
-            همه ←
+          <Link to="/tests" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 transition-colors">
+            همه <ArrowLeft className="w-4 h-4" />
           </Link>
         </div>
       </div>
 
-      {/* Bar chart */}
-      <div className="flex items-end gap-1.5 h-24">
+      {/* نمودار میله‌ای */}
+      <div className="flex items-end gap-2 h-32 px-1">
         {recentTests.map((test) => {
           const pct = Math.round((test.score / (test.max_score || 100)) * 100)
-          const color =
-            pct >= 80 ? 'bg-success' : pct >= 60 ? 'bg-accent' : pct >= 40 ? 'bg-warning' : 'bg-danger'
+          let barColor = 'bg-gray-300'
+          if (pct >= 80) barColor = 'bg-emerald-500'
+          else if (pct >= 60) barColor = 'bg-indigo-500'
+          else if (pct >= 40) barColor = 'bg-amber-500'
+          else barColor = 'bg-rose-400'
+
           return (
-            <div
-              key={test.id}
-              className="flex-1 flex flex-col items-center gap-1 group relative"
-            >
+            <div key={test.id} className="flex-1 flex flex-col items-center gap-1.5 group relative">
               {/* Tooltip */}
-              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                <div className="bg-surface-4 border border-border text-2xs rounded-xs px-2 py-1 whitespace-nowrap shadow">
-                  <p className="text-text-primary font-medium">{test.name}</p>
-                  <p className="text-text-tertiary">
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                <div className="bg-gray-900 text-white text-xs rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+                  <p className="font-medium">{test.name}</p>
+                  <p className="text-gray-300">
                     {toPersianDigits(test.score)}/{toPersianDigits(test.max_score || 100)} ({toPersianDigits(pct)}%)
                   </p>
                 </div>
               </div>
 
-              <div className="w-full flex items-end h-20">
-                <div
-                  className={`w-full rounded-2xs transition-all ${color}/70 hover:${color}`}
-                  style={{ height: `${pct}%` }}
+              <div className="w-full flex items-end h-24">
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${pct}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  className={`w-full rounded-t-lg ${barColor} transition-colors`}
                 />
               </div>
-              <p className="text-2xs text-text-tertiary truncate w-full text-center">
+              <p className="text-xs text-gray-400 truncate w-full text-center leading-tight">
                 {formatDateShort(test.date)}
               </p>
             </div>

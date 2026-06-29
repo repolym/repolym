@@ -1,9 +1,11 @@
 import React from 'react'
+import { motion } from 'framer-motion'
 import type { StudySession } from '../../types/database'
 import { calculateCurrentStreak, calculateLongestStreak } from '../../utils/calc-streak'
 import { formatMinutes, today } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Skeleton } from '../common/Loading'
+import { Zap, Flame } from 'lucide-react'
 
 interface StreakCardProps {
   sessions: StudySession[]
@@ -23,40 +25,51 @@ export const StreakCard: React.FC<StreakCardProps> = ({ sessions, loading }) => 
 
   if (loading) {
     return (
-      <div className="card p-5 space-y-3">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-8 w-16" />
-        <Skeleton className="h-3 w-32" />
+      <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 space-y-4">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-16" />
+        <Skeleton className="h-4 w-32" />
       </div>
     )
   }
 
   return (
-    <div className="card p-5">
-      <p className="label mb-3">روزهای متوالی</p>
-
-      <div className="flex items-end gap-1 mb-1">
-        <span className="text-4xl font-semibold text-text-primary font-mono tabular-nums">
-          {toPersianDigits(current)}
-        </span>
-        <span className="text-sm text-text-secondary mb-1.5">روز</span>
+    <motion.div
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-2xl p-6 shadow-card border border-gray-100"
+    >
+      <div className="flex items-center gap-2 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+          <Zap className="w-5 h-5 text-amber-500" />
+        </div>
+        <span className="font-medium text-gray-600">روزهای متوالی</span>
       </div>
 
-      <p className="text-xs text-text-tertiary">
-        طولانی‌ترین: <span className="text-text-secondary">{toPersianDigits(longest)} روز</span>
-      </p>
+      <div className="flex items-end gap-2 mb-1">
+        <span className="text-5xl font-extrabold text-gray-800 tabular-nums">
+          {toPersianDigits(current)}
+        </span>
+        <span className="text-gray-500 mb-1.5 text-sm">روز</span>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-1">
+        <Flame className="w-4 h-4 text-orange-400" />
+        طولانی‌ترین: <span className="font-medium text-gray-700">{toPersianDigits(longest)} روز</span>
+      </div>
 
       {totalMinutesToday > 0 && (
-        <div className="mt-3 pt-3 border-t border-border-subtle">
-          <p className="text-xs text-text-tertiary">
-            امروز: <span className="text-success font-medium">{formatMinutes(totalMinutesToday)}</span>
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-sm text-gray-500">
+            امروز: <span className="text-green-600 font-semibold">{formatMinutes(totalMinutesToday)}</span>
           </p>
         </div>
       )}
 
       {current === 0 && (
-        <p className="mt-3 text-xs text-warning">یک جلسه ثبت کن تا روندت شروع بشه</p>
+        <p className="mt-4 text-sm text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
+          یک جلسه ثبت کن تا روندت شروع بشه
+        </p>
       )}
-    </div>
+    </motion.div>
   )
 }

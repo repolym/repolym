@@ -1,13 +1,24 @@
 import React, { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import type { StudySession } from '../../types/database'
 import { formatMinutes, getWeekStart, getMonthStart, today } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Skeleton } from '../common/Loading'
+import { Clock, TrendingUp, Calendar, Target } from 'lucide-react'
 
 interface StatsCardsProps {
   sessions: StudySession[]
   loading: boolean
 }
+
+const cardConfig = [
+  { label: 'امروز', icon: Clock, key: 'todayMins' },
+  { label: 'این هفته', icon: TrendingUp, key: 'weekMins' },
+  { label: 'این ماه', icon: Calendar, key: 'monthMins' },
+  { label: 'میانگین روزانه', icon: Target, key: 'avgPerDay' },
+] as const
+
+type StatKey = (typeof cardConfig)[number]['key']
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => {
   const stats = useMemo(() => {
@@ -25,21 +36,21 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => 
     return { todayMins, weekMins, monthMins, monthDays, avgPerDay }
   }, [sessions])
 
-  const items = [
-    { label: 'امروز', value: formatMinutes(stats.todayMins), sub: 'مطالعه' },
-    { label: 'این هفته', value: formatMinutes(stats.weekMins), sub: 'مطالعه' },
-    { label: 'این ماه', value: formatMinutes(stats.monthMins), sub: `${toPersianDigits(stats.monthDays)} روز فعال` },
-    { label: 'میانگین روزانه', value: formatMinutes(stats.avgPerDay), sub: 'این ماه' },
-  ]
+  const values: Record<StatKey, string> = {
+    todayMins: formatMinutes(stats.todayMins),
+    weekMins: formatMinutes(stats.weekMins),
+    monthMins: formatMinutes(stats.monthMins),
+    avgPerDay: formatMinutes(stats.avgPerDay),
+  }
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {items.map((_, i) => (
-          <div key={i} className="card p-4 space-y-2">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-3 w-12" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {cardConfig.map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 space-y-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-4 w-16" />
           </div>
         ))}
       </div>
@@ -47,13 +58,26 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => 
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {items.map((item) => (
-        <div key={item.label} className="card p-4">
-          <p className="label mb-2">{item.label}</p>
-          <p className="text-2xl font-semibold text-text-primary font-mono tabular-nums">{item.value}</p>
-          <p className="text-xs text-text-tertiary mt-1">{item.sub}</p>
-        </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {cardConfig.map(({ label, icon: Icon, key }) => (
+        <motion.div
+          key={key}
+          whileHover={{ y: -2, scale: 1.02 }}
+          className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 transition-all"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <Icon className="w-4 h-4 text-indigo-600" />
+            </div>
+            <span className="text-sm font-medium text-gray-600">{label}</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-800 tabular-nums">{values[key]}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {key === 'monthMins'
+              ? `${toPersianDigits(stats.monthDays)} روز فعال`
+              : 'مطالعه'}
+          </p>
+        </motion.div>
       ))}
     </div>
   )
