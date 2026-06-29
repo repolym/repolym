@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
 import { formatMinutes, today } from '../../utils/date-utils'
-import { toJalaliLong } from '../../utils/jalali'
+import { toJalaliLong, toJalali, toGregorian, todayJalali } from '../../utils/jalali'
 
 interface SessionDetail {
     id: string
@@ -27,7 +27,6 @@ const parseNotes = (notes: string | null) => {
             phone: parsed.phone || '',
         }
     } catch {
-        // notes ساده (قدیمی)
         return { activities: notes, wake: '', sleep: '', phone: '' }
     }
 }
@@ -35,12 +34,26 @@ const parseNotes = (notes: string | null) => {
 const AdminDashboard: React.FC = () => {
     const [sessions, setSessions] = useState<SessionDetail[]>([])
     const [loading, setLoading] = useState(true)
+    const [users, setUsers] = useState<{ id: string; name: string }[]>([])
+    const [selectedUser, setSelectedUser] = useState<string>('all')
+    const [startDate, setStartDate] = useState<string>('') // Gregorian YYYY-MM-DD
+    const [endDate, setEndDate] = useState<string>('')
 
+    // بارگذاری لیست کاربران برای dropdown
     useEffect(() => {
-        const fetchAllSessions = async () => {
+        const fetchUsers = async () => {
+            const { data } = await supabase.from('users').select('id, name').order('name')
+            if (data) setUsers(data)
+        }
+        fetchUsers()
+    }, [])
+
+    // بارگذاری جلسات بر اساس فیلترها
+    useEffect(() => {
+        const fetchSessions = async () => {
             setLoading(true)
             try {
-                const { data, error } = await supabase
+                let query = supabase
                     .from('study_sessions')
                     .select(`
             id,
@@ -52,7 +65,22 @@ const AdminDashboard: React.FC = () => {
             subjects ( name )
           `)
                     .order('date', { ascending: false })
-                    .limit(500) // افزایش در صورت نیاز
+                    .limit(1000)
+
+                // فیلتر کاربر
+                if (selectedUser !== 'all') {
+                    query = query.eq('user_id', selectedUser)
+                }
+
+                // فیلتر تاریخ
+                if (startDate) {
+                    query = query.gte('date', startDate)
+                }
+                if (endDate) {
+                    query = query.lte('date', endDate)
+                }
+
+                const { data, error } = await query
 
                 if (error) throw error
 
@@ -80,61 +108,132 @@ const AdminDashboard: React.FC = () => {
             }
         }
 
-        fetchAllSessions()
-    }, [])
+        fetchSessions()
+    }, [selectedUser, startDate, endDate])
 
-    if (loading) {
-        return (
-            <div className="p-6 text-center">
-                <p className="text-text-tertiary">در حال بارگذاری جلسات...</p>
-            </div>
-        )
+    // توابع کمکی برای تبدیل تاریخ جلالی به میلادی
+    const handleStartDateChange = (jalali: string) => {
+        try {
+            setStartDate(toGregorian(jalali))
+        } catch {
+            setStartDate('')
+        }
+    }
+
+    const handleEndDateChange = (jalali: string) => {
+        try {
+            setEndDate(toGregorian(jalali))
+        } catch {
+            setEndDate('')
+        }
+    }
+
+    // تبدیل تاریخ میلادی به جلالی برای نمایش در input (اختیاری)
+    const gregToJalaliInput = (greg: string) => {
+        if (!greg) return ''
+        try {
+            return toJalali(greg)
+        } catch {
+            return ''
+        }
     }
 
     return (
         <div className="p-4 md:p-6 max-w-full mx-auto" dir="rtl">
             <h1 className="text-base font-semibold text-text-primary mb-4">جزئیات جلسات مطالعه</h1>
 
+            {/* فیلترها */}
+            <div className="card p-4 mb-4 flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs text-text-secondary mb-1">کاربر</label>
+                    <select
+                        value={selectedUser}
+                        onChange={(e) => setSelectedUser(e.target.value)}
+                        className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+                    >
+                        <option value="all">همه کاربران</option>
+                        {users.map((u) => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="w-[180px]">
+                    <label className="block text-xs text-text-secondary mb-1">از تاریخ (جلالی)</label>
+                    <input
+                        type="text"
+                        placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
+                        value={gregToJalaliInput(startDate)}
+                        onChange={(e) => handleStartDateChange(e.target.value)}
+                        className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+                    />
+                </div>
+                <div className="w-[180px]">
+                    <label className="block text-xs text-text-secondary mb-1">تا تاریخ (جلالی)</label>
+                    <input
+                        type="text"
+                        placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
+                        value={gregToJalaliInput(endDate)}
+                        onChange={(e) => handleEndDateChange(e.target.value)}
+                        className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+                    />
+                </div>
+                <button
+                    onClick={() => {
+                        setSelectedUser('all')
+                        setStartDate('')
+                        setEndDate('')
+                    }}
+                    className="btn-ghost text-xs text-text-tertiary hover:text-text-primary"
+                >
+                    پاک‌کردن فیلترها
+                </button>
+            </div>
+
+            {/* جدول */}
             <div className="card p-3 overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
-                    <thead>
-                        <tr className="border-b border-border-subtle text-text-secondary text-xs">
-                            <th className="text-right py-2 px-2 whitespace-nowrap">کاربر</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">تاریخ</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">مدت</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">فعالیت‌ها</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">بیداری</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">خواب</th>
-                            <th className="text-right py-2 px-2 whitespace-nowrap">گوشی (ساعت)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sessions.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="py-8 text-center text-text-tertiary">
-                                    هیچ جلسه‌ای ثبت نشده است
-                                </td>
+                {loading ? (
+                    <div className="py-8 text-center text-text-tertiary">در حال بارگذاری...</div>
+                ) : (
+                    <table className="w-full text-sm border-collapse">
+                        <thead>
+                            <tr className="border-b border-border-subtle text-text-secondary text-xs">
+                                <th className="text-right py-2 px-2 whitespace-nowrap">کاربر</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">تاریخ</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">مدت</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">فعالیت‌ها</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">بیداری</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">خواب</th>
+                                <th className="text-right py-2 px-2 whitespace-nowrap">گوشی (ساعت)</th>
                             </tr>
-                        ) : (
-                            sessions.map((s) => (
-                                <tr key={s.id} className="border-b border-border-subtle last:border-0 hover:bg-surface-2 transition-colors">
-                                    <td className="py-2 px-2">
-                                        <span className="font-medium text-text-primary">{s.user_name}</span>
-                                        <div className="text-2xs text-text-tertiary">{s.user_email}</div>
+                        </thead>
+                        <tbody>
+                            {sessions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="py-8 text-center text-text-tertiary">
+                                        هیچ جلسه‌ای با این فیلترها یافت نشد
                                     </td>
-                                    <td className="py-2 px-2 text-xs">{toJalaliLong(s.date)}</td>
-                                    <td className="py-2 px-2 font-mono">{formatMinutes(s.duration_minutes)}</td>
-                                    <td className="py-2 px-2 text-xs max-w-[200px] whitespace-pre-wrap break-words">
-                                        {s.activities || '—'}
-                                    </td>
-                                    <td className="py-2 px-2 text-xs">{s.wake_time || '—'}</td>
-                                    <td className="py-2 px-2 text-xs">{s.sleep_time || '—'}</td>
-                                    <td className="py-2 px-2 text-xs">{s.phone_hours || '—'}</td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : (
+                                sessions.map((s) => (
+                                    <tr key={s.id} className="border-b border-border-subtle last:border-0 hover:bg-surface-2 transition-colors">
+                                        <td className="py-2 px-2">
+                                            <span className="font-medium text-text-primary">{s.user_name}</span>
+                                            <div className="text-2xs text-text-tertiary">{s.user_email}</div>
+                                        </td>
+                                        <td className="py-2 px-2 text-xs">{toJalaliLong(s.date)}</td>
+                                        <td className="py-2 px-2 font-mono">{formatMinutes(s.duration_minutes)}</td>
+                                        <td className="py-2 px-2 text-xs max-w-[200px] whitespace-pre-wrap break-words">
+                                            {s.activities || '—'}
+                                        </td>
+                                        <td className="py-2 px-2 text-xs">{s.wake_time || '—'}</td>
+                                        <td className="py-2 px-2 text-xs">{s.sleep_time || '—'}</td>
+                                        <td className="py-2 px-2 text-xs">{s.phone_hours || '—'}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     )
