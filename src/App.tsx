@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { DashboardProvider } from './context/DashboardContext'
 import { ToastProvider } from './context/ToastContext'
@@ -28,7 +28,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <ToastProvider>
           <Routes>
@@ -80,7 +80,7 @@ const App: React.FC = () => {
           <ToastContainer />
         </ToastProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
