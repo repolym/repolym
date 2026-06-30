@@ -19,7 +19,7 @@ export const Input: React.FC<InputProps> = ({ label, error, hint, className = ''
       <input
         id={inputId}
         {...props}
-        className={`input-base ${error ? 'border-danger focus:ring-danger focus:border-danger' : ''} ${className}`}
+        className={`input-base text-base py-2.5 ${error ? 'border-danger focus:ring-danger focus:border-danger' : ''} ${className}`}
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       {hint && !error && <p className="text-xs text-text-tertiary">{hint}</p>}
@@ -45,7 +45,7 @@ export const Textarea: React.FC<TextareaProps> = ({ label, error, className = ''
         id={inputId}
         rows={3}
         {...props}
-        className={`input-base resize-none ${error ? 'border-danger' : ''} ${className}`}
+        className={`input-base text-base py-2.5 resize-none ${error ? 'border-danger' : ''} ${className}`}
       />
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
@@ -72,7 +72,7 @@ export const Select: React.FC<SelectProps> = ({ label, error, options, placehold
       <select
         id={inputId}
         {...props}
-        className={`input-base ${error ? 'border-danger' : ''} ${className}`}
+        className={`input-base text-base py-2.5 ${error ? 'border-danger' : ''} ${className}`}
       >
         {placeholder && (
           <option value="" disabled>

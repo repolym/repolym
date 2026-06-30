@@ -3,7 +3,7 @@ import type { StudySession, SessionFormData, Subject } from '../../types/databas
 import { Modal } from '../common/Modal'
 import { Input, Select, Textarea } from '../common/Input'
 import { Button } from '../common/Button'
-import { today, formatMinutes, toLocalISODate } from '../../utils/date-utils'
+import { today } from '../../utils/date-utils'
 import {
   toJalali,
   toJalaliLong,
@@ -11,7 +11,6 @@ import {
   todayJalali,
   toPersianDigits,
 } from '../../utils/jalali'
-import * as jalaali from 'jalaali-js'
 
 interface SessionFormProps {
   isOpen: boolean
@@ -24,20 +23,17 @@ interface SessionFormProps {
 // --- Helpers ---
 const parseActivitiesDuration = (text: string): number => {
   let totalHours = 0
-  // Pattern: X ساعت و نیم
   const halfRegex = /(\d+(?:\.\d+)?)\s*ساعت\s*و\s*نیم/g
   let match
   while ((match = halfRegex.exec(text)) !== null) {
     totalHours += parseFloat(match[1]) + 0.5
   }
-  // Remove those matches to avoid double counting
   const cleaned = text.replace(halfRegex, '')
-  // Pattern: X ساعت
   const hourRegex = /(\d+(?:\.\d+)?)\s*ساعت/g
   while ((match = hourRegex.exec(cleaned)) !== null) {
     totalHours += parseFloat(match[1])
   }
-  return Math.round(totalHours * 60) // return minutes
+  return Math.round(totalHours * 60)
 }
 
 const buildNotesJSON = (activities: string, wake: string, sleep: string, phone: string): string =>
@@ -54,15 +50,14 @@ const parseNotesJSON = (notes: string | null) => {
       phone: parsed.phone || '',
     }
   } catch {
-    // legacy plain text notes
     return { activities: notes, wake: '', sleep: '', phone: '' }
   }
 }
 
 // --- Component ---
 export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSubmit, subjects, editing }) => {
-  const [name, setName] = useState<string>('')
-  const [jalaliDate, setJalaliDate] = useState<string>(todayJalali()) // "۱۴۰۴/۰۳/۲۵"
+  // ---- NAME REMOVED ----
+  const [jalaliDate, setJalaliDate] = useState<string>(todayJalali())
   const [activities, setActivities] = useState('')
   const [wakeTime, setWakeTime] = useState('')
   const [sleepTime, setSleepTime] = useState('')
@@ -75,12 +70,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('olympiad_user_name')
-    if (stored) setName(stored)
-  }, [])
-
   // Load editing data or reset
   useEffect(() => {
     if (editing) {
@@ -89,9 +78,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       setWakeTime(parsed.wake)
       setSleepTime(parsed.sleep)
       setPhoneHours(parsed.phone)
-      // Convert stored gregorian date to Jalali
       setJalaliDate(toJalali(editing.date))
-      // Name from localStorage (no change)
     } else {
       setActivities('')
       setWakeTime('')
@@ -103,19 +90,15 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
     setServerError(null)
   }, [editing, isOpen])
 
-  // Save name to localStorage on change
-  const handleNameChange = (value: string) => {
-    setName(value)
-    localStorage.setItem('olympiad_user_name', value)
-  }
-
   // Date navigation
   const changeDate = (days: number) => {
     try {
       const greg = toGregorian(jalaliDate)
       const d = new Date(greg + 'T00:00:00')
       d.setDate(d.getDate() + days)
-      const newJalali = toJalali(toLocalISODate(d))
+      // استفاده از متد ساده و امن برای تبدیل به YYYY-MM-DD
+      const newGreg = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+      const newJalali = toJalali(newGreg)
       setJalaliDate(newJalali)
     } catch {
       // ignore
@@ -137,7 +120,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: typeof errors = {}
-    if (!name.trim()) newErrors.name = 'نام الزامی است'
+    // NAME VALIDATION REMOVED
     if (!jalaliDate) newErrors.jalaliDate = 'تاریخ الزامی است'
     if (!wakeTime) newErrors.wakeTime = 'ساعت بیداری الزامی است'
     if (!sleepTime) newErrors.sleepTime = 'ساعت خواب الزامی است'
@@ -161,7 +144,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       phoneHoursNum >= 0 &&
       computedDuration / 60 + phoneHoursNum > 24
     ) {
-      // مجموع ساعت مطالعه و کار با گوشی نمی‌تواند از ۲۴ ساعت یک روز بیشتر شود
       newErrors.activities = 'مجموع ساعت مطالعه و کار با گوشی نمی‌تواند بیش از ۲۴ ساعت در روز باشد'
     }
 
@@ -174,12 +156,12 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
     setServerError(null)
 
     try {
-      const gregorianDate = toGregorian(jalaliDate) // "2025-06-14"
+      const gregorianDate = toGregorian(jalaliDate)
       const duration = parseActivitiesDuration(activities)
       const notes = buildNotesJSON(activities, wakeTime, sleepTime, phoneHours)
 
       const data: SessionFormData = {
-        subject_id: editing?.subject_id ?? null, // keep existing or null
+        subject_id: editing?.subject_id ?? null,
         date: gregorianDate,
         duration_minutes: duration || 0,
         notes,
@@ -187,10 +169,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
 
       const ok = await onSubmit(data)
       if (ok) {
-        // Save name to localStorage if not already
-        if (name && !localStorage.getItem('olympiad_user_name')) {
-          localStorage.setItem('olympiad_user_name', name)
-        }
         onClose()
       }
     } catch (err) {
@@ -215,32 +193,21 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       title={editing ? 'ویرایش جلسه' : 'ثبت جلسه مطالعه'}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Field 1: Name */}
-        <Input
-          label="نام و نام خانوادگی"
-          type="text"
-          value={name}
-          onChange={(e) => handleNameChange(e.target.value)}
-          placeholder="علی رضایی"
-          error={errors.name}
-          required
-        />
-
         {/* Field 2: Date */}
         <div>
-          <label className="label mb-1">تاریخ</label>
+          <label className="label mb-1 text-base">تاریخ</label>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => changeDate(-1)}
               className="btn-ghost p-1 text-text-secondary hover:text-text-primary"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <div className="flex-1 text-center">
-              <p className="text-sm font-medium text-text-primary">
+              <p className="text-xl font-bold text-text-primary">
                 {(() => {
                   try {
                     return toJalaliLong(gregorianDisplayDate)
@@ -255,7 +222,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               onClick={() => changeDate(1)}
               className="btn-ghost p-1 text-text-secondary hover:text-text-primary"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
