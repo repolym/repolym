@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react'
 import type { Test, TestFormData, Subject } from '../../types/database'
 import { Modal } from '../common/Modal'
 import { Input, Select, Textarea } from '../common/Input'
+import { JalaliDateInput } from '../common/JalaliDateInput'
 import { Button } from '../common/Button'
 import { today } from '../../utils/date-utils'
-import { toJalaliLong } from '../../utils/jalali'
 
 interface TestFormProps {
   isOpen: boolean
@@ -115,20 +115,14 @@ export const TestForm: React.FC<TestFormProps> = ({ isOpen, onClose, onSubmit, s
             min={1}
           />
           <div>
-            <Input
+            <JalaliDateInput
               label="تاریخ"
-              type="date"
               value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              onChange={(date) => setForm((f) => ({ ...f, date }))}
               max={today()}
               error={errors.date}
               required
             />
-            {form.date && (
-              <p className="text-2xs text-text-tertiary mt-0.5">
-                {toJalaliLong(form.date)}
-              </p>
-            )}
           </div>
         </div>
 

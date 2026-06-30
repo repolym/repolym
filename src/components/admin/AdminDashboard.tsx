@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
-import { formatMinutes, today } from '../../utils/date-utils'
+import { formatMinutes, today, daysAgo, getWeekStart, getMonthStart } from '../../utils/date-utils'
 import { toJalaliLong, toJalali, toGregorian, todayJalali } from '../../utils/jalali'
+import { formatError } from '../../utils/error-handler'
 
 interface SessionDetail {
   id: string
@@ -34,11 +35,46 @@ const parseNotes = (notes: string | null) => {
 const AdminDashboard: React.FC = () => {
   const [sessions, setSessions] = useState<SessionDetail[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [users, setUsers] = useState<{ id: string; name: string }[]>([])
   const [selectedUser, setSelectedUser] = useState<string>('all')
   // مستقیماً تاریخ جلالی ذخیره می‌شود
   const [jalaliStart, setJalaliStart] = useState('')
   const [jalaliEnd, setJalaliEnd] = useState('')
+  const [activePreset, setActivePreset] = useState<string>('')
+
+  // فیلترهای آماده — همگی بک‌اند-محور هستند (محدوده تاریخ جلالی را به میلادی
+  // تبدیل کرده و مستقیماً در کوئری Supabase استفاده می‌کنیم)
+  const applyPreset = (preset: 'today' | 'yesterday' | 'week' | 'month' | 'all') => {
+    setActivePreset(preset)
+    if (preset === 'all') {
+      setJalaliStart('')
+      setJalaliEnd('')
+      return
+    }
+    if (preset === 'today') {
+      const t = toJalali(today())
+      setJalaliStart(t)
+      setJalaliEnd(t)
+      return
+    }
+    if (preset === 'yesterday') {
+      const y = toJalali(daysAgo(1))
+      setJalaliStart(y)
+      setJalaliEnd(y)
+      return
+    }
+    if (preset === 'week') {
+      setJalaliStart(toJalali(getWeekStart()))
+      setJalaliEnd(toJalali(today()))
+      return
+    }
+    if (preset === 'month') {
+      setJalaliStart(toJalali(getMonthStart()))
+      setJalaliEnd(toJalali(today()))
+      return
+    }
+  }
 
   // بارگذاری لیست کاربران
   useEffect(() => {
@@ -106,8 +142,9 @@ const AdminDashboard: React.FC = () => {
         })
 
         setSessions(formatted)
+        setLoadError(null)
       } catch (err) {
-        console.error(err)
+        setLoadError(formatError(err))
       } finally {
         setLoading(false)
       }
@@ -121,51 +158,82 @@ const AdminDashboard: React.FC = () => {
       <h1 className="text-base font-semibold text-text-primary mb-4">جزئیات جلسات مطالعه</h1>
 
       {/* فیلترها */}
-      <div className="card p-4 mb-4 flex flex-wrap gap-4 items-end">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-text-secondary mb-1">کاربر</label>
-          <select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+      <div className="card p-4 mb-4 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'all', label: 'همه' },
+            { key: 'today', label: 'امروز' },
+            { key: 'yesterday', label: 'دیروز' },
+            { key: 'week', label: 'این هفته' },
+            { key: 'month', label: 'این ماه' },
+          ].map((p) => (
+            <button
+              key={p.key}
+              onClick={() => applyPreset(p.key as any)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                activePreset === p.key
+                  ? 'bg-accent text-white border-accent'
+                  : 'border-border text-text-secondary hover:bg-surface-2'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs text-text-secondary mb-1">کاربر</label>
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+            >
+              <option value="all">همه کاربران</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-[180px]">
+            <label className="block text-xs text-text-secondary mb-1">از تاریخ (جلالی)</label>
+            <input
+              type="text"
+              placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
+              value={jalaliStart}
+              onChange={(e) => { setJalaliStart(e.target.value); setActivePreset('') }}
+              className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+            />
+          </div>
+          <div className="w-[180px]">
+            <label className="block text-xs text-text-secondary mb-1">تا تاریخ (جلالی)</label>
+            <input
+              type="text"
+              placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
+              value={jalaliEnd}
+              onChange={(e) => { setJalaliEnd(e.target.value); setActivePreset('') }}
+              className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setSelectedUser('all')
+              setJalaliStart('')
+              setJalaliEnd('')
+              setActivePreset('')
+            }}
+            className="btn-ghost text-xs text-text-tertiary hover:text-text-primary"
           >
-            <option value="all">همه کاربران</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
+            پاک‌کردن فیلترها
+          </button>
         </div>
-        <div className="w-[180px]">
-          <label className="block text-xs text-text-secondary mb-1">از تاریخ (جلالی)</label>
-          <input
-            type="text"
-            placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
-            value={jalaliStart}
-            onChange={(e) => setJalaliStart(e.target.value)}
-            className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
-          />
-        </div>
-        <div className="w-[180px]">
-          <label className="block text-xs text-text-secondary mb-1">تا تاریخ (جلالی)</label>
-          <input
-            type="text"
-            placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
-            value={jalaliEnd}
-            onChange={(e) => setJalaliEnd(e.target.value)}
-            className="w-full rounded-xs border border-border bg-surface-1 px-3 py-2 text-sm text-text-primary"
-          />
-        </div>
-        <button
-          onClick={() => {
-            setSelectedUser('all')
-            setJalaliStart('')
-            setJalaliEnd('')
-          }}
-          className="btn-ghost text-xs text-text-tertiary hover:text-text-primary"
-        >
-          پاک‌کردن فیلترها
-        </button>
       </div>
+
+      {loadError && (
+        <div className="card p-4 mb-4 text-sm text-danger bg-danger/10 border border-danger/20">
+          {loadError}
+        </div>
+      )}
 
       {/* جدول */}
       <div className="card p-3 overflow-x-auto">

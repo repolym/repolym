@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean
   error: string | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, name: string, password: string) => Promise<void>
+  signUp: (email: string, name: string, password: string) => Promise<{ requiresEmailConfirmation: boolean }>
   signOut: () => Promise<void>
   clearError: () => void
 }
@@ -69,20 +69,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(formatError(error))
+    // مهم: قبل از بازگشت از این تابع، پروفایل کاربر را در state قرار می‌دهیم.
+    // در غیر این صورت، اگر صفحه بلافاصله بعد از signIn به مسیر محافظت‌شده
+    // ناوبری کند، ProtectedRoute هنوز user را null می‌بیند (چون onAuthStateChange
+    // به‌صورت async و با تأخیر اجرا می‌شود) و کاربر دوباره به /login برمی‌گردد.
+    setSession(data.session)
+    if (data.user) {
+      const profile = await fetchUserProfile(data.user.id)
+      if (!profile) {
+        throw new Error('مشکل در بارگذاری اطلاعات حساب کاربری. لطفاً دوباره تلاش کنید.')
+      }
+      setUser(profile)
+    }
   }
 
   const signUp = async (email: string, name: string, password: string) => {
     setError(null)
     // Pass name in metadata so the DB trigger can use it
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } },
     })
     if (error) throw new Error(formatError(error))
     // Profile is created automatically by the DB trigger — no manual insert needed
+    setSession(data.session)
+    if (data.user && data.session) {
+      // اگر تأیید ایمیل غیرفعال باشد، session بلافاصله موجود است و باید پروفایل
+      // را بارگذاری کنیم تا ناوبری بعدی به داشبورد با شکست مواجه نشود.
+      const profile = await fetchUserProfile(data.user.id)
+      setUser(profile)
+      return { requiresEmailConfirmation: false }
+    }
+    // session وجود ندارد یعنی Supabase منتظر تأیید ایمیل است؛ کاربر نباید به
+    // مسیر محافظت‌شده هدایت شود، بلکه باید پیام تأیید ایمیل را ببیند.
+    return { requiresEmailConfirmation: true }
   }
 
   const signOut = async () => {

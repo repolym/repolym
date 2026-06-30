@@ -1,8 +1,7 @@
 import type { Goal, GoalWithProgress, StudySession } from '../types/database'
-import { today } from './date-utils'
+import { today, toLocalISODate } from './date-utils'
 
 const getPeriodRange = (goal: Goal): { from: string; to: string } => {
-  const now = new Date()
   const todayStr = today()
 
   if (goal.period === 'day') {
@@ -10,16 +9,19 @@ const getPeriodRange = (goal: Goal): { from: string; to: string } => {
   }
 
   if (goal.period === 'week') {
+    const now = new Date()
     const day = now.getDay()
     const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-    const monday = new Date(now.setDate(diff))
+    const monday = new Date(now)
+    monday.setDate(diff)
     return {
-      from: monday.toISOString().split('T')[0],
+      from: toLocalISODate(monday),
       to: todayStr,
     }
   }
 
   if (goal.period === 'month') {
+    const now = new Date()
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
     return { from: monthStart, to: todayStr }
   }

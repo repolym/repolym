@@ -158,3 +158,97 @@ CREATE POLICY "tests_select_own" ON tests FOR SELECT USING (auth.uid() = user_id
 CREATE POLICY "tests_insert_own" ON tests FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "tests_update_own" ON tests FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "tests_delete_own" ON tests FOR DELETE USING (auth.uid() = user_id);
+
+-- =============================================
+-- دسترسی ادمین (رفع باگ حیاتی): پیش از این هیچ Policy ای به ادمین اجازه
+-- نمی‌داد داده‌های سایر کاربران را ببیند، در نتیجه پنل ادمین (و هر فیلتری
+-- در آن، از جمله فیلتر تاریخ) همیشه فقط داده‌های خودِ ادمین را برمی‌گرداند —
+-- نه به این دلیل که فیلتر اشتباه بود، بلکه چون دیتابیس اساساً ردیف‌های
+-- کاربران دیگر را پنهان می‌کرد. این تابع SECURITY DEFINER بدون ایجاد
+-- بازگشت بی‌نهایت در RLS، نقش ادمین کاربر جاری را بررسی می‌کند.
+-- =============================================
+CREATE OR REPLACE FUNCTION public.is_admin_user()
+RETURNS BOOLEAN AS $$
+  SELECT COALESCE(
+    (SELECT is_admin FROM public.users WHERE id = auth.uid()),
+    false
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
+
+DROP POLICY IF EXISTS "users_select_admin" ON users;
+CREATE POLICY "users_select_admin" ON users FOR SELECT USING (public.is_admin_user());
+
+DROP POLICY IF EXISTS "subjects_select_admin" ON subjects;
+CREATE POLICY "subjects_select_admin" ON subjects FOR SELECT USING (public.is_admin_user());
+
+DROP POLICY IF EXISTS "sessions_select_admin" ON study_sessions;
+CREATE POLICY "sessions_select_admin" ON study_sessions FOR SELECT USING (public.is_admin_user());
+
+DROP POLICY IF EXISTS "goals_select_admin" ON goals;
+CREATE POLICY "goals_select_admin" ON goals FOR SELECT USING (public.is_admin_user());
+
+DROP POLICY IF EXISTS "tests_select_admin" ON tests;
+CREATE POLICY "tests_select_admin" ON tests FOR SELECT USING (public.is_admin_user());
+
+-- =============================================
+-- دسترسی عمومی برای صفحهٔ اشتراک‌گذاری (رفع باگ حیاتی): صفحهٔ
+-- «/public/:userId» قرار است بدون نیاز به ورود قابل مشاهده باشد (دکمهٔ
+-- «اشتراک‌گذاری ساعات مطالعه» چنین لینکی می‌سازد)، اما پیش از این هیچ Policy
+-- ای به کاربر ناشناس (anon) اجازهٔ خواندن نمی‌داد، پس این صفحه برای همه
+-- (به‌جز خودِ کاربر) همیشه خالی نمایش داده می‌شد. این Policy فقط به نقش
+-- anon اجازهٔ SELECT می‌دهد (نه به کاربران واردشده) تا دسترسی کاربران
+-- واردشده به داده‌های خودشان/سایرین تغییری نکند. توجه: کلاینت در
+-- PublicStudyPage.tsx فقط ستون‌های غیرحساس (date, duration_minutes,
+-- subject) را انتخاب می‌کند، نه notes (که شامل ساعت خواب/بیداری/گوشی است).
+-- =============================================
+DROP POLICY IF EXISTS "sessions_select_public_anon" ON study_sessions;
+CREATE POLICY "sessions_select_public_anon" ON study_sessions FOR SELECT TO anon USING (true);
+
+DROP POLICY IF EXISTS "subjects_select_public_anon" ON subjects;
+CREATE POLICY "subjects_select_public_anon" ON subjects FOR SELECT TO anon USING (true);
+
+-- =============================================
+-- محدودیت‌های کسب‌وکار (رفع باگ #۱۰): یک روز نمی‌تواند بیش از ۲۴ ساعت
+-- مطالعه + استفاده از گوشی داشته باشد. اعتبارسنجی سمت کلاینت (در SessionForm)
+-- می‌تواند دور زده شود، پس این قانون باید در پایگاه‌داده نیز اجرا شود.
+-- ساعت گوشی داخل ستون notes (JSON متنی) ذخیره می‌شود.
+-- =============================================
+CREATE OR REPLACE FUNCTION public.validate_session_daily_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+  phone_hours NUMERIC := 0;
+  notes_json JSONB;
+BEGIN
+  IF NEW.duration_minutes IS NULL OR NEW.duration_minutes <= 0 OR NEW.duration_minutes > 1440 THEN
+    RAISE EXCEPTION 'مدت مطالعه باید بین ۱ دقیقه و ۲۴ ساعت باشد';
+  END IF;
+
+  IF NEW.notes IS NOT NULL THEN
+    BEGIN
+      notes_json := NEW.notes::JSONB;
+      phone_hours := COALESCE((notes_json->>'phone')::NUMERIC, 0);
+    EXCEPTION WHEN OTHERS THEN
+      phone_hours := 0;
+    END;
+  END IF;
+
+  IF phone_hours < 0 THEN
+    RAISE EXCEPTION 'ساعت استفاده از گوشی نمی‌تواند منفی باشد';
+  END IF;
+
+  IF phone_hours > 24 THEN
+    RAISE EXCEPTION 'ساعت استفاده از گوشی نمی‌تواند بیش از ۲۴ ساعت باشد';
+  END IF;
+
+  IF (NEW.duration_minutes::NUMERIC / 60.0) + phone_hours > 24 THEN
+    RAISE EXCEPTION 'مجموع ساعت مطالعه و استفاده از گوشی نمی‌تواند بیش از ۲۴ ساعت در روز باشد';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_validate_session_daily_limit ON study_sessions;
+CREATE TRIGGER trg_validate_session_daily_limit
+  BEFORE INSERT OR UPDATE ON study_sessions
+  FOR EACH ROW EXECUTE FUNCTION public.validate_session_daily_limit();

@@ -3,7 +3,7 @@ import type { StudySession, SessionFormData, Subject } from '../../types/databas
 import { Modal } from '../common/Modal'
 import { Input, Select, Textarea } from '../common/Input'
 import { Button } from '../common/Button'
-import { today, formatMinutes } from '../../utils/date-utils'
+import { today, formatMinutes, toLocalISODate } from '../../utils/date-utils'
 import {
   toJalali,
   toJalaliLong,
@@ -115,7 +115,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       const greg = toGregorian(jalaliDate)
       const d = new Date(greg + 'T00:00:00')
       d.setDate(d.getDate() + days)
-      const newJalali = toJalali(d.toISOString().split('T')[0])
+      const newJalali = toJalali(toLocalISODate(d))
       setJalaliDate(newJalali)
     } catch {
       // ignore
@@ -141,7 +141,30 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
     if (!jalaliDate) newErrors.jalaliDate = 'تاریخ الزامی است'
     if (!wakeTime) newErrors.wakeTime = 'ساعت بیداری الزامی است'
     if (!sleepTime) newErrors.sleepTime = 'ساعت خواب الزامی است'
-    if (!phoneHours || isNaN(Number(phoneHours))) newErrors.phoneHours = 'مقدار نامعتبر'
+
+    const phoneHoursNum = Number(phoneHours)
+    if (!phoneHours || isNaN(phoneHoursNum)) {
+      newErrors.phoneHours = 'مقدار نامعتبر'
+    } else if (phoneHoursNum < 0) {
+      newErrors.phoneHours = 'مقدار نمی‌تواند منفی باشد'
+    } else if (phoneHoursNum > 24) {
+      newErrors.phoneHours = 'یک روز نمی‌تواند بیش از ۲۴ ساعت باشد'
+    }
+
+    const computedDuration = parseActivitiesDuration(activities)
+    if (!activities.trim() || computedDuration <= 0) {
+      newErrors.activities = 'حداقل یک فعالیت با ساعت مشخص وارد کنید (مثال: ۲ ساعت ریاضی)'
+    } else if (computedDuration > 24 * 60) {
+      newErrors.activities = 'مجموع ساعات مطالعه نمی‌تواند بیش از ۲۴ ساعت در روز باشد'
+    } else if (
+      !isNaN(phoneHoursNum) &&
+      phoneHoursNum >= 0 &&
+      computedDuration / 60 + phoneHoursNum > 24
+    ) {
+      // مجموع ساعت مطالعه و کار با گوشی نمی‌تواند از ۲۴ ساعت یک روز بیشتر شود
+      newErrors.activities = 'مجموع ساعت مطالعه و کار با گوشی نمی‌تواند بیش از ۲۴ ساعت در روز باشد'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -277,6 +300,9 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               افزودن
             </Button>
           </div>
+          {errors.activities && (
+            <p className="text-xs text-danger mt-1">{errors.activities}</p>
+          )}
         </div>
 
         {/* Field 4: Wake time */}
@@ -310,6 +336,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               type="number"
               step="0.5"
               min="0"
+              max="24"
               value={phoneHours}
               onChange={(e) => setPhoneHours(e.target.value)}
               placeholder="۲"

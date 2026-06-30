@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { Goal, GoalFormData } from '../../types/database'
 import { Modal } from '../common/Modal'
 import { Input, Select } from '../common/Input'
+import { JalaliDateInput } from '../common/JalaliDateInput'
 import { Button } from '../common/Button'
 import { today } from '../../utils/date-utils'
 
@@ -108,19 +109,17 @@ export const GoalForm: React.FC<GoalFormProps> = ({ isOpen, onClose, onSubmit, e
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Input
+          <JalaliDateInput
             label="تاریخ شروع"
-            type="date"
             value={form.start_date}
-            onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
+            onChange={(date) => setForm((f) => ({ ...f, start_date: date }))}
             error={errors.start_date}
             required
           />
-          <Input
+          <JalaliDateInput
             label="تاریخ پایان (اختیاری)"
-            type="date"
             value={form.end_date ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
+            onChange={(date) => setForm((f) => ({ ...f, end_date: date }))}
             min={form.start_date}
             error={errors.end_date}
           />
