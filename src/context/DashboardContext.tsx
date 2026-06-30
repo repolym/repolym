@@ -28,7 +28,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
-        return parsed.dateRange || defaultRange()
+        // اگر محدوده ذخیره‌شده مربوط به روز دیگری باشد (مثلاً کاربر یک شب با تب
+        // باز مانده)، آن را نادیده می‌گیریم — وگرنه «تا تاریخ» برای همیشه روی
+        // یک روز قدیمی ثابت می‌ماند و داده‌های جدید هرگز نمایش داده نمی‌شوند.
+        if (parsed.dateRange?.to === today()) {
+          return parsed.dateRange
+        }
       }
     } catch {}
     return defaultRange()

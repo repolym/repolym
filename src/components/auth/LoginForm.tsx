@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, LogIn, UserPlus } from 'lucide-react'
@@ -7,12 +7,19 @@ import { AuthLayout } from '../auth/AuthLayout'
 import { formatError } from '../../utils/error-handler'
 
 export const LoginPage: React.FC = () => {
-  const { signIn } = useAuth()
+  const { signIn, user, isLoading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // اگر کاربر از قبل وارد شده، صفحه ورود را نشان نده — مستقیم به داشبورد برو
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isLoading, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

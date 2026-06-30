@@ -11,8 +11,8 @@ import { StreakCard } from './StreakCard'
 import { GoalProgressCards } from './GoalProgressCards'
 import { TestScoresChart } from './TestScoresChart'
 import { StatsCards } from './StatsCards'
-import { daysAgo, today, formatDate } from '../../utils/date-utils'
-import { Sunrise, Calendar } from 'lucide-react'
+import { daysAgo, today, formatDate, getGreeting } from '../../utils/date-utils'
+import { Sunrise, Sun, Sunset, Moon, Calendar } from 'lucide-react'
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth()
@@ -44,6 +44,20 @@ export const DashboardPage: React.FC = () => {
 
   const firstName = user?.name?.split(' ')[0] || 'دانش‌آموز'
 
+  const greeting = useMemo(() => getGreeting(), [])
+  const GreetingIcon = useMemo(() => {
+    switch (greeting.period) {
+      case 'morning':
+        return Sunrise
+      case 'noon':
+        return Sun
+      case 'afternoon':
+        return Sunset
+      default:
+        return Moon
+    }
+  }, [greeting.period])
+
   return (
     <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* هدر با احوال‌پرسی */}
@@ -58,10 +72,10 @@ export const DashboardPage: React.FC = () => {
           <span>{formatDate(today())}</span>
         </div>
         <h1 className="text-3xl font-extrabold text-gray-800 leading-tight">
-          <Sunrise className="inline-block w-7 h-7 text-amber-500 mr-2" />
-          صبح بخیر، {firstName}
+          <GreetingIcon className="inline-block w-7 h-7 text-amber-500 mr-2" />
+          {greeting.text}، {firstName}
         </h1>
-        <p className="text-gray-500 text-sm">امروز یک روز عالی برای مطالعه‌ست. ادامه بده!</p>
+        <p className="text-gray-500 text-sm">{greeting.subtitle}</p>
       </motion.div>
 
       {/* کارت‌های آمار */}

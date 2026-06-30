@@ -1,5 +1,5 @@
 import type { StudySession } from '../types/database'
-import { today } from './date-utils'
+import { today, daysAgo } from './date-utils'
 
 export const calculateCurrentStreak = (sessions: StudySession[]): number => {
   if (!sessions.length) return 0
@@ -11,9 +11,7 @@ export const calculateCurrentStreak = (sessions: StudySession[]): number => {
 
   let streak = 0
   const todayStr = today()
-  const yesterdayDate = new Date()
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-  const yesterdayStr = yesterdayDate.toISOString().split('T')[0]
+  const yesterdayStr = daysAgo(1)
 
   // Streak must start from today or yesterday
   if (sortedDates[0] !== todayStr && sortedDates[0] !== yesterdayStr) {

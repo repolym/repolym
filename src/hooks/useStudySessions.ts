@@ -11,13 +11,14 @@ interface UseStudySessionsParams {
 
 const CACHE_TTL = 60_000
 
-interface Cache {
-  data: StudySession[]
-  timestamp: number
-  key: string
-}
-
-const cache: Cache = { data: [], timestamp: 0, key: '' }
+// نکته: قبلاً اینجا یک شیء واحد (نه Map) برای کش استفاده می‌شد که بین همهٔ
+// نمونه‌های این هوک در سراسر برنامه مشترک بود. وقتی دو کامپوننت هم‌زمان با
+// پارامترهای متفاوت این هوک را صدا می‌زدند (مثلاً در DashboardPage که هم
+// sessions و هم allSessions را می‌خواند)، هر بار کش با cacheKey جدید بازنویسی
+// می‌شد و کش قبلی را باطل می‌کرد — یعنی کشینگ عملاً کار نمی‌کرد و درخواست‌های
+// تکراری غیرضروری به سرور ارسال می‌شد. حالا مثل useGoals/useTests از Map
+// با کلید مجزا برای هر ترکیب پارامتر استفاده می‌کنیم.
+const cache = new Map<string, { data: StudySession[]; timestamp: number }>()
 
 export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsParams) => {
   const [data, setData] = useState<StudySession[]>([])
@@ -31,9 +32,9 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
     if (!userId) return
     if (fetchingRef.current) return
 
-    const now = Date.now()
-    if (!forceRefresh && cache.key === cacheKey && now - cache.timestamp < CACHE_TTL) {
-      setData(cache.data)
+    const cached = cache.get(cacheKey)
+    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setData(cached.data)
       return
     }
 
@@ -56,9 +57,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       if (err) throw err
 
       const sessions = rows as StudySession[]
-      cache.data = sessions
-      cache.timestamp = Date.now()
-      cache.key = cacheKey
+      cache.set(cacheKey, { data: sessions, timestamp: Date.now() })
       setData(sessions)
     } catch (err) {
       setError(formatError(err))
@@ -78,7 +77,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       { ...formData, user_id: userId },
     ])
     if (error) throw new Error(formatError(error))
-    cache.timestamp = 0
+    cache.clear()
     await fetch(true)
     return true
   }
@@ -91,7 +90,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       .eq('id', id)
       .eq('user_id', userId)
     if (error) throw new Error(formatError(error))
-    cache.timestamp = 0
+    cache.clear()
     await fetch(true)
     return true
   }
@@ -104,7 +103,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       .eq('id', id)
       .eq('user_id', userId)
     if (error) throw new Error(formatError(error))
-    cache.timestamp = 0
+    cache.clear()
     await fetch(true)
     return true
   }

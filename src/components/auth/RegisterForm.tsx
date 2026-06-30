@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Lock, UserPlus } from 'lucide-react'
@@ -7,13 +7,21 @@ import { AuthLayout } from '../auth/AuthLayout'
 import { formatError } from '../../utils/error-handler'
 
 export const RegisterPage: React.FC = () => {
-  const { signUp } = useAuth()
+  const { signUp, user, isLoading } = useAuth()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [confirmationSent, setConfirmationSent] = useState(false)
+
+  // اگر کاربر از قبل وارد شده، صفحه ثبت‌نام را نشان نده — مستقیم به داشبورد برو
+  useEffect(() => {
+    if (!isLoading && user && !confirmationSent) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isLoading, user, navigate, confirmationSent])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,13 +30,41 @@ export const RegisterPage: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      await signUp(email.trim(), name.trim(), password)
-      navigate('/dashboard', { replace: true })
+      const { requiresEmailConfirmation } = await signUp(email.trim(), name.trim(), password)
+      if (requiresEmailConfirmation) {
+        setConfirmationSent(true)
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     } catch (err) {
       const msg = formatError(err)
       if (msg.includes('already registered')) setError('این ایمیل قبلاً ثبت‌نام کرده است')
       else setError(msg)
     } finally { setLoading(false) }
+  }
+
+  if (confirmationSent) {
+    return (
+      <AuthLayout>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-center"
+        >
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">ثبت‌نام تقریباً تمام شد ✉️</h2>
+          <p className="text-sm text-gray-500 mb-8">
+            یک ایمیل تأیید برای {email} ارسال کردیم. برای فعال‌سازی حساب، روی لینک داخل ایمیل کلیک کنید.
+          </p>
+          <Link
+            to="/login"
+            className="inline-block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-2xl transition-all"
+          >
+            بازگشت به صفحه ورود
+          </Link>
+        </motion.div>
+      </AuthLayout>
+    )
   }
 
   return (

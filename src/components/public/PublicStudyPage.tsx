@@ -23,13 +23,20 @@ const PublicStudyPage: React.FC = () => {
             try {
                 const { data, error: supabaseError } = await supabase
                     .from('study_sessions')
-                    .select('*, subjects (id, name, color)')
+                    .select('id, date, duration_minutes, subjects (id, name, color)')
                     .eq('user_id', userId)
                     .order('date', { ascending: false })
 
                 if (supabaseError) throw supabaseError
 
-                setSessions(data || [])
+                // تبدیل داده‌ی خام به فرمت مورد انتظار
+                const formatted = (data || []).map((item: any) => ({
+                    ...item,
+                    // اگر subjects به‌صورت آرایه برگشت (نادر)، اولین عنصر را بگیرد
+                    subjects: Array.isArray(item.subjects) ? item.subjects[0] : item.subjects,
+                })) as SessionWithSubject[]
+
+                setSessions(formatted)
             } catch (err) {
                 console.error(err)
                 setError('خطا در بارگذاری اطلاعات')
@@ -76,7 +83,6 @@ const PublicStudyPage: React.FC = () => {
                     <ul className="space-y-2">
                         {sessions.map((session) => (
                             <li key={session.id} className="card-hover px-4 py-3 flex items-center gap-3">
-                                {/* Subject color dot */}
                                 <div
                                     className="w-2 h-8 rounded-full flex-shrink-0"
                                     style={{ backgroundColor: session.subjects?.color || '#3a3a3f' }}
