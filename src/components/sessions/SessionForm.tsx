@@ -23,17 +23,28 @@ interface SessionFormProps {
 // --- Helpers ---
 const parseActivitiesDuration = (text: string): number => {
   let totalHours = 0
+
+  // 1. الگوی "X ساعت و نیم"
   const halfRegex = /(\d+(?:\.\d+)?)\s*ساعت\s*و\s*نیم/g
   let match
   while ((match = halfRegex.exec(text)) !== null) {
     totalHours += parseFloat(match[1]) + 0.5
   }
   const cleaned = text.replace(halfRegex, '')
+
+  // 2. الگوی "X ساعت"
   const hourRegex = /(\d+(?:\.\d+)?)\s*ساعت/g
   while ((match = hourRegex.exec(cleaned)) !== null) {
     totalHours += parseFloat(match[1])
   }
-  return Math.round(totalHours * 60)
+
+  // 3. الگوی "Y دقیقه" (جدید)
+  const minuteRegex = /(\d+(?:\.\d+)?)\s*دقیقه/g
+  while ((match = minuteRegex.exec(text)) !== null) {
+    totalHours += parseFloat(match[1]) / 60
+  }
+
+  return Math.round(totalHours * 60) // خروجی به دقیقه
 }
 
 const buildNotesJSON = (activities: string, wake: string, sleep: string, phone: string): string =>
@@ -56,7 +67,6 @@ const parseNotesJSON = (notes: string | null) => {
 
 // --- Component ---
 export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSubmit, subjects, editing }) => {
-  // ---- NAME REMOVED ----
   const [jalaliDate, setJalaliDate] = useState<string>(todayJalali())
   const [activities, setActivities] = useState('')
   const [wakeTime, setWakeTime] = useState('')
@@ -64,13 +74,12 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
   const [phoneHours, setPhoneHours] = useState('')
 
   const [quickSubject, setQuickSubject] = useState('')
-  const [quickDuration, setQuickDuration] = useState('')
+  const [quickDuration, setQuickDuration] = useState('') // اکنون دقیقه
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
-  // Load editing data or reset
   useEffect(() => {
     if (editing) {
       const parsed = parseNotesJSON(editing.notes)
@@ -90,37 +99,33 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
     setServerError(null)
   }, [editing, isOpen])
 
-  // Date navigation
   const changeDate = (days: number) => {
     try {
       const greg = toGregorian(jalaliDate)
       const d = new Date(greg + 'T00:00:00')
       d.setDate(d.getDate() + days)
-      // استفاده از متد ساده و امن برای تبدیل به YYYY-MM-DD
-      const newGreg = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+      const newGreg = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0')
       const newJalali = toJalali(newGreg)
       setJalaliDate(newJalali)
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }
 
-  // Quick-add
+  // Quick-add با دقیقه
   const handleQuickAdd = () => {
     if (!quickSubject || !quickDuration) return
     const subj = subjects.find((s) => s.id === quickSubject)
     if (!subj) return
-    const line = `• ${subj.name} - ${quickDuration} ساعت\n`
+    const line = `• ${subj.name} - ${quickDuration} دقیقه\n`
     setActivities((prev) => (prev ? prev + line : line))
     setQuickSubject('')
     setQuickDuration('')
   }
 
-  // Validation & Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: typeof errors = {}
-    // NAME VALIDATION REMOVED
     if (!jalaliDate) newErrors.jalaliDate = 'تاریخ الزامی است'
     if (!wakeTime) newErrors.wakeTime = 'ساعت بیداری الزامی است'
     if (!sleepTime) newErrors.sleepTime = 'ساعت خواب الزامی است'
@@ -136,14 +141,10 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
 
     const computedDuration = parseActivitiesDuration(activities)
     if (!activities.trim() || computedDuration <= 0) {
-      newErrors.activities = 'حداقل یک فعالیت با ساعت مشخص وارد کنید (مثال: ۲ ساعت ریاضی)'
+      newErrors.activities = 'حداقل یک فعالیت با ساعت یا دقیقه وارد کنید'
     } else if (computedDuration > 24 * 60) {
       newErrors.activities = 'مجموع ساعات مطالعه نمی‌تواند بیش از ۲۴ ساعت در روز باشد'
-    } else if (
-      !isNaN(phoneHoursNum) &&
-      phoneHoursNum >= 0 &&
-      computedDuration / 60 + phoneHoursNum > 24
-    ) {
+    } else if (!isNaN(phoneHoursNum) && phoneHoursNum >= 0 && computedDuration / 60 + phoneHoursNum > 24) {
       newErrors.activities = 'مجموع ساعت مطالعه و کار با گوشی نمی‌تواند بیش از ۲۴ ساعت در روز باشد'
     }
 
@@ -168,9 +169,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       }
 
       const ok = await onSubmit(data)
-      if (ok) {
-        onClose()
-      }
+      if (ok) onClose()
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'خطا در ذخیره‌سازی')
     } finally {
@@ -179,11 +178,8 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
   }
 
   const gregorianDisplayDate = (() => {
-    try {
-      return toGregorian(jalaliDate)
-    } catch {
-      return today()
-    }
+    try { return toGregorian(jalaliDate) }
+    catch { return today() }
   })()
 
   return (
@@ -197,11 +193,8 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
         <div>
           <label className="label mb-1 text-base">تاریخ</label>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => changeDate(-1)}
-              className="btn-ghost p-1 text-text-secondary hover:text-text-primary"
-            >
+            <button type="button" onClick={() => changeDate(-1)}
+              className="btn-ghost p-1 text-text-secondary hover:text-text-primary">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -209,27 +202,19 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
             <div className="flex-1 text-center">
               <p className="text-xl font-bold text-text-primary">
                 {(() => {
-                  try {
-                    return toJalaliLong(gregorianDisplayDate)
-                  } catch {
-                    return jalaliDate
-                  }
+                  try { return toJalaliLong(gregorianDisplayDate) }
+                  catch { return jalaliDate }
                 })()}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => changeDate(1)}
-              className="btn-ghost p-1 text-text-secondary hover:text-text-primary"
-            >
+            <button type="button" onClick={() => changeDate(1)}
+              className="btn-ghost p-1 text-text-secondary hover:text-text-primary">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
-          {errors.jalaliDate && (
-            <p className="text-xs text-danger mt-1">{errors.jalaliDate}</p>
-          )}
+          {errors.jalaliDate && <p className="text-xs text-danger mt-1">{errors.jalaliDate}</p>}
         </div>
 
         {/* Field 3: Activities */}
@@ -241,7 +226,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
             placeholder="مثال: ۴ ساعت و نیم آزمون مانتیس - ۱ ساعت تحلیل آزمون - ۲ ساعت فصل ۴۱ کمپبل"
             rows={4}
           />
-          {/* Quick-add row */}
           <div className="mt-2 flex gap-2 items-end">
             <Select
               label=""
@@ -256,20 +240,18 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
             <Input
               label=""
               type="number"
-              step="0.5"
-              min="0.5"
+              step="1"
+              min="1"
               value={quickDuration}
               onChange={(e) => setQuickDuration(e.target.value)}
-              placeholder="مدت (ساعت)"
+              placeholder="مدت (دقیقه)"
               className="w-24"
             />
             <Button type="button" variant="secondary" onClick={handleQuickAdd} className="text-xs">
               افزودن
             </Button>
           </div>
-          {errors.activities && (
-            <p className="text-xs text-danger mt-1">{errors.activities}</p>
-          )}
+          {errors.activities && <p className="text-xs text-danger mt-1">{errors.activities}</p>}
         </div>
 
         {/* Field 4: Wake time */}
@@ -322,9 +304,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
         )}
 
         <div className="flex gap-2 justify-end pt-1">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            انصراف
-          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>انصراف</Button>
           <Button type="submit" variant="primary" loading={loading}>
             {editing ? 'به‌روزرسانی' : 'ذخیره'}
           </Button>
