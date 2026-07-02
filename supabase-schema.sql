@@ -252,3 +252,13 @@ DROP TRIGGER IF EXISTS trg_validate_session_daily_limit ON study_sessions;
 CREATE TRIGGER trg_validate_session_daily_limit
   BEFORE INSERT OR UPDATE ON study_sessions
   FOR EACH ROW EXECUTE FUNCTION public.validate_session_daily_limit();
+
+-- =============================================
+-- مهاجرت: انتخاب المپیاد + تنظیمات کاربر (افزایشی، سازگار با نسخه قبلی)
+-- این بخش فقط ستون اضافه می‌کند و هیچ داده یا Policy موجودی را تغییر نمی‌دهد.
+-- =============================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS olympiad_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;
+-- preferences: محل ذخیره تنظیمات سبک (تم، اعلان‌ها و...) به‌صورت انعطاف‌پذیر
+-- بدون نیاز به مهاجرت‌های بعدی برای هر تنظیم جدید.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb;
