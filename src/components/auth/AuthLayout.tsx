@@ -4,14 +4,17 @@ import { TrendingUp, Zap } from 'lucide-react'
 import logo from '../../repolym.png'
 import { OLYMPIAD_ICON_MAP } from '../../config/olympiad-icons'
 import type { OlympiadTheme } from '../../config/olympiads'
+import { OlympiadAmbient } from '../common/OlympiadAmbient'
 
 interface AuthLayoutProps {
   children: React.ReactNode
   /** وقتی کاربر یک المپیاد را انتخاب کرده، پنل تزئینی هویت بصری همان المپیاد را می‌گیرد */
   olympiadTheme?: OlympiadTheme | null
+  /** فرم عریض‌تر — برای مراحلی مثل انتخاب المپیاد که به فضای بیشتری نیاز دارند */
+  wide?: boolean
 }
 
-export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme }) => {
+export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme, wide = false }) => {
   const gradient = olympiadTheme?.gradient ?? 'from-indigo-600 via-purple-600 to-pink-500'
   const OlympiadIcon = olympiadTheme ? OLYMPIAD_ICON_MAP[olympiadTheme.icon] : null
 
@@ -42,6 +45,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme 
             animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
           />
+
+          {/* جلوهٔ پویای مخصوص خانوادهٔ المپیاد انتخاب‌شده (geometric/cosmic/flow) —
+              المپیادهای organic همان موج‌های نرم بالا را دارند و افکت اضافه لازم ندارند */}
+          {olympiadTheme && olympiadTheme.effect !== 'organic' && (
+            <OlympiadAmbient effect={olympiadTheme.effect} color="#ffffff" className="opacity-70" />
+          )}
 
           <div className="relative z-10 flex flex-col justify-center px-12 text-white">
             {/* لوگوی بسیار بسیار بزرگ، یا نماد المپیاد انتخاب‌شده */}
@@ -123,7 +132,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme 
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, duration: 0.4 }}
-          className="w-full max-w-md"
+          className={`w-full transition-[max-width] duration-300 ${wide ? 'max-w-xl' : 'max-w-md'}`}
         >
           <div className="lg:hidden mb-8 text-center">
             <img
