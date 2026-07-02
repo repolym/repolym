@@ -5,10 +5,11 @@ import { DashboardProvider } from './context/DashboardContext'
 import { ToastProvider } from './context/ToastContext'
 import { AppShell } from './components/AppShell'
 import { ProtectedRoute } from './components/common/ProtectedRoute'
+import { StudentRoute } from './components/common/StudentRoute'
+import { AdminRoute } from './components/common/AdminRoute'
 import { ToastContainer } from './components/common/Toast'
 
 import AdminDashboard from './components/admin/AdminDashboard'
-import { AdminRoute } from './components/common/AdminRoute'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import { DashboardPage } from './components/dashboard/DashboardPage'
@@ -18,11 +19,23 @@ import { TestsPage } from './components/tests/TestsPage'
 import { SubjectsPage } from './components/subjects/SubjectsPage'
 import PublicStudyPage from './components/public/PublicStudyPage'
 
-const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
-    <DashboardProvider>
-      <AppShell>{children}</AppShell>
-    </DashboardProvider>
+    <StudentRoute>
+      <DashboardProvider>
+        <AppShell>{children}</AppShell>
+      </DashboardProvider>
+    </StudentRoute>
+  </ProtectedRoute>
+)
+
+const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute>
+    <AdminRoute>
+      <DashboardProvider>
+        <AppShell>{children}</AppShell>
+      </DashboardProvider>
+    </AdminRoute>
   </ProtectedRoute>
 )
 
@@ -32,51 +45,22 @@ const App: React.FC = () => {
       <AuthProvider>
         <ToastProvider>
           <Routes>
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <DashboardProvider>
-                    <AppShell>
-                      <AdminRoute>
-                        <AdminDashboard />
-                      </AdminRoute>
-                    </AppShell>
-                  </DashboardProvider>
-                </ProtectedRoute>
-              }
-            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            <Route
-              path="/dashboard"
-              element={<ProtectedLayout><DashboardPage /></ProtectedLayout>}
-            />
-            <Route
-              path="/sessions"
-              element={<ProtectedLayout><SessionsPage /></ProtectedLayout>}
-            />
-            <Route
-              path="/goals"
-              element={<ProtectedLayout><GoalsPage /></ProtectedLayout>}
-            />
-            <Route
-              path="/tests"
-              element={<ProtectedLayout><TestsPage /></ProtectedLayout>}
-            />
-            <Route
-              path="/subjects"
-              element={<ProtectedLayout><SubjectsPage /></ProtectedLayout>}
-            />
+            <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
 
-            {/* مسیر عمومی ساعات مطالعه */}
+            <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
+            <Route path="/sessions" element={<StudentLayout><SessionsPage /></StudentLayout>} />
+            <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
+            <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
+            <Route path="/subjects" element={<StudentLayout><SubjectsPage /></StudentLayout>} />
+
             <Route path="/public/:userId" element={<PublicStudyPage />} />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-
           <ToastContainer />
         </ToastProvider>
       </AuthProvider>
