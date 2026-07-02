@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboard } from '../../context/DashboardContext'
@@ -10,12 +10,13 @@ import { daysAgo, today, formatDate, getGreeting } from '../../utils/date-utils'
 import { Sunrise, Sun, Sunset, Moon, Calendar } from 'lucide-react'
 import { StatsCards } from './StatsCards'
 import { DashboardTabs } from './DashboardTabs'
+import { Skeleton } from '../common/Loading'
 
-// Direct imports – ensure each section has `export default`
-import OverviewSection from './sections/OverviewSection'
-import StudySection from './sections/StudySection'
-import PerformanceSection from './sections/PerformanceSection'
-import GrowthSection from './sections/GrowthSection'
+// Lazy load sections
+const OverviewSection = lazy(() => import('./sections/OverviewSection'))
+const StudySection = lazy(() => import('./sections/StudySection'))
+const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
+const GrowthSection = lazy(() => import('./sections/GrowthSection'))
 
 type TabId = 'overview' | 'study' | 'performance' | 'growth'
 
@@ -31,6 +32,7 @@ export const DashboardPage: React.FC = () => {
   const { dateRange } = useDashboard()
   const [activeTab, setActiveTab] = useState<TabId>('overview')
 
+  // Fetch data (all at once)
   const sessions = useStudySessions({
     userId: user?.id ?? null,
     dateFrom: dateRange.from,
@@ -66,6 +68,11 @@ export const DashboardPage: React.FC = () => {
     }
   }, [greeting.period])
 
+  // Fix: Type-safe tab change handler
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as TabId)
+  }
+
   return (
     <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-8" dir="rtl">
       {/* Header */}
@@ -95,10 +102,14 @@ export const DashboardPage: React.FC = () => {
         <StatsCards sessions={sessions.data} loading={sessions.loading} />
       </motion.div>
 
-      {/* Tabs */}
-      <DashboardTabs tabs={tabConfig} activeTab={activeTab} onChange={setActiveTab} />
+      {/* Tabs with fixed onChange */}
+      <DashboardTabs
+        tabs={tabConfig}
+        activeTab={activeTab}
+        onChange={handleTabChange}
+      />
 
-      {/* Tab content with animation */}
+      {/* Tab content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -107,25 +118,50 @@ export const DashboardPage: React.FC = () => {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
         >
-          {activeTab === 'overview' && (
-            <OverviewSection
-              goals={goalsWithProgress}
-              loading={goals.loading}
-              sessions={sessions.data}
-              tests={tests.data}
-            />
-          )}
-          {activeTab === 'study' && (
-            <StudySection sessions={allSessions.data} loading={allSessions.loading} />
-          )}
-          {activeTab === 'performance' && (
-            <PerformanceSection tests={tests.data} loading={tests.loading} />
-          )}
-          {activeTab === 'growth' && (
-            <GrowthSection sessions={sessions.data} loading={sessions.loading} />
-          )}
+          <Suspense fallback={<SectionSkeleton />}>
+            {activeTab === 'overview' && (
+              <OverviewSection
+                goals={goalsWithProgress}
+                loading={goals.loading}
+                sessions={sessions.data}
+                tests={tests.data}
+              />
+            )}
+            {activeTab === 'study' && (
+              <StudySection
+                sessions={allSessions.data}
+                loading={allSessions.loading}
+              />
+            )}
+            {activeTab === 'performance' && (
+              <PerformanceSection
+                tests={tests.data}
+                loading={tests.loading}
+              />
+            )}
+            {activeTab === 'growth' && (
+              <GrowthSection
+                sessions={sessions.data}
+                loading={sessions.loading}
+              />
+            )}
+          </Suspense>
         </motion.div>
       </AnimatePresence>
     </div>
   )
 }
+
+// Skeleton
+const SectionSkeleton: React.FC = () => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+    {[1, 2, 3, 4].map(i => (
+      <div key={i} className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 space-y-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    ))}
+  </div>
+)

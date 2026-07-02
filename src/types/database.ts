@@ -22,23 +22,21 @@ export interface StudySession {
   id: string
   user_id: string
   subject_id: string | null
-  date: string // YYYY-MM-DD
+  date: string
   duration_minutes: number
   notes: string | null
   created_at: string
   updated_at: string
-  // New optional fields
   resource?: string | null
   question_count?: number | null
   question_difficulty?: string | null
-  estimated_difficulty?: string | null
+  estimated_difficulty?: number | null  // ← number, not string
   question_type?: string | null
   todo_relation?: string | null
   tags?: string | null
-  // Joined
-  subjects?: Subject
   plan_id?: string | null
-  plan?: Plan | null // joined
+  plan?: Plan | null
+  subjects?: Subject
 }
 
 export interface Goal {
@@ -89,11 +87,10 @@ export interface SessionFormData {
   date: string
   duration_minutes: number
   notes: string
-  // New optional fields
   resource?: string | null
   question_count?: number | null
   question_difficulty?: string | null
-  estimated_difficulty?: string | null
+  estimated_difficulty?: number | null  // ← number, not string
   question_type?: string | null
   todo_relation?: string | null
   tags?: string | null

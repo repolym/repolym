@@ -186,7 +186,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
         date: gregorianDate,
         duration_minutes: duration || 0,
         notes,
-        // Include new fields only if they have a value
+        // New fields - optional
         resource: resource.trim() || null,
         question_count: questionCount ? Number(questionCount) : null,
         question_difficulty: questionDifficulty.trim() || null,

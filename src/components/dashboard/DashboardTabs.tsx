@@ -45,4 +45,3 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({ tabs, activeTab, o
         </div>
     )
 }
-
