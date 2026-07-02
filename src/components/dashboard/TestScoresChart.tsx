@@ -13,7 +13,8 @@ interface TestScoresChartProps {
 }
 
 export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading }) => {
-  const recentTests = useMemo(() => [...tests].slice(0, 8).reverse(), [tests])
+  // Show up to 12 most recent tests (instead of 8)
+  const recentTests = useMemo(() => [...tests].slice(0, 12).reverse(), [tests])
 
   const avgScore = useMemo(() => {
     if (!recentTests.length) return 0
@@ -27,7 +28,7 @@ export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading
         <div className="flex items-center gap-2 mb-5">
           <Skeleton className="h-5 w-24" />
         </div>
-        <div className="flex items-end gap-2 h-28">
+        <div className="flex items-end gap-2 h-48">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Skeleton key={i} className="flex-1 rounded-t-lg" style={{ height: `${15 + i * 12}%` }} />
           ))}
@@ -83,8 +84,8 @@ export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading
         </div>
       </div>
 
-      {/* نمودار میله‌ای */}
-      <div className="flex items-end gap-2 h-32 px-1">
+      {/* Taller chart */}
+      <div className="flex items-end gap-2 h-48 px-1">
         {recentTests.map((test) => {
           const pct = Math.round((test.score / (test.max_score || 100)) * 100)
           let barColor = 'bg-gray-300'
@@ -105,7 +106,7 @@ export const TestScoresChart: React.FC<TestScoresChartProps> = ({ tests, loading
                 </div>
               </div>
 
-              <div className="w-full flex items-end h-24">
+              <div className="w-full flex items-end h-40">
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${pct}%` }}

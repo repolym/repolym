@@ -262,3 +262,46 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT 
 -- preferences: محل ذخیره تنظیمات سبک (تم، اعلان‌ها و...) به‌صورت انعطاف‌پذیر
 -- بدون نیاز به مهاجرت‌های بعدی برای هر تنظیم جدید.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb;
+
+-- =============================================
+-- مطالعه - افزودن فیلدهای جدید به جلسات (اختیاری)
+-- =============================================
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS resource TEXT;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS question_count INTEGER;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS question_difficulty TEXT;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS estimated_difficulty TEXT;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS question_type TEXT;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS todo_relation TEXT;
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS tags TEXT;
+
+-- =============================================
+-- برنامه‌ریزی - جدول برنامه‌ها
+-- =============================================
+CREATE TABLE IF NOT EXISTS plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    type TEXT NOT NULL CHECK (type IN ('daily', 'weekly', 'monthly', 'exam', 'flexible')),
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+    start_date DATE NOT NULL,
+    end_date DATE,
+    due_date DATE,
+    estimated_duration INTEGER, -- minutes
+    dependencies JSONB, -- array of plan IDs
+    recurring JSONB, -- { frequency: 'daily'|'weekly'|'monthly', interval: 1, days?: [1,2,3] }
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ایندکس‌ها
+CREATE INDEX IF NOT EXISTS idx_plans_user_id ON plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_plans_start_date ON plans(user_id, start_date);
+CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(user_id, status);
+
+-- اضافه کردن ستون plan_id به study_sessions (اختیاری)
+ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS plan_id UUID REFERENCES plans(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_plan_id ON study_sessions(plan_id);
+

@@ -17,9 +17,10 @@ export const TestsPage: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Test | null>(null)
 
+  // Fetch tests from the last 365 days (was 180)
   const { data: tests, loading, error, refetch, createTest, updateTest, deleteTest } = useTests({
     userId: user?.id ?? null,
-    dateFrom: daysAgo(180),
+    dateFrom: daysAgo(365),
     dateTo: today(),
   })
 

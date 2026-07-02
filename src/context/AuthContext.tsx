@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
 import type { User } from '../types/database'
 import { formatError } from '../utils/error-handler'
-import { cleanupAuthParams } from '../utils/auth-cleanup'   // <-- اضافه شده
+import { cleanupAuthParams } from '../utils/auth-cleanup'
 import type { OlympiadSubject } from '../config/olympiads'
 
 interface OnboardingData {
@@ -24,6 +24,7 @@ interface AuthContextType {
     onboarding?: OnboardingData
   ) => Promise<{ requiresEmailConfirmation: boolean }>
   completeOnboarding: (onboarding: OnboardingData) => Promise<void>
+  updateProfile: (updates: Partial<{ name: string }>) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
 }
@@ -76,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(await applyPendingOnboardingIfAny(session.user.id, profile))
       }
       setIsLoading(false)
-      cleanupAuthParams()   // <-- پاک‌سازی توکن از URL
+      cleanupAuthParams()
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -89,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (event === 'SIGNED_IN') setIsLoading(false)
       if (event === 'SIGNED_OUT') setIsLoading(false)
-      cleanupAuthParams()   // <-- پاک‌سازی بعد از هر تغییر auth
+      cleanupAuthParams()
     })
 
     return () => listener.subscription.unsubscribe()
@@ -174,6 +175,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(updated)
   }
 
+  // NEW: Update user profile (e.g. name) and refresh the user state
+  const updateProfile = async (updates: Partial<{ name: string }>) => {
+    if (!session?.user) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('users')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', session.user.id)
+    if (error) throw new Error(formatError(error))
+    // Refresh the user profile
+    const updated = await fetchUserProfile(session.user.id)
+    setUser(updated)
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
@@ -183,7 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => setError(null)
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, error, signIn, signUp, completeOnboarding, signOut, clearError }}>
+    <AuthContext.Provider value={{ user, session, isLoading, error, signIn, signUp, completeOnboarding, updateProfile, signOut, clearError }}>
       {children}
     </AuthContext.Provider>
   )

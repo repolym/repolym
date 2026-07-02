@@ -27,8 +27,18 @@ export interface StudySession {
   notes: string | null
   created_at: string
   updated_at: string
+  // New optional fields
+  resource?: string | null
+  question_count?: number | null
+  question_difficulty?: string | null
+  estimated_difficulty?: string | null
+  question_type?: string | null
+  todo_relation?: string | null
+  tags?: string | null
   // Joined
   subjects?: Subject
+  plan_id?: string | null
+  plan?: Plan | null // joined
 }
 
 export interface Goal {
@@ -79,6 +89,14 @@ export interface SessionFormData {
   date: string
   duration_minutes: number
   notes: string
+  // New optional fields
+  resource?: string | null
+  question_count?: number | null
+  question_difficulty?: string | null
+  estimated_difficulty?: string | null
+  question_type?: string | null
+  todo_relation?: string | null
+  tags?: string | null
 }
 
 export interface GoalFormData {
@@ -131,3 +149,38 @@ export interface DashboardStats {
   avgMinutesPerDay: number
   studyDaysThisMonth: number
 }
+
+export interface Plan {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  type: 'daily' | 'weekly' | 'monthly' | 'exam' | 'flexible'
+  priority: 'low' | 'medium' | 'high'
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  progress: number // 0-100
+  start_date: string
+  end_date: string | null
+  due_date: string | null
+  estimated_duration: number | null // minutes
+  dependencies: string[] | null // array of plan IDs
+  recurring: any | null // JSON
+  created_at: string
+  updated_at: string
+}
+
+export interface PlanFormData {
+  title: string
+  description?: string
+  type: Plan['type']
+  priority: Plan['priority']
+  status?: Plan['status']
+  progress?: number
+  start_date: string
+  end_date?: string | null
+  due_date?: string | null
+  estimated_duration?: number | null
+  dependencies?: string[] | null
+  recurring?: any | null
+}
+

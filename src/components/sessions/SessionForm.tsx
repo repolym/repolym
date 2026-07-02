@@ -9,7 +9,6 @@ import {
   toJalaliLong,
   toGregorian,
   todayJalali,
-  toPersianDigits,
 } from '../../utils/jalali'
 
 interface SessionFormProps {
@@ -24,7 +23,6 @@ interface SessionFormProps {
 const parseActivitiesDuration = (text: string): number => {
   let totalHours = 0
 
-  // 1. الگوی "X ساعت و نیم"
   const halfRegex = /(\d+(?:\.\d+)?)\s*ساعت\s*و\s*نیم/g
   let match
   while ((match = halfRegex.exec(text)) !== null) {
@@ -32,19 +30,17 @@ const parseActivitiesDuration = (text: string): number => {
   }
   const cleaned = text.replace(halfRegex, '')
 
-  // 2. الگوی "X ساعت"
   const hourRegex = /(\d+(?:\.\d+)?)\s*ساعت/g
   while ((match = hourRegex.exec(cleaned)) !== null) {
     totalHours += parseFloat(match[1])
   }
 
-  // 3. الگوی "Y دقیقه" (جدید)
   const minuteRegex = /(\d+(?:\.\d+)?)\s*دقیقه/g
   while ((match = minuteRegex.exec(text)) !== null) {
     totalHours += parseFloat(match[1]) / 60
   }
 
-  return Math.round(totalHours * 60) // خروجی به دقیقه
+  return Math.round(totalHours * 60)
 }
 
 const buildNotesJSON = (activities: string, wake: string, sleep: string, phone: string): string =>
@@ -73,8 +69,17 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
   const [sleepTime, setSleepTime] = useState('')
   const [phoneHours, setPhoneHours] = useState('')
 
+  // New fields
+  const [resource, setResource] = useState('')
+  const [questionCount, setQuestionCount] = useState('')
+  const [questionDifficulty, setQuestionDifficulty] = useState('')
+  const [estimatedDifficulty, setEstimatedDifficulty] = useState('')
+  const [questionType, setQuestionType] = useState('')
+  const [todoRelation, setTodoRelation] = useState('')
+  const [tags, setTags] = useState('')
+
   const [quickSubject, setQuickSubject] = useState('')
-  const [quickDuration, setQuickDuration] = useState('') // اکنون دقیقه
+  const [quickDuration, setQuickDuration] = useState('')
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -88,12 +93,28 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       setSleepTime(parsed.sleep)
       setPhoneHours(parsed.phone)
       setJalaliDate(toJalali(editing.date))
+      // Set new fields from editing object
+      setResource(editing.resource || '')
+      setQuestionCount(editing.question_count?.toString() || '')
+      setQuestionDifficulty(editing.question_difficulty || '')
+      setEstimatedDifficulty(editing.estimated_difficulty?.toString() || '')
+      setQuestionType(editing.question_type || '')
+      setTodoRelation(editing.todo_relation || '')
+      setTags(editing.tags || '')
     } else {
       setActivities('')
       setWakeTime('')
       setSleepTime('')
       setPhoneHours('')
       setJalaliDate(todayJalali())
+      // Reset new fields
+      setResource('')
+      setQuestionCount('')
+      setQuestionDifficulty('')
+      setEstimatedDifficulty('')
+      setQuestionType('')
+      setTodoRelation('')
+      setTags('')
     }
     setErrors({})
     setServerError(null)
@@ -112,7 +133,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
     } catch { /* ignore */ }
   }
 
-  // Quick-add با دقیقه
   const handleQuickAdd = () => {
     if (!quickSubject || !quickDuration) return
     const subj = subjects.find((s) => s.id === quickSubject)
@@ -166,6 +186,14 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
         date: gregorianDate,
         duration_minutes: duration || 0,
         notes,
+        // Include new fields only if they have a value
+        resource: resource.trim() || null,
+        question_count: questionCount ? Number(questionCount) : null,
+        question_difficulty: questionDifficulty.trim() || null,
+        estimated_difficulty: estimatedDifficulty ? Number(estimatedDifficulty) : null,
+        question_type: questionType.trim() || null,
+        todo_relation: todoRelation.trim() || null,
+        tags: tags.trim() || null,
       }
 
       const ok = await onSubmit(data)
@@ -187,9 +215,10 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
       isOpen={isOpen}
       onClose={onClose}
       title={editing ? 'ویرایش جلسه' : 'ثبت جلسه مطالعه'}
+      size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Field 2: Date */}
+        {/* Date */}
         <div>
           <label className="label mb-1 text-base">تاریخ</label>
           <div className="flex items-center gap-2">
@@ -200,7 +229,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               </svg>
             </button>
             <div className="flex-1 text-center">
-              <p className="text-xl font-bold text-text-primary">
+              <p className="text-xl font-bold text-text-primary whitespace-nowrap">
                 {(() => {
                   try { return toJalaliLong(gregorianDisplayDate) }
                   catch { return jalaliDate }
@@ -217,7 +246,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
           {errors.jalaliDate && <p className="text-xs text-danger mt-1">{errors.jalaliDate}</p>}
         </div>
 
-        {/* Field 3: Activities */}
+        {/* Activities */}
         <div>
           <label className="label mb-1">فعالیت‌های آموزشی در طول روز</label>
           <Textarea
@@ -245,7 +274,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               value={quickDuration}
               onChange={(e) => setQuickDuration(e.target.value)}
               placeholder="مدت (دقیقه)"
-              className="w-24"
+              className="w-32"
             />
             <Button type="button" variant="secondary" onClick={handleQuickAdd} className="text-xs">
               افزودن
@@ -254,7 +283,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
           {errors.activities && <p className="text-xs text-danger mt-1">{errors.activities}</p>}
         </div>
 
-        {/* Field 4: Wake time */}
+        {/* Wake time */}
         <Input
           label="ساعت بیداری صبح"
           type="time"
@@ -265,7 +294,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
           required
         />
 
-        {/* Field 5: Sleep time */}
+        {/* Sleep time */}
         <Input
           label="ساعت خواب شب"
           type="time"
@@ -276,7 +305,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
           required
         />
 
-        {/* Field 6: Phone usage */}
+        {/* Phone usage */}
         <div>
           <label className="label mb-1">مجموع ساعت کار با گوشی (غیردرسی)</label>
           <div className="flex items-center gap-2">
@@ -291,11 +320,80 @@ export const SessionForm: React.FC<SessionFormProps> = ({ isOpen, onClose, onSub
               placeholder="۲"
               error={errors.phoneHours}
               required
-              className="w-24"
+              className="w-32"
             />
             <span className="text-sm text-text-secondary">ساعت</span>
           </div>
         </div>
+
+        {/* ====== NEW FIELDS ====== */}
+        <details className="mt-4 border-t border-gray-200 pt-4">
+          <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-700">
+            جزئیات بیشتر (اختیاری)
+          </summary>
+          <div className="mt-4 space-y-4">
+            <Input
+              label="منبع مطالعه"
+              type="text"
+              value={resource}
+              onChange={(e) => setResource(e.target.value)}
+              placeholder="نام کتاب، وب‌سایت، استاد..."
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="تعداد سوالات"
+                type="number"
+                min="0"
+                value={questionCount}
+                onChange={(e) => setQuestionCount(e.target.value)}
+                placeholder="مثلاً ۲۰"
+              />
+              <Input
+                label="سطح دشواری سوالات"
+                type="text"
+                value={questionDifficulty}
+                onChange={(e) => setQuestionDifficulty(e.target.value)}
+                placeholder="آسان، متوسط، سخت"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="دشواری تخمینی (از ۱ تا ۱۰)"
+                type="number"
+                min="1"
+                max="10"
+                value={estimatedDifficulty}
+                onChange={(e) => setEstimatedDifficulty(e.target.value)}
+                placeholder="عدد ۱ تا ۱۰"
+              />
+              <Input
+                label="نوع سوالات"
+                type="text"
+                value={questionType}
+                onChange={(e) => setQuestionType(e.target.value)}
+                placeholder="تشریحی، تستی، ترکیبی"
+              />
+            </div>
+
+            <Input
+              label="ارتباط با وظیفه (Todo)"
+              type="text"
+              value={todoRelation}
+              onChange={(e) => setTodoRelation(e.target.value)}
+              placeholder="مثلاً: مرور فصل ۳"
+            />
+
+            <Input
+              label="برچسب‌ها (با کاما جدا کنید)"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="ریاضی, تست, مرور"
+            />
+          </div>
+        </details>
 
         {serverError && (
           <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-xs px-3 py-2">

@@ -8,9 +8,7 @@ import { OlympiadAmbient } from '../common/OlympiadAmbient'
 
 interface AuthLayoutProps {
   children: React.ReactNode
-  /** وقتی کاربر یک المپیاد را انتخاب کرده، پنل تزئینی هویت بصری همان المپیاد را می‌گیرد */
   olympiadTheme?: OlympiadTheme | null
-  /** فرم عریض‌تر — برای مراحلی مثل انتخاب المپیاد که به فضای بیشتری نیاز دارند */
   wide?: boolean
 }
 
@@ -20,7 +18,6 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
 
   return (
     <div className="min-h-screen flex" dir="rtl">
-      {/* ========== بخش تزئینی (لوگو + شعار) — با انتخاب المپیاد، هویت بصری همان رشته را می‌گیرد ========== */}
       <AnimatePresence mode="wait">
         <motion.div
           key={olympiadTheme?.id ?? 'default'}
@@ -46,14 +43,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          {/* جلوهٔ پویای مخصوص خانوادهٔ المپیاد انتخاب‌شده (geometric/cosmic/flow) —
-              المپیادهای organic همان موج‌های نرم بالا را دارند و افکت اضافه لازم ندارند */}
           {olympiadTheme && olympiadTheme.effect !== 'organic' && (
             <OlympiadAmbient effect={olympiadTheme.effect} color="#ffffff" className="opacity-70" />
           )}
 
           <div className="relative z-10 flex flex-col justify-center px-12 text-white">
-            {/* لوگوی بسیار بسیار بزرگ، یا نماد المپیاد انتخاب‌شده */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -65,12 +59,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
                   <OlympiadIcon className="w-12 h-12 text-white" />
                 </div>
               ) : (
-                <img src={logo} alt="Repolym" className="h-48 w-auto object-contain drop-shadow-2xl" />
+                <img src={logo} alt="" className="h-48 w-auto object-contain drop-shadow-2xl" />
               )}
               <div className="w-20 h-1.5 bg-yellow-300 rounded-full mt-5" />
             </motion.div>
 
-            {/* شعار نئونی */}
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -126,7 +119,6 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
         </motion.div>
       </AnimatePresence>
 
-      {/* ========== بخش فرم ========== */}
       <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
@@ -137,7 +129,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
           <div className="lg:hidden mb-8 text-center">
             <img
               src={logo}
-              alt="Repolym"
+              alt=""
               className="h-16 w-auto mx-auto object-contain drop-shadow-lg"
             />
           </div>

@@ -16,7 +16,8 @@ import { DashboardPage } from './components/dashboard/DashboardPage'
 import { SessionsPage } from './components/sessions/SessionsPage'
 import { GoalsPage } from './components/goals/GoalsPage'
 import { TestsPage } from './components/tests/TestsPage'
-import { SubjectsPage } from './components/subjects/SubjectsPage'
+import { ProfilePage } from './components/profile/ProfilePage'
+import { PlanningPage } from './components/plans/PlanningPage'  // <-- added
 import PublicStudyPage from './components/public/PublicStudyPage'
 
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -54,7 +55,8 @@ const App: React.FC = () => {
             <Route path="/sessions" element={<StudentLayout><SessionsPage /></StudentLayout>} />
             <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
             <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
-            <Route path="/subjects" element={<StudentLayout><SubjectsPage /></StudentLayout>} />
+            <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
+            <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} /> {/* <-- new route */}
 
             <Route path="/public/:userId" element={<PublicStudyPage />} />
 

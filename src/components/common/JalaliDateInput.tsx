@@ -13,8 +13,6 @@ interface JalaliDateInputProps {
   className?: string
 }
 
-// فیلد ورود تاریخ شمسی (جلالی) که در سراسر پروژه به‌صورت یکپارچه استفاده می‌شود.
-// مقدار ورودی/خروجی همیشه میلادی (ISO) است؛ نمایش و تایپ برای کاربر همیشه شمسی است.
 export const JalaliDateInput: React.FC<JalaliDateInputProps> = ({
   label,
   value,
@@ -30,15 +28,12 @@ export const JalaliDateInput: React.FC<JalaliDateInputProps> = ({
   const [text, setText] = useState<string>(() => (value ? toJalali(value) : ''))
   const [localError, setLocalError] = useState<string | null>(null)
 
-  // Keep displayed text in sync when the underlying value changes externally
   useEffect(() => {
     setText(value ? toJalali(value) : '')
     setLocalError(null)
   }, [value])
 
   const tryParse = (raw: string): string | null => {
-    // Accept both Persian and English digits, with "/" separators.
-    // toGregorian() already normalizes Persian digits internally.
     const normalized = raw.trim()
     if (!/^[\d۰-۹]{2,4}\/[\d۰-۹]{1,2}\/[\d۰-۹]{1,2}$/.test(normalized)) return null
     try {
@@ -117,7 +112,7 @@ export const JalaliDateInput: React.FC<JalaliDateInputProps> = ({
           placeholder="۱۴۰۴/۰۳/۲۵"
           onChange={(e) => setText(e.target.value)}
           onBlur={(e) => commit(e.target.value)}
-          className={`input-base text-center ${displayedError ? 'border-danger focus:ring-danger focus:border-danger' : ''} ${className}`}
+          className={`input-base text-center flex-1 min-w-[120px] ${displayedError ? 'border-danger focus:ring-danger focus:border-danger' : ''} ${className}`}
         />
         <button
           type="button"

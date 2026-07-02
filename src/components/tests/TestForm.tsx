@@ -97,24 +97,9 @@ export const TestForm: React.FC<TestFormProps> = ({ isOpen, onClose, onSubmit, s
           options={subjectOptions}
         />
 
+        {/* Layout: date takes 2 columns, score and max_score stacked in 1 column */}
         <div className="grid grid-cols-3 gap-3">
-          <Input
-            label="نمره"
-            type="number"
-            value={form.score}
-            onChange={(e) => setForm((f) => ({ ...f, score: Number(e.target.value) }))}
-            min={0}
-            error={errors.score}
-            required
-          />
-          <Input
-            label="از"
-            type="number"
-            value={form.max_score}
-            onChange={(e) => setForm((f) => ({ ...f, max_score: Number(e.target.value) }))}
-            min={1}
-          />
-          <div>
+          <div className="col-span-2">
             <JalaliDateInput
               label="تاریخ"
               value={form.date}
@@ -122,6 +107,24 @@ export const TestForm: React.FC<TestFormProps> = ({ isOpen, onClose, onSubmit, s
               max={today()}
               error={errors.date}
               required
+            />
+          </div>
+          <div className="col-span-1 space-y-3">
+            <Input
+              label="نمره"
+              type="number"
+              value={form.score}
+              onChange={(e) => setForm((f) => ({ ...f, score: Number(e.target.value) }))}
+              min={0}
+              error={errors.score}
+              required
+            />
+            <Input
+              label="از"
+              type="number"
+              value={form.max_score}
+              onChange={(e) => setForm((f) => ({ ...f, max_score: Number(e.target.value) }))}
+              min={1}
             />
           </div>
         </div>
