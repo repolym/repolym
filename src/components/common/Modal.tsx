@@ -5,13 +5,14 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 const sizeClass = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
+  xl: 'max-w-2xl',
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
@@ -43,12 +44,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Panel — ارتفاع حداکثر نسبت به دید صفحه محدود می‌شود و اسکرول داخلی
+          می‌گیرد تا در محتوای پرتعداد (مثلاً گرید ۱۴ المپیاد) از صفحه بیرون نزند */}
       <div
-        className={`relative w-full ${sizeClass[size]} bg-surface-2 border border-border rounded-xs shadow-2xl animate-slide-up`}
+        className={`relative w-full ${sizeClass[size]} max-h-[85vh] flex flex-col bg-surface-2 border border-border rounded-xs shadow-2xl animate-slide-up`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle shrink-0">
           <h2 id="modal-title" className="text-sm font-semibold text-text-primary">
             {title}
           </h2>
@@ -63,7 +65,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-5 py-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   )

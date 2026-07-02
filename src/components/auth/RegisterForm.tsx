@@ -151,8 +151,12 @@ export const RegisterPage: React.FC = () => {
     exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -24 : 24 }),
   }
 
+  // مراحل المپیاد/دروس به فضای افقی بیشتری نیاز دارند تا گرید ۱۴ گزینه‌ای
+  // فشرده به نظر نرسد — بقیهٔ مراحل (نام/ایمیل/رمز) با عرض جمع‌وجورتر بهتر است
+  const isWideStep = step === 'olympiad' || step === 'subjects'
+
   return (
-    <AuthLayout olympiadTheme={selectedOlympiad}>
+    <AuthLayout olympiadTheme={selectedOlympiad} wide={isWideStep}>
       <div>
         {/* نشانگر پیشرفت — هر مرحله فقط یک سؤال */}
         <div className="flex items-center gap-1.5 mb-8">
@@ -245,7 +249,7 @@ export const RegisterPage: React.FC = () => {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">کدوم المپیاد؟</h2>
                 <p className="text-sm text-gray-500 mb-6">دروس پیش‌فرض همون رو براش آماده می‌کنیم</p>
-                <div className="grid grid-cols-2 gap-3 max-h-[340px] overflow-y-auto pr-0.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[440px] overflow-y-auto pr-0.5">
                   {OLYMPIADS.map((o) => {
                     const Icon = OLYMPIAD_ICON_MAP[o.icon] ?? Sparkles
                     const active = olympiadId === o.id
