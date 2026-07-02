@@ -370,8 +370,8 @@ export const FocusMode: React.FC = () => {
                             setTimeRemaining(focusMinutes * 60)
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'pomodoro' && !isBreak
-                                ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
-                                : 'text-white/40 hover:text-white/80'
+                            ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
+                            : 'text-white/40 hover:text-white/80'
                             }`}
                     >
                         <Timer className="w-4 h-4" />
@@ -385,8 +385,8 @@ export const FocusMode: React.FC = () => {
                             setTimeRemaining(DEEP_FOCUS_MINUTES * 60)
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'deep-focus' && !isBreak
-                                ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
-                                : 'text-white/40 hover:text-white/80'
+                            ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
+                            : 'text-white/40 hover:text-white/80'
                             }`}
                     >
                         <Brain className="w-4 h-4" />

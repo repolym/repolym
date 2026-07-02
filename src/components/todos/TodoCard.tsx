@@ -53,6 +53,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
     }
 
     const isCompleted = todo.status === 'completed'
+    const isCancelled = todo.status === 'cancelled'
 
     return (
         <>
@@ -60,7 +61,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
                 <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-sm font-medium ${isCompleted ? 'line-through text-gray-400' : 'text-text-primary'}`}>
+                            <span className={`text-sm font-medium ${isCompleted || isCancelled ? 'line-through text-gray-400' : 'text-text-primary'}`}>
                                 {todo.title}
                             </span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>
@@ -74,10 +75,10 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
                         )}
 
                         <div className="flex items-center gap-3 mt-1 text-xs text-text-tertiary flex-wrap">
-                            {todo.subject && (
+                            {todo.subjects && (
                                 <span className="flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: todo.subject.color }} />
-                                    {todo.subject.name}
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: todo.subjects.color }} />
+                                    {todo.subjects.name}
                                 </span>
                             )}
                             {todo.deadline && (
@@ -138,7 +139,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
                 </div>
 
                 {/* Quick status actions */}
-                {!isCompleted && todo.status !== 'cancelled' && (
+                {!isCompleted && !isCancelled && (
                     <div className="flex gap-2 mt-1">
                         {todo.status !== 'in_progress' && (
                             <button

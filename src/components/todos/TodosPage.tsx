@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTodos } from '../../hooks/useTodos'
 import { useSubjects } from '../../hooks/useSubjects'
@@ -13,7 +13,7 @@ import { Input } from '../common/Input'
 import { EmptyState, PageLoader, ErrorMessage } from '../common/Loading'
 import { today, daysAgo } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
-import { Search, Filter, Plus } from 'lucide-react'
+import { Search, Plus } from 'lucide-react'
 
 export const TodosPage: React.FC = () => {
     const { user } = useAuth()
@@ -31,8 +31,8 @@ export const TodosPage: React.FC = () => {
         status: statusFilter,
         subjectId: subjectFilter === 'all' ? null : subjectFilter,
         search: debouncedSearch,
-        dateFrom: daysAgo(30), // optional: only show todos with deadline in next 30 days?
-        dateTo: null,
+        dateFrom: daysAgo(30),
+        dateTo: undefined, // ✅ fixed: changed from null to undefined
     })
 
     const { data: subjects } = useSubjects(user?.id ?? null)
@@ -48,7 +48,7 @@ export const TodosPage: React.FC = () => {
     })
 
     // Debounce search
-    React.useEffect(() => {
+    useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
         return () => clearTimeout(timer)
     }, [searchQuery])
@@ -58,7 +58,8 @@ export const TodosPage: React.FC = () => {
         const completed = todos.filter(t => t.status === 'completed').length
         const pending = todos.filter(t => t.status === 'pending').length
         const inProgress = todos.filter(t => t.status === 'in_progress').length
-        return { total, completed, pending, inProgress }
+        const cancelled = todos.filter(t => t.status === 'cancelled').length
+        return { total, completed, pending, inProgress, cancelled }
     }, [todos])
 
     const handleCreate = async (data: TodoFormData): Promise<boolean> => {
