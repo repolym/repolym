@@ -3,6 +3,12 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
 import type { User } from '../types/database'
 import { formatError } from '../utils/error-handler'
+import type { OlympiadSubject } from '../config/olympiads'
+
+interface OnboardingData {
+  olympiadId: string
+  subjects: OlympiadSubject[]
+}
 
 interface AuthContextType {
   user: User | null
@@ -10,7 +16,13 @@ interface AuthContextType {
   isLoading: boolean
   error: string | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, name: string, password: string) => Promise<{ requiresEmailConfirmation: boolean }>
+  signUp: (
+    email: string,
+    name: string,
+    password: string,
+    onboarding?: OnboardingData
+  ) => Promise<{ requiresEmailConfirmation: boolean }>
+  completeOnboarding: (onboarding: OnboardingData) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
 }
@@ -43,11 +55,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (initDone.current) return
     initDone.current = true
 
+    // اگر انتخاب المپیاد/دروس پیش از تأیید ایمیل ذخیره شده باشد (کاربری که
+    // لینک تأیید را در دستگاه/تب دیگری باز کرده)، پس از اولین بارگذاری پروفایل
+    // آن را اعمال می‌کنیم تا هیچ داده‌ای گم نشود.
+    const applyPendingOnboardingIfAny = async (userId: string, profile: User | null) => {
+      if (!profile || profile.onboarding_completed) return profile
+      try {
+        const raw = sessionStorage.getItem(`pending_onboarding_${userId}`)
+        if (!raw) return profile
+        const onboarding = JSON.parse(raw) as OnboardingData
+        await applyOnboarding(userId, onboarding)
+        sessionStorage.removeItem(`pending_onboarding_${userId}`)
+        return await fetchUserProfile(userId)
+      } catch {
+        return profile
+      }
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
         const profile = await fetchUserProfile(session.user.id)
-        setUser(profile)
+        setUser(await applyPendingOnboardingIfAny(session.user.id, profile))
       }
       setIsLoading(false)
     })
@@ -56,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session)
       if (session?.user) {
         const profile = await fetchUserProfile(session.user.id)
-        setUser(profile)
+        setUser(await applyPendingOnboardingIfAny(session.user.id, profile))
       } else {
         setUser(null)
       }
@@ -85,7 +114,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const signUp = async (email: string, name: string, password: string) => {
+  // اعمال انتخاب المپیاد و دروس روی پروفایل کاربر — بدون بازنویسی داده‌های
+  // جدیدتری که ممکن است هم‌زمان (مثلاً در تب دیگر) روی preferences نوشته
+  // شده باشند: preferences با merge سمت سرور به‌جای overwrite کامل به‌روز می‌شود.
+  const applyOnboarding = async (userId: string, onboarding: OnboardingData) => {
+    if (onboarding.subjects.length > 0) {
+      const rows = onboarding.subjects.map((s) => ({ user_id: userId, name: s.name, color: s.color }))
+      // ON CONFLICT روی (user_id, name) از تکرار درس در صورت تلاش دوباره جلوگیری می‌کند
+      await supabase.from('subjects').upsert(rows, { onConflict: 'user_id,name', ignoreDuplicates: true })
+    }
+    const { data: current } = await supabase
+      .from('users')
+      .select('preferences')
+      .eq('id', userId)
+      .single()
+
+    await supabase
+      .from('users')
+      .update({
+        olympiad_id: onboarding.olympiadId,
+        onboarding_completed: true,
+        preferences: { ...(current?.preferences ?? {}), olympiad_id: onboarding.olympiadId },
+      })
+      .eq('id', userId)
+  }
+
+  const signUp = async (
+    email: string,
+    name: string,
+    password: string,
+    onboarding?: OnboardingData
+  ) => {
     setError(null)
     // Pass name in metadata so the DB trigger can use it
     const { data, error } = await supabase.auth.signUp({
@@ -100,12 +159,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // اگر تأیید ایمیل غیرفعال باشد، session بلافاصله موجود است و باید پروفایل
       // را بارگذاری کنیم تا ناوبری بعدی به داشبورد با شکست مواجه نشود.
       const profile = await fetchUserProfile(data.user.id)
-      setUser(profile)
+      if (profile && onboarding) {
+        try {
+          await applyOnboarding(data.user.id, onboarding)
+          const updated = await fetchUserProfile(data.user.id)
+          setUser(updated)
+        } catch {
+          // انتخاب المپیاد/دروس نباید مانع تکمیل ثبت‌نام شود — کاربر بعداً
+          // می‌تواند آن را از صفحه تنظیمات کامل کند.
+          setUser(profile)
+        }
+      } else {
+        setUser(profile)
+      }
       return { requiresEmailConfirmation: false }
     }
     // session وجود ندارد یعنی Supabase منتظر تأیید ایمیل است؛ کاربر نباید به
-    // مسیر محافظت‌شده هدایت شود، بلکه باید پیام تأیید ایمیل را ببیند.
+    // مسیر محافظت‌شده هدایت شود، بلکه باید پیام تأیید ایمیل را ببیند. انتخاب
+    // المپیاد/دروس را برای پس از تأیید ایمیل و اولین ورود ذخیره می‌کنیم.
+    if (onboarding && data.user) {
+      try {
+        sessionStorage.setItem(`pending_onboarding_${data.user.id}`, JSON.stringify(onboarding))
+      } catch {}
+    }
     return { requiresEmailConfirmation: true }
+  }
+
+  const completeOnboarding = async (onboarding: OnboardingData) => {
+    if (!session?.user) return
+    await applyOnboarding(session.user.id, onboarding)
+    const updated = await fetchUserProfile(session.user.id)
+    setUser(updated)
   }
 
   const signOut = async () => {
@@ -117,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => setError(null)
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, error, signIn, signUp, signOut, clearError }}>
+    <AuthContext.Provider value={{ user, session, isLoading, error, signIn, signUp, completeOnboarding, signOut, clearError }}>
       {children}
     </AuthContext.Provider>
   )

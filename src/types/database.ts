@@ -3,6 +3,9 @@ export interface User {
   email: string
   name: string
   is_admin: boolean
+  olympiad_id: string | null
+  onboarding_completed: boolean
+  preferences: Record<string, unknown>
   created_at: string
   updated_at: string
 }
