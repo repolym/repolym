@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
 import type { User } from '../types/database'
 import { formatError } from '../utils/error-handler'
+import { cleanupAuthParams } from '../utils/auth-cleanup'   // <-- اضافه شده
 import type { OlympiadSubject } from '../config/olympiads'
 
 interface OnboardingData {
@@ -37,7 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initDone = useRef(false)
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
-    // Retry up to 5 times with delay — trigger may not have run yet
     for (let i = 0; i < 5; i++) {
       const { data, error } = await supabase
         .from('users')
@@ -55,9 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (initDone.current) return
     initDone.current = true
 
-    // اگر انتخاب المپیاد/دروس پیش از تأیید ایمیل ذخیره شده باشد (کاربری که
-    // لینک تأیید را در دستگاه/تب دیگری باز کرده)، پس از اولین بارگذاری پروفایل
-    // آن را اعمال می‌کنیم تا هیچ داده‌ای گم نشود.
     const applyPendingOnboardingIfAny = async (userId: string, profile: User | null) => {
       if (!profile || profile.onboarding_completed) return profile
       try {
@@ -79,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(await applyPendingOnboardingIfAny(session.user.id, profile))
       }
       setIsLoading(false)
+      cleanupAuthParams()   // <-- پاک‌سازی توکن از URL
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -91,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (event === 'SIGNED_IN') setIsLoading(false)
       if (event === 'SIGNED_OUT') setIsLoading(false)
+      cleanupAuthParams()   // <-- پاک‌سازی بعد از هر تغییر auth
     })
 
     return () => listener.subscription.unsubscribe()
@@ -100,10 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(formatError(error))
-    // مهم: قبل از بازگشت از این تابع، پروفایل کاربر را در state قرار می‌دهیم.
-    // در غیر این صورت، اگر صفحه بلافاصله بعد از signIn به مسیر محافظت‌شده
-    // ناوبری کند، ProtectedRoute هنوز user را null می‌بیند (چون onAuthStateChange
-    // به‌صورت async و با تأخیر اجرا می‌شود) و کاربر دوباره به /login برمی‌گردد.
     setSession(data.session)
     if (data.user) {
       const profile = await fetchUserProfile(data.user.id)
@@ -114,13 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // اعمال انتخاب المپیاد و دروس روی پروفایل کاربر — بدون بازنویسی داده‌های
-  // جدیدتری که ممکن است هم‌زمان (مثلاً در تب دیگر) روی preferences نوشته
-  // شده باشند: preferences با merge سمت سرور به‌جای overwrite کامل به‌روز می‌شود.
   const applyOnboarding = async (userId: string, onboarding: OnboardingData) => {
     if (onboarding.subjects.length > 0) {
       const rows = onboarding.subjects.map((s) => ({ user_id: userId, name: s.name, color: s.color }))
-      // ON CONFLICT روی (user_id, name) از تکرار درس در صورت تلاش دوباره جلوگیری می‌کند
       await supabase.from('subjects').upsert(rows, { onConflict: 'user_id,name', ignoreDuplicates: true })
     }
     const { data: current } = await supabase
@@ -146,18 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     onboarding?: OnboardingData
   ) => {
     setError(null)
-    // Pass name in metadata so the DB trigger can use it
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } },
     })
     if (error) throw new Error(formatError(error))
-    // Profile is created automatically by the DB trigger — no manual insert needed
     setSession(data.session)
     if (data.user && data.session) {
-      // اگر تأیید ایمیل غیرفعال باشد، session بلافاصله موجود است و باید پروفایل
-      // را بارگذاری کنیم تا ناوبری بعدی به داشبورد با شکست مواجه نشود.
       const profile = await fetchUserProfile(data.user.id)
       if (profile && onboarding) {
         try {
@@ -165,8 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const updated = await fetchUserProfile(data.user.id)
           setUser(updated)
         } catch {
-          // انتخاب المپیاد/دروس نباید مانع تکمیل ثبت‌نام شود — کاربر بعداً
-          // می‌تواند آن را از صفحه تنظیمات کامل کند.
           setUser(profile)
         }
       } else {
@@ -174,13 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { requiresEmailConfirmation: false }
     }
-    // session وجود ندارد یعنی Supabase منتظر تأیید ایمیل است؛ کاربر نباید به
-    // مسیر محافظت‌شده هدایت شود، بلکه باید پیام تأیید ایمیل را ببیند. انتخاب
-    // المپیاد/دروس را برای پس از تأیید ایمیل و اولین ورود ذخیره می‌کنیم.
     if (onboarding && data.user) {
       try {
         sessionStorage.setItem(`pending_onboarding_${data.user.id}`, JSON.stringify(onboarding))
-      } catch {}
+      } catch { }
     }
     return { requiresEmailConfirmation: true }
   }
