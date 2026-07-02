@@ -166,6 +166,46 @@ export interface Plan {
   updated_at: string
 }
 
+export interface Todo {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  subject_id: string | null
+  study_resource: string | null
+  question_count: number | null
+  difficulty: string | null
+  priority: 'low' | 'medium' | 'high'
+  deadline: string | null
+  estimated_time: number | null
+  actual_time: number | null
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  session_id: string | null
+  plan_id: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  subjects?: Subject
+  study_session?: StudySession
+  plan?: Plan
+}
+
+export interface TodoFormData {
+  title: string
+  description?: string | null
+  subject_id?: string | null
+  study_resource?: string | null
+  question_count?: number | null
+  difficulty?: string | null
+  priority?: Todo['priority']
+  deadline?: string | null
+  estimated_time?: number | null
+  actual_time?: number | null
+  status?: Todo['status']
+  session_id?: string | null
+  plan_id?: string | null
+}
+
 export interface PlanFormData {
   title: string
   description?: string

@@ -10,14 +10,6 @@ interface UseStudySessionsParams {
 }
 
 const CACHE_TTL = 60_000
-
-// نکته: قبلاً اینجا یک شیء واحد (نه Map) برای کش استفاده می‌شد که بین همهٔ
-// نمونه‌های این هوک در سراسر برنامه مشترک بود. وقتی دو کامپوننت هم‌زمان با
-// پارامترهای متفاوت این هوک را صدا می‌زدند (مثلاً در DashboardPage که هم
-// sessions و هم allSessions را می‌خواند)، هر بار کش با cacheKey جدید بازنویسی
-// می‌شد و کش قبلی را باطل می‌کرد — یعنی کشینگ عملاً کار نمی‌کرد و درخواست‌های
-// تکراری غیرضروری به سرور ارسال می‌شد. حالا مثل useGoals/useTests از Map
-// با کلید مجزا برای هر ترکیب پارامتر استفاده می‌کنیم.
 const cache = new Map<string, { data: StudySession[]; timestamp: number }>()
 
 export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsParams) => {
@@ -31,6 +23,14 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
   const fetch = useCallback(async (forceRefresh = false) => {
     if (!userId) return
     if (fetchingRef.current) return
+
+    // ✅ Check for valid session before making request
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setData([])
+      setError(null) // clear any previous error
+      return
+    }
 
     const cached = cache.get(cacheKey)
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -60,7 +60,15 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       cache.set(cacheKey, { data: sessions, timestamp: Date.now() })
       setData(sessions)
     } catch (err) {
-      setError(formatError(err))
+      // Only set error if it's NOT an auth error (to avoid session expiry messages)
+      const msg = formatError(err)
+      if (!msg.includes('نشست') && !msg.includes('JWT') && !msg.includes('session')) {
+        setError(msg)
+      } else {
+        // Auth error – clear data and silently handle
+        setData([])
+        setError(null)
+      }
     } finally {
       fetchingRef.current = false
       setLoading(false)

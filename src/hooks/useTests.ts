@@ -23,6 +23,14 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
     if (!userId) return
     if (fetchingRef.current) return
 
+    // ✅ Check for valid session before making request
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setData([])
+      setError(null)
+      return
+    }
+
     const cached = cache.get(cacheKey)
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setData(cached.data)
@@ -50,7 +58,13 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
       cache.set(cacheKey, { data: tests, timestamp: Date.now() })
       setData(tests)
     } catch (err) {
-      setError(formatError(err))
+      const msg = formatError(err)
+      if (!msg.includes('نشست') && !msg.includes('JWT') && !msg.includes('session')) {
+        setError(msg)
+      } else {
+        setData([])
+        setError(null)
+      }
     } finally {
       fetchingRef.current = false
       setLoading(false)

@@ -13,6 +13,8 @@ import {
   Home,
   UserCog,
   CalendarDays,
+  CheckSquare,
+  Zap,
 } from 'lucide-react'
 
 // گروه‌بندی آیتم‌های ناوبری دانش‌آموز
@@ -34,6 +36,8 @@ const studentNavGroups = [
     label: 'برنامه‌ریزی',
     items: [
       { to: '/planning', label: 'برنامه‌ریزی', icon: CalendarDays },
+      { to: '/todos', label: 'وظایف', icon: CheckSquare },
+      { to: '/focus', label: 'حالت تمرکز', icon: Zap },
     ],
   },
 ]

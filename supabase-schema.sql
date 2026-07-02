@@ -305,3 +305,74 @@ CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(user_id, status);
 ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS plan_id UUID REFERENCES plans(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_sessions_plan_id ON study_sessions(plan_id);
 
+-- =============================================
+-- برنامه‌ریزی - RLS و محدودیت‌های تاریخ
+-- =============================================
+
+-- 1. فعال‌سازی RLS
+ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
+
+-- 2. سیاست‌های دسترسی
+DROP POLICY IF EXISTS "plans_select_own" ON plans;
+DROP POLICY IF EXISTS "plans_insert_own" ON plans;
+DROP POLICY IF EXISTS "plans_update_own" ON plans;
+DROP POLICY IF EXISTS "plans_delete_own" ON plans;
+
+CREATE POLICY "plans_select_own" ON plans FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "plans_insert_own" ON plans FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "plans_update_own" ON plans FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "plans_delete_own" ON plans FOR DELETE USING (auth.uid() = user_id);
+
+-- 3. محدودیت‌های تاریخ (اگر قبلاً اضافه نشده‌اند)
+ALTER TABLE plans DROP CONSTRAINT IF EXISTS plans_end_date_check;
+ALTER TABLE plans DROP CONSTRAINT IF EXISTS plans_due_date_check;
+
+ALTER TABLE plans ADD CONSTRAINT plans_end_date_check 
+  CHECK (end_date IS NULL OR end_date >= start_date);
+
+ALTER TABLE plans ADD CONSTRAINT plans_due_date_check 
+  CHECK (due_date IS NULL OR due_date >= start_date);
+
+  -- =============================================
+-- وظایف (Todos) - جدول جدید
+-- =============================================
+CREATE TABLE IF NOT EXISTS todos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    subject_id UUID REFERENCES subjects(id) ON DELETE SET NULL,
+    study_resource TEXT,
+    question_count INTEGER,
+    difficulty TEXT, -- e.g., 'easy', 'medium', 'hard'
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+    deadline DATE,
+    estimated_time INTEGER, -- minutes
+    actual_time INTEGER, -- minutes
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    session_id UUID REFERENCES study_sessions(id) ON DELETE SET NULL,
+    plan_id UUID REFERENCES plans(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
+CREATE INDEX IF NOT EXISTS idx_todos_status ON todos(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(user_id, deadline);
+
+-- RLS policies
+ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "todos_select_own" ON todos;
+DROP POLICY IF EXISTS "todos_insert_own" ON todos;
+DROP POLICY IF EXISTS "todos_update_own" ON todos;
+DROP POLICY IF EXISTS "todos_delete_own" ON todos;
+
+CREATE POLICY "todos_select_own" ON todos FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "todos_insert_own" ON todos FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "todos_update_own" ON todos FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "todos_delete_own" ON todos FOR DELETE USING (auth.uid() = user_id);
+
+-- Admin access (optional)
+DROP POLICY IF EXISTS "todos_select_admin" ON todos;
+CREATE POLICY "todos_select_admin" ON todos FOR SELECT USING (public.is_admin_user());

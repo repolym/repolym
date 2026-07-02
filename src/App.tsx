@@ -1,5 +1,6 @@
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import { DashboardProvider } from './context/DashboardContext'
 import { ToastProvider } from './context/ToastContext'
@@ -17,7 +18,9 @@ import { SessionsPage } from './components/sessions/SessionsPage'
 import { GoalsPage } from './components/goals/GoalsPage'
 import { TestsPage } from './components/tests/TestsPage'
 import { ProfilePage } from './components/profile/ProfilePage'
-import { PlanningPage } from './components/plans/PlanningPage'  // <-- added
+import { PlanningPage } from './components/plans/PlanningPage'
+import { TodosPage } from './components/todos/TodosPage'
+import FocusMode from './components/focus/FocusMode'
 import PublicStudyPage from './components/public/PublicStudyPage'
 
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -45,24 +48,45 @@ const App: React.FC = () => {
     <HashRouter>
       <AuthProvider>
         <ToastProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+              <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
 
-            <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
-            <Route path="/sessions" element={<StudentLayout><SessionsPage /></StudentLayout>} />
-            <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
-            <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
-            <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
-            <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} /> {/* <-- new route */}
+              <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
+              <Route path="/sessions" element={<StudentLayout><SessionsPage /></StudentLayout>} />
+              <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
+              <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
+              <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
+              <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
+              <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
 
-            <Route path="/public/:userId" element={<PublicStudyPage />} />
+              {/* Focus Mode – full screen with smooth transition */}
+              <Route
+                path="/focus"
+                element={
+                  <ProtectedRoute>
+                    <motion.div
+                      key="focus"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <FocusMode />
+                    </motion.div>
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+              <Route path="/public/:userId" element={<PublicStudyPage />} />
+
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </AnimatePresence>
           <ToastContainer />
         </ToastProvider>
       </AuthProvider>

@@ -71,15 +71,27 @@ export const PlanForm: React.FC<PlanFormProps> = ({ isOpen, onClose, onSubmit, e
         setServerError(null)
     }, [editing, isOpen])
 
-    const validate = (): boolean => {
-        const e: typeof errors = {}
-        if (!form.title.trim()) e.title = 'عنوان برنامه الزامی است'
-        if (!form.start_date) e.start_date = 'تاریخ شروع الزامی است'
-        if (form.end_date && form.end_date < form.start_date) e.end_date = 'تاریخ پایان نمی‌تواند قبل از شروع باشد'
-        if (form.due_date && form.due_date < form.start_date) e.due_date = 'تاریخ سررسید نمی‌تواند قبل از شروع باشد'
-        setErrors(e)
-        return Object.keys(e).length === 0
-    }
+const validate = (): boolean => {
+  const e: typeof errors = {}
+  if (!form.title.trim()) e.title = 'عنوان برنامه الزامی است'
+  if (!form.start_date) e.start_date = 'تاریخ شروع الزامی است'
+  
+  if (form.end_date && form.end_date < form.start_date) {
+    e.end_date = 'تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد'
+  }
+  if (form.due_date && form.due_date < form.start_date) {
+    e.due_date = 'تاریخ سررسید نمی‌تواند قبل از تاریخ شروع باشد'
+  }
+  
+  // اضافه: بررسی معتبر بودن نوع و اولویت (اگر از select می‌آید، معمولاً درست است)
+  const validTypes = ['daily', 'weekly', 'monthly', 'exam', 'flexible'];
+  if (!validTypes.includes(form.type)) {
+    e.type = 'نوع برنامه نامعتبر است';
+  }
+  
+  setErrors(e)
+  return Object.keys(e).length === 0
+}
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

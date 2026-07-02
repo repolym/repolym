@@ -4,7 +4,7 @@ import type { Subject, SubjectFormData } from '../types/database'
 import { formatError } from '../utils/error-handler'
 
 const cache = new Map<string, { data: Subject[]; timestamp: number }>()
-const CACHE_TTL = 300_000 // 5 min — subjects change rarely
+const CACHE_TTL = 300_000 // 5 min
 
 export const useSubjects = (userId: string | null) => {
   const [data, setData] = useState<Subject[]>([])
@@ -16,6 +16,14 @@ export const useSubjects = (userId: string | null) => {
     if (!userId) return
     if (fetchingRef.current) return
 
+    // ✅ Check for valid session before making request
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setData([])
+      setError(null)
+      return
+    }
+
     const cached = cache.get(userId)
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setData(cached.data)
@@ -24,6 +32,7 @@ export const useSubjects = (userId: string | null) => {
 
     fetchingRef.current = true
     setLoading(true)
+    setError(null)
 
     try {
       const { data: rows, error: err } = await supabase
@@ -38,7 +47,13 @@ export const useSubjects = (userId: string | null) => {
       cache.set(userId, { data: subjects, timestamp: Date.now() })
       setData(subjects)
     } catch (err) {
-      setError(formatError(err))
+      const msg = formatError(err)
+      if (!msg.includes('نشست') && !msg.includes('JWT') && !msg.includes('session')) {
+        setError(msg)
+      } else {
+        setData([])
+        setError(null)
+      }
     } finally {
       fetchingRef.current = false
       setLoading(false)

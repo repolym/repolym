@@ -175,7 +175,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(updated)
   }
 
-  // NEW: Update user profile (e.g. name) and refresh the user state
   const updateProfile = async (updates: Partial<{ name: string }>) => {
     if (!session?.user) throw new Error('Not authenticated')
     const { error } = await supabase
@@ -193,6 +192,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null)
     setSession(null)
   }
+
+  // ========== NEW: Auto-handle session expiry ==========
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      // If session is null but user is still in state → session expired
+      if (!currentSession && user) {
+        await signOut()
+        window.location.hash = '#/login'
+      }
+    }, 60000) // check every 60 seconds
+
+    return () => clearInterval(interval)
+  }, [user]) // re-run when user changes
 
   const clearError = () => setError(null)
 
