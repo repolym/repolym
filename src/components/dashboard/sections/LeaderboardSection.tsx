@@ -1,7 +1,7 @@
 // src/components/dashboard/sections/LeaderboardSection.tsx
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../config/supabase';
-import { Trophy, Medal, Award, Target, Flame, Loader2 } from 'lucide-react';
+import { Trophy, Medal, Award, Target, Flame, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 interface LeaderboardEntry {
@@ -16,43 +16,68 @@ export default function LeaderboardSection() {
     const { user } = useAuth();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchLeaderboard() {
+            // If no olympiad, show empty state (not an error)
             if (!user?.olympiad_id) {
                 setLoading(false);
+                setLeaderboard([]);
+                setError(null);
                 return;
             }
 
-            // ✅ Corrected RPC call – added p_window_type
-            const { data, error } = await supabase.rpc('get_olympiad_leaderboard', {
-                p_olympiad_id: user.olympiad_id,
-                p_today: new Date().toISOString().split('T')[0],
-                p_limit: 50,
-                p_window_type: 'month', // can be 'week', 'month', or 'all'
-            });
+            setLoading(true);
+            setError(null);
 
-            if (error) {
-                console.error('Leaderboard error:', error);
-                setLoading(false);
-                return;
-            }
+            try {
+                const { data, error: rpcError } = await supabase.rpc('get_olympiad_leaderboard', {
+                    p_olympiad_id: user.olympiad_id,
+                    p_today: new Date().toISOString().split('T')[0],
+                    p_limit: 50,
+                    p_window_type: 'month', // or 'week', 'all'
+                });
 
-            if (data && data.entries) {
-                const formatted = data.entries.map((entry: any) => ({
-                    user_id: entry.user_id,
-                    user_name: entry.name,
-                    total_study_minutes: entry.total_minutes_30,
-                    active_days: entry.active_days_30,
-                    rank: entry.rank,
+                if (rpcError) {
+                    console.error('Leaderboard RPC error:', rpcError);
+                    setError('خطا در دریافت رتبه‌بندی. لطفاً بعداً تلاش کنید.');
+                    setLeaderboard([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // ✅ Safe data extraction – handle cases where data is not as expected
+                const entries = (data as any)?.entries;
+                if (!Array.isArray(entries)) {
+                    console.warn('Leaderboard data is not an array:', data);
+                    setLeaderboard([]);
+                    setLoading(false);
+                    return;
+                }
+
+                const formatted = entries.map((entry: any) => ({
+                    user_id: entry.user_id || '',
+                    user_name: entry.name || 'ناشناس',
+                    total_study_minutes: Number(entry.total_minutes_30) || 0,
+                    active_days: Number(entry.active_days_30) || 0,
+                    rank: Number(entry.rank) || 0,
                 }));
-                setLeaderboard(formatted);
-            }
-            setLoading(false);
-        }
-        fetchLeaderboard();
-    }, [user]);
 
+                setLeaderboard(formatted);
+            } catch (err) {
+                console.error('Leaderboard fetch error:', err);
+                setError('مشکلی در دریافت اطلاعات رخ داد.');
+                setLeaderboard([]);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchLeaderboard();
+    }, [user?.olympiad_id]); // ✅ depend only on olympiad_id to avoid infinite loops
+
+    // ─── Loading State ──────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -61,6 +86,34 @@ export default function LeaderboardSection() {
         );
     }
 
+    // ─── Error State ────────────────────────────────────────────
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center p-4">
+                <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+                <p className="text-red-600 font-medium">{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
+                >
+                    تلاش مجدد
+                </button>
+            </div>
+        );
+    }
+
+    // ─── Empty State (no data) ─────────────────────────────────
+    if (leaderboard.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center p-4">
+                <Trophy className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-gray-500 font-medium">هیچ داده‌ای برای نمایش وجود ندارد</p>
+                <p className="text-sm text-gray-400">با ثبت جلسات مطالعه، رتبه شما در اینجا ظاهر می‌شود.</p>
+            </div>
+        );
+    }
+
+    // ─── Main Render ────────────────────────────────────────────
     const currentUserEntry = leaderboard.find((item) => item.user_id === user?.id);
 
     return (
@@ -123,7 +176,7 @@ export default function LeaderboardSection() {
                                     <div>
                                         <span className={`font-semibold text-sm block ${isMe ? 'text-indigo-600 font-bold' : 'text-slate-700'
                                             }`}>
-                                            {row.user_name || 'دانش‌آموز ناشناس'} {isMe && '(شما)'}
+                                            {row.user_name} {isMe && '(شما)'}
                                         </span>
                                         <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                                             <Flame size={12} className="text-orange-400" />
