@@ -6,29 +6,26 @@ import { useStudySessions } from '../../hooks/useStudySessions'
 import { useGoals } from '../../hooks/useGoals'
 import { useTests } from '../../hooks/useTests'
 import { calculateGoalsProgress } from '../../utils/calc-goal-progress'
-import { daysAgo, today, formatDate, getGreeting } from '../../utils/date-utils'
+import { today, formatDate, getGreeting } from '../../utils/date-utils'
 import { Sunrise, Sun, Sunset, Moon, Calendar } from 'lucide-react'
 import { StatsCards } from './StatsCards'
 import { DashboardTabs } from './DashboardTabs'
 import { Skeleton } from '../common/Loading'
 
-// بارگذاری تنبل بخش‌ها
-const OverviewSection     = lazy(() => import('./sections/OverviewSection'))
-const StudySection        = lazy(() => import('./sections/StudySection'))
-const PerformanceSection  = lazy(() => import('./sections/PerformanceSection'))
-const GrowthSection       = lazy(() => import('./sections/GrowthSection'))
-const AnalyticsSection    = lazy(() => import('./AnalyticsSection'))
-const LeaderboardSection  = lazy(() => import('./LeaderboardSection'))
+const OverviewSection = lazy(() => import('./sections/OverviewSection'))
+const StudySection = lazy(() => import('./sections/StudySection'))
+const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
+const GrowthSection = lazy(() => import('./sections/GrowthSection'))
+const AnalyticsSection = lazy(() => import('./AnalyticsSection'))
 
-type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics' | 'leaderboard'
+type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics'
 
 const tabConfig: { id: TabId; label: string }[] = [
-    { id: 'overview',     label: 'خلاصه' },
-    { id: 'study',        label: 'مطالعه' },
-    { id: 'performance',  label: 'عملکرد' },
-    { id: 'growth',       label: 'رشد' },
-    { id: 'analytics',    label: 'تحلیل' },
-    { id: 'leaderboard',  label: 'لیدربورد' },
+    { id: 'overview', label: 'خلاصه' },
+    { id: 'study', label: 'مطالعه' },
+    { id: 'performance', label: 'عملکرد' },
+    { id: 'growth', label: 'رشد' },
+    { id: 'analytics', label: 'تحلیل' },
 ]
 
 export const DashboardPage: React.FC = () => {
@@ -40,12 +37,6 @@ export const DashboardPage: React.FC = () => {
         userId: user?.id ?? null,
         dateFrom: dateRange.from,
         dateTo: dateRange.to,
-    })
-
-    const allSessions = useStudySessions({
-        userId: user?.id ?? null,
-        dateFrom: daysAgo(365),
-        dateTo: today(),
     })
 
     const goals = useGoals({ userId: user?.id ?? null, status: 'active' })
@@ -64,10 +55,10 @@ export const DashboardPage: React.FC = () => {
     const greeting = getGreeting()
     const GreetingIcon = React.useMemo(() => {
         switch (greeting.period) {
-            case 'morning':   return Sunrise
-            case 'noon':      return Sun
+            case 'morning': return Sunrise
+            case 'noon': return Sun
             case 'afternoon': return Sunset
-            default:          return Moon
+            default: return Moon
         }
     }, [greeting.period])
 
@@ -77,7 +68,6 @@ export const DashboardPage: React.FC = () => {
 
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-8" dir="rtl">
-            {/* هدر */}
             <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -95,7 +85,6 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-gray-500 text-sm">{greeting.subtitle}</p>
             </motion.div>
 
-            {/* کارت‌های آماری */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -104,14 +93,12 @@ export const DashboardPage: React.FC = () => {
                 <StatsCards sessions={sessions.data} loading={sessions.loading} />
             </motion.div>
 
-            {/* تب‌ها */}
             <DashboardTabs
                 tabs={tabConfig}
                 activeTab={activeTab}
                 onChange={handleTabChange}
             />
 
-            {/* محتوای تب */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeTab}
@@ -130,10 +117,7 @@ export const DashboardPage: React.FC = () => {
                             />
                         )}
                         {activeTab === 'study' && (
-                            <StudySection
-                                sessions={allSessions.data}
-                                loading={allSessions.loading}
-                            />
+                            <StudySection />
                         )}
                         {activeTab === 'performance' && (
                             <PerformanceSection
@@ -150,12 +134,6 @@ export const DashboardPage: React.FC = () => {
                         {activeTab === 'analytics' && (
                             <AnalyticsSection userId={user?.id ?? null} />
                         )}
-                        {activeTab === 'leaderboard' && (
-                            <LeaderboardSection
-                                userId={user?.id ?? null}
-                                olympiadId={user?.olympiad_id ?? null}
-                            />
-                        )}
                     </Suspense>
                 </motion.div>
             </AnimatePresence>
@@ -163,10 +141,9 @@ export const DashboardPage: React.FC = () => {
     )
 }
 
-// اسکلتون بارگذاری
 const SectionSkeleton: React.FC = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
             <div key={i} className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 space-y-4">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-4 w-full" />
