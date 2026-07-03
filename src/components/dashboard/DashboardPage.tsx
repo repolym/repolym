@@ -17,14 +17,16 @@ const OverviewSection = lazy(() => import('./sections/OverviewSection'))
 const StudySection = lazy(() => import('./sections/StudySection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
 const GrowthSection = lazy(() => import('./sections/GrowthSection'))
+const AnalyticsSection = lazy(() => import('./AnalyticsSection'))  // <-- new
 
-type TabId = 'overview' | 'study' | 'performance' | 'growth'
+type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics'  // <-- added analytics
 
 const tabConfig: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'خلاصه' },
   { id: 'study', label: 'مطالعه' },
   { id: 'performance', label: 'عملکرد' },
   { id: 'growth', label: 'رشد' },
+  { id: 'analytics', label: 'تحلیل' },   // <-- new tab
 ]
 
 export const DashboardPage: React.FC = () => {
@@ -68,7 +70,6 @@ export const DashboardPage: React.FC = () => {
     }
   }, [greeting.period])
 
-  // Fix: Type-safe tab change handler
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId as TabId)
   }
@@ -102,7 +103,7 @@ export const DashboardPage: React.FC = () => {
         <StatsCards sessions={sessions.data} loading={sessions.loading} />
       </motion.div>
 
-      {/* Tabs with fixed onChange */}
+      {/* Tabs */}
       <DashboardTabs
         tabs={tabConfig}
         activeTab={activeTab}
@@ -144,6 +145,9 @@ export const DashboardPage: React.FC = () => {
                 sessions={sessions.data}
                 loading={sessions.loading}
               />
+            )}
+            {activeTab === 'analytics' && (
+              <AnalyticsSection userId={user?.id ?? null} />
             )}
           </Suspense>
         </motion.div>
