@@ -109,9 +109,8 @@ export default function LeaderboardSection() {
                         return (
                             <div
                                 key={row.user_id}
-                                className={`flex items-center justify-between p-4 transition-colors ${
-                                    isMe ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'
-                                }`}
+                                className={`flex items-center justify-between p-4 transition-colors ${isMe ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'
+                                    }`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-8 flex justify-center items-center font-mono font-bold text-base text-slate-500">
@@ -122,9 +121,8 @@ export default function LeaderboardSection() {
                                     </div>
 
                                     <div>
-                                        <span className={`font-semibold text-sm block ${
-                                            isMe ? 'text-indigo-600 font-bold' : 'text-slate-700'
-                                        }`}>
+                                        <span className={`font-semibold text-sm block ${isMe ? 'text-indigo-600 font-bold' : 'text-slate-700'
+                                            }`}>
                                             {row.user_name || 'دانش‌آموز ناشناس'} {isMe && '(شما)'}
                                         </span>
                                         <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
