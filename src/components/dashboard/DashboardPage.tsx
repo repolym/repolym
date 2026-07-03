@@ -17,8 +17,9 @@ const StudySection = lazy(() => import('./sections/StudySection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
 const GrowthSection = lazy(() => import('./sections/GrowthSection'))
 const AnalyticsSection = lazy(() => import('./AnalyticsSection'))
+const LeaderboardSection = lazy(() => import('./sections/LeaderboardSection'))
 
-type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics'
+type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics' | 'leaderboard'
 
 const tabConfig: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'خلاصه' },
@@ -26,6 +27,8 @@ const tabConfig: { id: TabId; label: string }[] = [
     { id: 'performance', label: 'عملکرد' },
     { id: 'growth', label: 'رشد' },
     { id: 'analytics', label: 'تحلیل' },
+    { id: 'analytics', label: 'تحلیل' },
+    { id: 'leaderboard', label: 'جدول امتیازات' }, // اضافه شد
 ]
 
 export const DashboardPage: React.FC = () => {
@@ -133,6 +136,12 @@ export const DashboardPage: React.FC = () => {
                         )}
                         {activeTab === 'analytics' && (
                             <AnalyticsSection userId={user?.id ?? null} />
+                        )}
+                        {activeTab === 'analytics' && (
+                            <AnalyticsSection userId={user?.id ?? null} />
+                        )}
+                        {activeTab === 'leaderboard' && (
+                            <LeaderboardSection />
                         )}
                     </Suspense>
                 </motion.div>
