@@ -8,16 +8,17 @@ export class LeaderboardServiceError extends Error {}
 
 const CLIENT_CACHE_TTL = 5 * 60_000 // 5 دقیقه
 
-const cacheKey = (olympiadId: string, referenceDate: string) =>
-    `leaderboard|${olympiadId}|${referenceDate}`
+const cacheKey = (olympiadId: string, referenceDate: string, window: string) =>
+    `leaderboard|${olympiadId}|${referenceDate}|${window}`
 
 export const leaderboardService = {
     async getSnapshot(
         olympiadId: string,
-        options?: { forceRefresh?: boolean; referenceDate?: string; limit?: number }
+        options?: { forceRefresh?: boolean; referenceDate?: string; limit?: number; window?: string }
     ): Promise<LeaderboardSnapshot> {
         const referenceDate = options?.referenceDate ?? today()
-        const key = cacheKey(olympiadId, referenceDate)
+        const window = options?.window || 'month'
+        const key = cacheKey(olympiadId, referenceDate, window)
 
         if (options?.forceRefresh) {
             queryDeduplicator.invalidate(key)
@@ -30,10 +31,11 @@ export const leaderboardService = {
                     p_olympiad_id: olympiadId,
                     p_today: referenceDate,
                     p_limit: options?.limit ?? 50,
+                    p_window_type: window,
                 })
 
                 if (error) {
-                    logger.error('Leaderboard RPC error', error, { olympiadId, referenceDate })
+                    logger.error('Leaderboard RPC error', error, { olympiadId, referenceDate, window })
                     throw new LeaderboardServiceError(error.message)
                 }
                 if (!data) {
@@ -45,7 +47,7 @@ export const leaderboardService = {
         )
     },
 
-    invalidate(olympiadId: string, referenceDate: string = today()) {
-        queryDeduplicator.invalidate(cacheKey(olympiadId, referenceDate))
+    invalidate(olympiadId: string, referenceDate: string = today(), window: string = 'month') {
+        queryDeduplicator.invalidate(cacheKey(olympiadId, referenceDate, window))
     },
 }

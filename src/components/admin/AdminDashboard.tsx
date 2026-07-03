@@ -34,6 +34,18 @@ interface StudentRank {
   total_minutes: number
 }
 
+// New: Leaderboard with score
+interface LeaderboardEntry {
+  user_id: string
+  name: string
+  total_minutes_30: number
+  active_days_30: number
+  best_streak: number
+  avg_test_score: number
+  composite_score: number
+  rank: number
+}
+
 const parseNotes = (notes: string | null) => {
   if (!notes) return { activities: '', wake: '', sleep: '', phone: '' }
   try {
@@ -70,6 +82,9 @@ const AdminDashboard: React.FC = () => {
   const [topStudents, setTopStudents] = useState<StudentRank[]>([])
   const [olympiadStats, setOlympiadStats] = useState<OlympiadStat[]>([])
   const [bestOlympiad, setBestOlympiad] = useState<OlympiadStat | null>(null)
+
+  // New: Leaderboard data for admin
+  const [adminLeaderboard, setAdminLeaderboard] = useState<LeaderboardEntry[]>([])
 
   // ---------- بارگذاری کاربران و المپیادها ----------
   useEffect(() => {
@@ -212,6 +227,29 @@ const AdminDashboard: React.FC = () => {
         stats.sort((a, b) => b.avg_minutes - a.avg_minutes)
         setOlympiadStats(stats)
         setBestOlympiad(stats.length > 0 ? stats[0] : null)
+
+        // Fetch leaderboard for admin (using new RPC)
+        const { data: lbData, error: lbError } = await supabase.rpc('get_olympiad_leaderboard', {
+          p_olympiad_id: selectedOlympiad === 'all' ? null : selectedOlympiad,
+          p_today: todayStr,
+          p_limit: 50,
+          p_window_type: period === 'week' ? 'week' : period === 'month' ? 'month' : 'all'
+        })
+        if (!lbError && lbData) {
+          const entries = lbData.entries || []
+          // Map to our interface
+          const mapped = entries.map((e: any) => ({
+            user_id: e.user_id,
+            name: e.name,
+            total_minutes_30: e.total_minutes_30,
+            active_days_30: e.active_days_30,
+            best_streak: e.best_streak,
+            avg_test_score: e.avg_test_score,
+            composite_score: e.composite_score,
+            rank: e.rank
+          }))
+          setAdminLeaderboard(mapped)
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -423,6 +461,41 @@ const AdminDashboard: React.FC = () => {
                       <Bar dataKey="total_minutes" fill="#4F46E5" radius={[0, 8, 8, 0]} barSize={24} name="دقیقه مطالعه" />
                     </BarChart>
                   </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* New: Admin Leaderboard with composite scores */}
+              <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">جدول امتیازات ترکیبی (بر اساس الگوریتم هوشمند)</h3>
+                {adminLeaderboard.length === 0 ? (
+                  <p className="text-gray-400 text-sm">داده‌ای موجود نیست.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-gray-500 bg-gray-50/50">
+                          <th className="text-right py-2 px-3">رتبه</th>
+                          <th className="text-right py-2 px-3">نام</th>
+                          <th className="text-right py-2 px-3">امتیاز ترکیبی</th>
+                          <th className="text-right py-2 px-3">مطالعه (۳۰ روز)</th>
+                          <th className="text-right py-2 px-3">روزهای فعال</th>
+                          <th className="text-right py-2 px-3">میانگین آزمون</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminLeaderboard.map((entry) => (
+                          <tr key={entry.user_id} className="border-b border-gray-50">
+                            <td className="py-2 px-3 font-mono">{entry.rank}</td>
+                            <td className="py-2 px-3 font-medium">{entry.name}</td>
+                            <td className="py-2 px-3 font-mono text-indigo-600">{entry.composite_score}</td>
+                            <td className="py-2 px-3 font-mono">{formatMinutes(entry.total_minutes_30)}</td>
+                            <td className="py-2 px-3">{entry.active_days_30}</td>
+                            <td className="py-2 px-3">{entry.avg_test_score}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </>

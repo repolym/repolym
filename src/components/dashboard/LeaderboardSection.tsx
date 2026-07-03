@@ -1,3 +1,4 @@
+// src/components/dashboard/LeaderboardSection.tsx
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -14,6 +15,15 @@ import type { LeaderboardEntry } from '../../types/leaderboard'
 // ─────────────────────────────────────────────────────────────────────────────
 // ثابت‌ها
 // ─────────────────────────────────────────────────────────────────────────────
+
+type WindowType = 'today' | 'week' | 'month' | 'all'
+
+const WINDOW_LABELS: Record<WindowType, string> = {
+    today: 'امروز',
+    week: 'این هفته',
+    month: 'این ماه',
+    all: 'همه زمان‌ها',
+}
 
 const RANK_ICONS: Record<number, { icon: React.ElementType; color: string; bg: string }> = {
     1: { icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50 border-amber-200' },
@@ -190,7 +200,12 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
     userId,
     olympiadId,
 }) => {
-    const { data, loading, error, refetch } = useLeaderboard({ olympiadId })
+    const [windowType, setWindowType] = useState<WindowType>('month')
+    const { data, loading, error, refetch } = useLeaderboard({
+        olympiadId,
+        window: windowType,
+        limit: 50,
+    })
     const olympiad = getOlympiad(olympiadId)
     const OlympiadIcon = olympiad ? OLYMPIAD_ICON_MAP[olympiad.icon] ?? OLYMPIAD_ICON_MAP['Sparkles'] : null
 
@@ -279,6 +294,22 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                     </button>
                 </div>
 
+                {/* Time window selector */}
+                <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t border-white/20">
+                    {(['today', 'week', 'month', 'all'] as WindowType[]).map((w) => (
+                        <button
+                            key={w}
+                            onClick={() => setWindowType(w)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${windowType === w
+                                ? 'bg-white text-indigo-700'
+                                : 'bg-white/20 text-white hover:bg-white/30'
+                                }`}
+                        >
+                            {WINDOW_LABELS[w]}
+                        </button>
+                    ))}
+                </div>
+
                 {/* آمار کلی */}
                 <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/20">
                     <div className="flex items-center gap-1.5">
@@ -324,6 +355,9 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             <div className="text-xs text-gray-400 bg-gray-50 rounded-xl px-4 py-3 leading-relaxed">
                 <span className="font-medium text-gray-500">نحوه امتیازگذاری: </span>
                 ۴۰٪ تداوم مطالعه + ۳۰٪ حجم مطالعه (۳۰ روز) + ۳۰٪ میانگین آزمون‌ها
+                <span className="block text-2xs text-gray-400 mt-1">
+                    * امتیاز بر اساس ترکیبی از مطالعه، کیفیت خواب، استفاده از موبایل و ثبات محاسبه می‌شود.
+                </span>
             </div>
         </motion.div>
     )

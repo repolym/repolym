@@ -7,16 +7,16 @@ import { today } from '../utils/date-utils'
 
 interface UseLeaderboardParams {
     olympiadId: string | null
-    referenceDate?: string
+    window?: 'today' | 'week' | 'month' | 'all'
     limit?: number
 }
 
-export const useLeaderboard = ({ olympiadId, referenceDate, limit }: UseLeaderboardParams) => {
+export const useLeaderboard = ({ olympiadId, window = 'month', limit }: UseLeaderboardParams) => {
     const [data, setData] = useState<LeaderboardSnapshot | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const mountedRef = useRef(true)
-    const refDate = referenceDate ?? today()
+    const refDate = today()
 
     const fetch = useCallback(
         async (forceRefresh = false) => {
@@ -30,6 +30,7 @@ export const useLeaderboard = ({ olympiadId, referenceDate, limit }: UseLeaderbo
                     forceRefresh,
                     referenceDate: refDate,
                     limit,
+                    window, // pass window type
                 })
                 if (mountedRef.current) {
                     setData(snapshot)
@@ -42,7 +43,7 @@ export const useLeaderboard = ({ olympiadId, referenceDate, limit }: UseLeaderbo
                             ? err.message
                             : formatError(err)
                     setError(message)
-                    logger.error('Failed to fetch leaderboard', err, { olympiadId, refDate })
+                    logger.error('Failed to fetch leaderboard', err, { olympiadId, refDate, window })
                 }
             } finally {
                 if (mountedRef.current) {
@@ -50,7 +51,7 @@ export const useLeaderboard = ({ olympiadId, referenceDate, limit }: UseLeaderbo
                 }
             }
         },
-        [olympiadId, refDate, limit]
+        [olympiadId, refDate, limit, window]
     )
 
     useEffect(() => {
