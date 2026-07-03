@@ -13,25 +13,30 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardSection() {
-    const { user } = useAuth();
+    const auth = useAuth();
+    const user = auth?.user ?? null;
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        let isMounted = true;
+
         async function fetchLeaderboard() {
-            // If no olympiad, show empty state (not an error)
-            if (!user?.olympiad_id) {
-                setLoading(false);
-                setLeaderboard([]);
-                setError(null);
-                return;
-            }
-
-            setLoading(true);
-            setError(null);
-
             try {
+                // If user has no olympiad, show empty state
+                if (!user?.olympiad_id) {
+                    if (isMounted) {
+                        setLeaderboard([]);
+                        setLoading(false);
+                        setError(null);
+                    }
+                    return;
+                }
+
+                setLoading(true);
+                setError(null);
+
                 const { data, error: rpcError } = await supabase.rpc('get_olympiad_leaderboard', {
                     p_olympiad_id: user.olympiad_id,
                     p_today: new Date().toISOString().split('T')[0],
@@ -41,41 +46,53 @@ export default function LeaderboardSection() {
 
                 if (rpcError) {
                     console.error('Leaderboard RPC error:', rpcError);
-                    setError('خطا در دریافت رتبه‌بندی. لطفاً بعداً تلاش کنید.');
-                    setLeaderboard([]);
-                    setLoading(false);
+                    if (isMounted) {
+                        setError('خطا در دریافت رتبه‌بندی. لطفاً بعداً تلاش کنید.');
+                        setLeaderboard([]);
+                        setLoading(false);
+                    }
                     return;
                 }
 
-                // ✅ Safe data extraction – handle cases where data is not as expected
-                const entries = (data as any)?.entries;
-                if (!Array.isArray(entries)) {
-                    console.warn('Leaderboard data is not an array:', data);
-                    setLeaderboard([]);
-                    setLoading(false);
-                    return;
+                // Safely extract entries – ensure data.entries is an array
+                let entries: any[] = [];
+                if (data && typeof data === 'object' && 'entries' in data && Array.isArray(data.entries)) {
+                    entries = data.entries;
+                } else {
+                    console.warn('Unexpected leaderboard data format:', data);
                 }
 
                 const formatted = entries.map((entry: any) => ({
-                    user_id: entry.user_id || '',
-                    user_name: entry.name || 'ناشناس',
-                    total_study_minutes: Number(entry.total_minutes_30) || 0,
-                    active_days: Number(entry.active_days_30) || 0,
-                    rank: Number(entry.rank) || 0,
+                    user_id: entry?.user_id ?? '',
+                    user_name: entry?.name ?? 'ناشناس',
+                    total_study_minutes: Number(entry?.total_minutes_30) || 0,
+                    active_days: Number(entry?.active_days_30) || 0,
+                    rank: Number(entry?.rank) || 0,
                 }));
 
-                setLeaderboard(formatted);
+                if (isMounted) {
+                    setLeaderboard(formatted);
+                    setError(null);
+                }
             } catch (err) {
                 console.error('Leaderboard fetch error:', err);
-                setError('مشکلی در دریافت اطلاعات رخ داد.');
-                setLeaderboard([]);
+                if (isMounted) {
+                    setError('مشکلی در دریافت اطلاعات رخ داد.');
+                    setLeaderboard([]);
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         }
 
         fetchLeaderboard();
-    }, [user?.olympiad_id]); // ✅ depend only on olympiad_id to avoid infinite loops
+
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.olympiad_id]);
 
     // ─── Loading State ──────────────────────────────────────────
     if (loading) {
@@ -161,7 +178,7 @@ export default function LeaderboardSection() {
                         const isMe = row.user_id === user?.id;
                         return (
                             <div
-                                key={row.user_id}
+                                key={row.user_id || Math.random().toString()}
                                 className={`flex items-center justify-between p-4 transition-colors ${isMe ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'
                                     }`}
                             >
