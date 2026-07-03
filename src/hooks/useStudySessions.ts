@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../config/supabase'
 import type { StudySession, SessionFormData } from '../types/database'
 import { formatError } from '../utils/error-handler'
+import { queryDeduplicator } from '../utils/query-deduplicator'
+import { logger } from '../utils/logger'
+import { validateSessionForm } from '../utils/validation'
 
 interface UseStudySessionsParams {
   userId: string | null
@@ -10,39 +13,17 @@ interface UseStudySessionsParams {
 }
 
 const CACHE_TTL = 60_000
-const cache = new Map<string, { data: StudySession[]; timestamp: number }>()
 
 export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsParams) => {
   const [data, setData] = useState<StudySession[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const fetchingRef = useRef(false)
+  const mountedRef = useRef(true)
 
-  const cacheKey = `${userId}|${dateFrom}|${dateTo}`
+  const cacheKey = `study_sessions|${userId}|${dateFrom}|${dateTo}`
 
-  const fetch = useCallback(async (forceRefresh = false) => {
-    if (!userId) return
-    if (fetchingRef.current) return
-
-    // ✅ Check for valid session before making request
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setData([])
-      setError(null) // clear any previous error
-      return
-    }
-
-    const cached = cache.get(cacheKey)
-    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      setData(cached.data)
-      return
-    }
-
-    fetchingRef.current = true
-    setLoading(true)
-    setError(null)
-
-    try {
+  const executeQuery = useCallback(
+    async (userId: string, dateFrom?: string, dateTo?: string): Promise<StudySession[]> => {
       let query = supabase
         .from('study_sessions')
         .select('*, subjects(id, name, color)')
@@ -56,65 +37,158 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
 
       if (err) throw err
 
-      const sessions = rows as StudySession[]
-      cache.set(cacheKey, { data: sessions, timestamp: Date.now() })
-      setData(sessions)
-    } catch (err) {
-      // Only set error if it's NOT an auth error (to avoid session expiry messages)
-      const msg = formatError(err)
-      if (!msg.includes('نشست') && !msg.includes('JWT') && !msg.includes('session')) {
-        setError(msg)
-      } else {
-        // Auth error – clear data and silently handle
-        setData([])
-        setError(null)
+      return (rows as StudySession[]) || []
+    },
+    []
+  )
+
+  const fetch = useCallback(
+    async (forceRefresh = false) => {
+      if (!userId || !mountedRef.current) return
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Check for valid session before making request
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          if (mountedRef.current) {
+            setData([])
+            setError(null)
+          }
+          return
+        }
+
+        const result = await queryDeduplicator.dedupedQuery(
+          cacheKey,
+          () => executeQuery(userId, dateFrom, dateTo),
+          forceRefresh ? 0 : CACHE_TTL
+        )
+
+        if (mountedRef.current) {
+          setData(result)
+          setError(null)
+        }
+      } catch (err) {
+        if (mountedRef.current) {
+          const message = formatError(err)
+          setError(message)
+          setData([])
+          logger.error('Failed to fetch study sessions', err, { userId, dateFrom, dateTo })
+        }
+      } finally {
+        if (mountedRef.current) {
+          setLoading(false)
+        }
       }
-    } finally {
-      fetchingRef.current = false
-      setLoading(false)
-    }
-  }, [userId, dateFrom, dateTo, cacheKey])
+    },
+    [userId, dateFrom, dateTo, cacheKey, executeQuery]
+  )
 
   useEffect(() => {
+    mountedRef.current = true
     fetch()
+
+    return () => {
+      mountedRef.current = false
+    }
   }, [fetch])
 
-  const createSession = async (formData: SessionFormData): Promise<boolean> => {
-    if (!userId) return false
-    const { error } = await supabase.from('study_sessions').insert([
-      { ...formData, user_id: userId },
-    ])
-    if (error) throw new Error(formatError(error))
-    cache.clear()
-    await fetch(true)
-    return true
-  }
+  const createSession = useCallback(
+    async (formData: SessionFormData): Promise<boolean> => {
+      if (!userId) return false
 
-  const updateSession = async (id: string, formData: Partial<SessionFormData>): Promise<boolean> => {
-    if (!userId) return false
-    const { error } = await supabase
-      .from('study_sessions')
-      .update({ ...formData, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('user_id', userId)
-    if (error) throw new Error(formatError(error))
-    cache.clear()
-    await fetch(true)
-    return true
-  }
+      // Validate before sending to server
+      const validation = validateSessionForm({
+        date: formData.date,
+        duration_minutes: formData.duration_minutes,
+      })
 
-  const deleteSession = async (id: string): Promise<boolean> => {
-    if (!userId) return false
-    const { error } = await supabase
-      .from('study_sessions')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId)
-    if (error) throw new Error(formatError(error))
-    cache.clear()
-    await fetch(true)
-    return true
-  }
+      if (!validation.allValid) {
+        setError('داده‌های ورودی نامعتبر است')
+        return false
+      }
 
-  return { data, loading, error, refetch: () => fetch(true), createSession, updateSession, deleteSession }
+      try {
+        const { error: err } = await supabase.from('study_sessions').insert([
+          { ...formData, user_id: userId },
+        ])
+
+        if (err) throw err
+
+        queryDeduplicator.invalidate(cacheKey)
+        await fetch(true)
+        return true
+      } catch (err) {
+        const message = formatError(err)
+        setError(message)
+        logger.error('Failed to create study session', err, { userId, formData })
+        return false
+      }
+    },
+    [userId, cacheKey, fetch]
+  )
+
+  const updateSession = useCallback(
+    async (id: string, formData: Partial<SessionFormData>): Promise<boolean> => {
+      if (!userId) return false
+
+      try {
+        const { error: err } = await supabase
+          .from('study_sessions')
+          .update({ ...formData, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .eq('user_id', userId)
+
+        if (err) throw err
+
+        queryDeduplicator.invalidate(cacheKey)
+        await fetch(true)
+        return true
+      } catch (err) {
+        const message = formatError(err)
+        setError(message)
+        logger.error('Failed to update study session', err, { userId, id, formData })
+        return false
+      }
+    },
+    [userId, cacheKey, fetch]
+  )
+
+  const deleteSession = useCallback(
+    async (id: string): Promise<boolean> => {
+      if (!userId) return false
+
+      try {
+        const { error: err } = await supabase
+          .from('study_sessions')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId)
+
+        if (err) throw err
+
+        queryDeduplicator.invalidate(cacheKey)
+        await fetch(true)
+        return true
+      } catch (err) {
+        const message = formatError(err)
+        setError(message)
+        logger.error('Failed to delete study session', err, { userId, id })
+        return false
+      }
+    },
+    [userId, cacheKey, fetch]
+  )
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: () => fetch(true),
+    createSession,
+    updateSession,
+    deleteSession,
+  }
 }

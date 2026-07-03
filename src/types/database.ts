@@ -220,4 +220,3 @@ export interface PlanFormData {
   dependencies?: string[] | null
   recurring?: any | null
 }
-
