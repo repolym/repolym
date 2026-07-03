@@ -35,17 +35,22 @@ const RANK_ICONS: Record<number, { icon: React.ElementType; color: string; bg: s
 // کامپوننت‌های کمکی
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ScoreBar: React.FC<{ value: number; color: string }> = ({ value, color }) => (
-    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-        <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(100, value)}%` }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-        />
-    </div>
-)
+const ScoreBar: React.FC<{ value: number | null | undefined; color: string }> = ({ value, color }) => {
+    const safeValue = value ?? 0
+    const clampedValue = Math.min(100, Math.max(0, safeValue))
+
+    return (
+        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+            <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: color }}
+                initial={{ width: 0 }}
+                animate={{ width: `${clampedValue}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+        </div>
+    )
+}
 
 const StatPill: React.FC<{
     icon: React.ElementType
@@ -73,7 +78,8 @@ interface EntryCardProps {
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor, index }) => {
     const [expanded, setExpanded] = useState(false)
-    const rankCfg = RANK_ICONS[entry.rank]
+    const rank = entry.rank ?? 0
+    const rankCfg = RANK_ICONS[rank]
     const RankIcon = rankCfg?.icon
 
     return (
@@ -105,7 +111,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor
                 `}>
                     {RankIcon
                         ? <RankIcon className="w-4 h-4" aria-hidden="true" />
-                        : <span className="text-xs font-bold tabular-nums">{toPersianDigits(entry.rank)}</span>
+                        : <span className="text-xs font-bold tabular-nums">{toPersianDigits(rank)}</span>
                     }
                 </div>
 
@@ -113,7 +119,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <p className={`text-sm font-semibold truncate ${isCurrentUser ? 'text-indigo-700' : 'text-gray-800'}`}>
-                            {entry.name}
+                            {entry.name || 'کاربر ناشناس'}
                         </p>
                         {isCurrentUser && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
@@ -124,14 +130,14 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor
                     </div>
                     {/* نوار امتیاز */}
                     <div className="mt-1.5">
-                        <ScoreBar value={entry.composite_score} color={accentColor} />
+                        <ScoreBar value={entry.composite_score ?? 0} color={accentColor} />
                     </div>
                 </div>
 
                 {/* امتیاز کلی */}
                 <div className="text-left flex-shrink-0">
                     <p className="text-base font-bold tabular-nums" style={{ color: accentColor }}>
-                        {toPersianDigits(entry.composite_score)}
+                        {toPersianDigits(entry.composite_score ?? 0)}
                     </p>
                     <p className="text-[10px] text-gray-400">امتیاز</p>
                 </div>
@@ -156,25 +162,25 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
                                 <StatPill
                                     icon={Clock}
-                                    value={formatMinutesPersian(entry.total_minutes_30)}
+                                    value={formatMinutesPersian(entry.total_minutes_30 ?? 0)}
                                     label="مطالعه ۳۰ روز"
                                     color="text-indigo-500"
                                 />
                                 <StatPill
                                     icon={Target}
-                                    value={`${toPersianDigits(entry.active_days_30)} روز`}
+                                    value={`${toPersianDigits(entry.active_days_30 ?? 0)} روز`}
                                     label="روز فعال"
                                     color="text-emerald-500"
                                 />
                                 <StatPill
                                     icon={Flame}
-                                    value={`${toPersianDigits(entry.best_streak)} روز`}
+                                    value={`${toPersianDigits(entry.best_streak ?? 0)} روز`}
                                     label="بهترین استریک"
                                     color="text-orange-500"
                                 />
                                 <StatPill
                                     icon={BarChart3}
-                                    value={`${toPersianDigits(entry.avg_test_score)}٪`}
+                                    value={`${toPersianDigits(entry.avg_test_score ?? 0)}٪`}
                                     label="میانگین آزمون"
                                     color="text-sky-500"
                                 />
@@ -235,6 +241,10 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
         )
     }
 
+    // ── استخراج امن داده‌ها ──────────────────────────────────
+    const entries: LeaderboardEntry[] = Array.isArray(data?.entries) ? data.entries : []
+    const totalUsers: number = data?.total_users ?? 0
+
     // ── بدون المپیاد ───────────────────────────────────────────
     if (!olympiadId || !olympiad) {
         return (
@@ -247,7 +257,8 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
         )
     }
 
-    if (!data || data.entries.length === 0) {
+    // ── بدون داده‌های لیدربورد ──────────────────────────────────
+    if (!data || entries.length === 0) {
         return (
             <div className="mt-4">
                 <EmptyState
@@ -259,7 +270,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
     }
 
     const accentColor = olympiad.accent
-    const currentUserRank = data.entries.find((e) => e.user_id === userId)
+    const currentUserRank = entries.find((e) => e.user_id === userId)
 
     return (
         <motion.div
@@ -315,7 +326,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                     <div className="flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-white/70" aria-hidden="true" />
                         <span className="text-sm font-medium text-white">
-                            {toPersianDigits(data.total_users)} رقیب
+                            {toPersianDigits(totalUsers)} رقیب
                         </span>
                     </div>
                     {currentUserRank && (
@@ -324,13 +335,13 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                             <div className="flex items-center gap-1.5">
                                 <Trophy className="w-4 h-4 text-amber-300" aria-hidden="true" />
                                 <span className="text-sm font-medium text-white">
-                                    رتبه {toPersianDigits(currentUserRank.rank)} شما
+                                    رتبه {toPersianDigits(currentUserRank.rank ?? 0)} شما
                                 </span>
                             </div>
                             <div className="w-px h-4 bg-white/30" />
                             <div className="flex items-center gap-1.5">
                                 <span className="text-sm font-medium text-white">
-                                    امتیاز {toPersianDigits(currentUserRank.composite_score)}
+                                    امتیاز {toPersianDigits(currentUserRank.composite_score ?? 0)}
                                 </span>
                             </div>
                         </>
@@ -340,7 +351,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
 
             {/* تابلوی امتیازات */}
             <div className="space-y-2">
-                {data.entries.map((entry, idx) => (
+                {entries.map((entry, idx) => (
                     <EntryCard
                         key={entry.user_id}
                         entry={entry}
