@@ -1,5 +1,6 @@
 import React from 'react'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Spinner } from './Loading'
 
 interface Props {
   loading?: boolean
@@ -9,6 +10,7 @@ interface Props {
   loadingComponent?: React.ReactNode
   errorComponent?: React.ReactNode | ((error: string) => React.ReactNode)
   emptyComponent?: React.ReactNode
+  onRetry?: () => void
 }
 
 export const AsyncBoundary: React.FC<Props> = ({
@@ -19,6 +21,7 @@ export const AsyncBoundary: React.FC<Props> = ({
   loadingComponent,
   errorComponent,
   emptyComponent,
+  onRetry,
 }) => {
   // Error state takes priority
   if (error) {
@@ -31,11 +34,16 @@ export const AsyncBoundary: React.FC<Props> = ({
     }
 
     return (
-      <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-        <div>
-          <p className="font-medium text-red-900">خطا</p>
-          <p className="text-sm text-red-700">{error}</p>
+      <div className="flex items-start gap-3 p-4 bg-danger/10 border border-danger/20 rounded-xs" role="alert">
+        <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="flex-1">
+          <p className="font-medium text-sm text-text-primary">خطا در بارگذاری اطلاعات</p>
+          <p className="text-xs text-text-secondary mt-0.5">{error}</p>
+          {onRetry && (
+            <button onClick={onRetry} className="btn-secondary text-xs mt-3">
+              دوباره تلاش کنید
+            </button>
+          )}
         </div>
       </div>
     )
@@ -48,8 +56,8 @@ export const AsyncBoundary: React.FC<Props> = ({
     }
 
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+      <div className="flex items-center justify-center py-8" role="status" aria-label="در حال بارگذاری">
+        <Spinner size="lg" />
       </div>
     )
   }
@@ -62,7 +70,7 @@ export const AsyncBoundary: React.FC<Props> = ({
 
     return (
       <div className="flex flex-col items-center justify-center py-8">
-        <p className="text-gray-500">داده‌ای یافت نشد</p>
+        <p className="text-sm text-text-tertiary">داده‌ای یافت نشد</p>
       </div>
     )
   }

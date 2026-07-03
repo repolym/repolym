@@ -336,7 +336,7 @@ export const RegisterPage: React.FC = () => {
           <motion.p
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-5"
+            role="alert" className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-5"
           >
             {fieldError || submitError}
           </motion.p>

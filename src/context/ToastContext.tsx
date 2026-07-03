@@ -20,11 +20,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).slice(2)
-    setToasts((prev) => [...prev, { id, message, type }])
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, 3500)
+    setToasts((prev) => {
+      // Avoid stacking identical duplicate toasts (e.g. rapid double-submits)
+      if (prev.some((t) => t.message === message && t.type === type)) return prev
+      const id = Math.random().toString(36).slice(2)
+      const duration = type === 'error' ? 5000 : 3500
+      setTimeout(() => {
+        setToasts((current) => current.filter((t) => t.id !== id))
+      }, duration)
+      return [...prev, { id, message, type }]
+    })
   }, [])
 
   const removeToast = useCallback((id: string) => {
