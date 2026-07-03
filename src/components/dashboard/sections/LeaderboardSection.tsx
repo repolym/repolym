@@ -1,7 +1,8 @@
+// src/components/dashboard/sections/LeaderboardSection.tsx
 import { useEffect, useState } from 'react';
-import { supabase } from '../../../config/supabase';      // ✅ fixed path
+import { supabase } from '../../../config/supabase';
 import { Trophy, Medal, Award, Target, Flame, Loader2 } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';   // ✅ fixed path
+import { useAuth } from '../../../context/AuthContext';
 
 interface LeaderboardEntry {
     user_id: string;
@@ -23,11 +24,12 @@ export default function LeaderboardSection() {
                 return;
             }
 
-            // Call the RPC function instead of querying a non‑existent table
+            // ✅ Corrected RPC call – added p_window_type
             const { data, error } = await supabase.rpc('get_olympiad_leaderboard', {
                 p_olympiad_id: user.olympiad_id,
                 p_today: new Date().toISOString().split('T')[0],
-                p_limit: 50
+                p_limit: 50,
+                p_window_type: 'month', // can be 'week', 'month', or 'all'
             });
 
             if (error) {
@@ -37,13 +39,12 @@ export default function LeaderboardSection() {
             }
 
             if (data && data.entries) {
-                // Transform RPC output to match the component's expected shape
                 const formatted = data.entries.map((entry: any) => ({
                     user_id: entry.user_id,
                     user_name: entry.name,
                     total_study_minutes: entry.total_minutes_30,
                     active_days: entry.active_days_30,
-                    rank: entry.rank
+                    rank: entry.rank,
                 }));
                 setLeaderboard(formatted);
             }
@@ -108,7 +109,9 @@ export default function LeaderboardSection() {
                         return (
                             <div
                                 key={row.user_id}
-                                className={`flex items-center justify-between p-4 transition-colors ${isMe ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'}`}
+                                className={`flex items-center justify-between p-4 transition-colors ${
+                                    isMe ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'
+                                }`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-8 flex justify-center items-center font-mono font-bold text-base text-slate-500">
@@ -119,7 +122,9 @@ export default function LeaderboardSection() {
                                     </div>
 
                                     <div>
-                                        <span className={`font-semibold text-sm block ${isMe ? 'text-indigo-600 font-bold' : 'text-slate-700'}`}>
+                                        <span className={`font-semibold text-sm block ${
+                                            isMe ? 'text-indigo-600 font-bold' : 'text-slate-700'
+                                        }`}>
                                             {row.user_name || 'دانش‌آموز ناشناس'} {isMe && '(شما)'}
                                         </span>
                                         <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
