@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, Clock, BarChart3, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Clock, BarChart3, TrendingUp, Activity, Trophy } from 'lucide-react'
 
 interface Tab {
     id: string
@@ -14,10 +14,12 @@ interface DashboardTabsProps {
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-    overview: <LayoutDashboard className="w-4 h-4" />,
-    study: <Clock className="w-4 h-4" />,
-    performance: <BarChart3 className="w-4 h-4" />,
-    growth: <TrendingUp className="w-4 h-4" />,
+    overview:     <LayoutDashboard className="w-4 h-4" />,
+    study:        <Clock className="w-4 h-4" />,
+    performance:  <BarChart3 className="w-4 h-4" />,
+    growth:       <TrendingUp className="w-4 h-4" />,
+    analytics:    <Activity className="w-4 h-4" />,
+    leaderboard:  <Trophy className="w-4 h-4" />,
 }
 
 export const DashboardTabs: React.FC<DashboardTabsProps> = ({ tabs, activeTab, onChange }) => {
@@ -37,7 +39,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({ tabs, activeTab, o
                             }
             `}
                     >
-                        {iconMap[tab.id] || null}
+                        {iconMap[tab.id] || tab.icon || null}
                         {tab.label}
                     </button>
                 )

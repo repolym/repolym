@@ -207,13 +207,24 @@ export const AnalyticsSection: React.FC<AnalyticsSectionProps> = ({ userId }) =>
                                     }}
                                     labelFormatter={(d) => formatDateShort(d as string)}
                                 />
-                                <Line type="monotone" dataKey="minutes" stroke="#E5E7EB" strokeWidth={1.5} dot={false} />
-                                <Line type="monotone" dataKey="moving_avg_7d" stroke="#4F46E5" strokeWidth={2.5} dot={false} />
+                                <Line
+                                    type="monotone" dataKey="minutes"
+                                    stroke="#E5E7EB" strokeWidth={1.5} dot={false}
+                                    name="دقیقه روزانه"
+                                />
+                                <Line
+                                    type="monotone" dataKey="moving_avg_7d"
+                                    stroke="#4F46E5" strokeWidth={2.5} dot={false}
+                                    name="moving_avg_7d"
+                                />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <EmptyState title="داده‌ای برای نمایش نیست" description="با ثبت جلسات مطالعه، این نمودار تکمیل می‌شود." />
+                    <EmptyState
+                        title="داده‌ای برای نمایش نیست"
+                        description="با ثبت جلسات مطالعه، این نمودار تکمیل می‌شود."
+                    />
                 )}
             </div>
 
