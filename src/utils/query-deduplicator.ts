@@ -15,7 +15,7 @@ interface PendingRequest<T> {
 class QueryDeduplicator {
   private pending = new Map<RequestKey, PendingRequest<unknown>>()
   private cache = new Map<RequestKey, { data: unknown; timestamp: number }>()
-  private cacheTimeouts = new Map<RequestKey, NodeJS.Timeout>()
+  private cacheTimeouts = new Map<RequestKey, number>()
 
   /**
    * Execute a query with automatic deduplication
@@ -57,7 +57,7 @@ class QueryDeduplicator {
           const prevTimeout = this.cacheTimeouts.get(key)
           if (prevTimeout) clearTimeout(prevTimeout)
           // Set new timeout
-          const timeout = setTimeout(() => {
+          const timeout = window.setTimeout(() => {
             this.cache.delete(key)
             this.cacheTimeouts.delete(key)
           }, cacheTtl)
@@ -77,7 +77,12 @@ class QueryDeduplicator {
       }
     })()
 
-    this.pending.set(key, { promise, resolvers, rejecters })
+    // Cast resolvers and rejecters to the expected types
+    this.pending.set(key, {
+      promise,
+      resolvers: resolvers as Set<Resolver<unknown>>,
+      rejecters: rejecters as Set<Rejecter>
+    })
 
     return promise
   }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../config/supabase'
-import { formatMinutes, today } from '../../utils/date-utils'
+import { formatMinutes } from '../../utils/date-utils'
 import { toJalaliLong } from '../../utils/jalali'
 import type { StudySession, Subject } from '../../types/database'
 

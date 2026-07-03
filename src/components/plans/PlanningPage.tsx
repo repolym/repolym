@@ -9,7 +9,7 @@ import { PlanForm } from './PlanForm'
 import { PlanCard } from './PlanCard'
 import { Button } from '../common/Button'
 import { EmptyState, PageLoader, ErrorMessage } from '../common/Loading'
-import { daysAgo, today, formatDate, formatDateShort } from '../../utils/date-utils'
+import { daysAgo, today, formatDate } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import {
     DndContext,
@@ -21,7 +21,6 @@ import {
     DragEndEvent,
 } from '@dnd-kit/core'
 import {
-    arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
@@ -70,15 +69,11 @@ export const PlanningPage: React.FC = () => {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
-    // Drag end handler
+    // Drag end handler - just refetch to sync UI (no order persistence yet)
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event
         if (!over || active.id === over.id) return
-        const oldIndex = plans.findIndex((p) => p.id === active.id)
-        const newIndex = plans.findIndex((p) => p.id === over.id)
-        const reordered = arrayMove(plans, oldIndex, newIndex)
-        // We'll just update local state for now; no order stored in DB yet
-        // (would need an `order` column)
+        // No order stored yet; just refetch to keep UI consistent
         refetch()
     }
 
@@ -269,8 +264,8 @@ export const PlanningPage: React.FC = () => {
                         key={id}
                         onClick={() => setViewMode(id as ViewMode)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${viewMode === id
-                                ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                             }`}
                     >
                         <Icon className="w-4 h-4" />

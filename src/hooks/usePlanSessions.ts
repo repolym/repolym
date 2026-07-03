@@ -9,7 +9,7 @@ export const usePlanSessions = (planId: string | null) => {
     const [error, setError] = useState<string | null>(null)
     const fetchingRef = useRef(false)
 
-    const fetch = useCallback(async (forceRefresh = false) => {
+    const fetch = useCallback(async (_forceRefresh = false) => {
         if (!planId) { setData([]); return }
         if (fetchingRef.current) return
 

@@ -71,7 +71,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               متأسفانه برنامه با خطایی مواجه شد. لطفاً صفحه را دوباره بارگذاری کنید.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.MODE === 'development' && this.state.error && (
               <details className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
                 <summary className="cursor-pointer font-mono text-xs text-gray-700 hover:text-gray-900">
                   جزئیات خطا

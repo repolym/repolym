@@ -1,6 +1,6 @@
 // src/components/admin/AdminDashboard.tsx
 // ترکیب پنل قبلی (جزئیات جلسات) + تحلیل‌های آماری با انتخاب المپیاد و بازه زمانی
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
 import { formatMinutes } from '../../utils/date-utils'
 import { toJalaliLong, toGregorian } from '../../utils/jalali'

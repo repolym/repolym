@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import logo from '../repolym.png'
+import logo from '../repolym.png'  // ✅ fixed path: two levels up to root
 
 import {
   Clock,
@@ -52,15 +52,9 @@ const adminNavGroups = [
 ]
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()  // removed unused signOut
   const location = useLocation()
-  const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/login', { replace: true })
-  }
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)

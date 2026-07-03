@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import type { Todo } from '../../types/database'
 import { formatDate, formatMinutes } from '../../utils/date-utils'
-import { toPersianDigits } from '../../utils/jalali'
 import { ConfirmModal } from '../common/Modal'
-import { Calendar, Clock, CheckCircle, AlertCircle, BookOpen, Layers } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, AlertCircle, BookOpen } from 'lucide-react'
 
 interface TodoCardProps {
     todo: Todo

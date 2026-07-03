@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react'
+import { Mail, Lock, LogIn } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AuthLayout } from '../auth/AuthLayout'
 import { formatError } from '../../utils/error-handler'

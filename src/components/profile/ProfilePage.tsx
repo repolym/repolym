@@ -18,7 +18,6 @@ import {
     Award,
     Palette,
     Bell,
-    Settings,
     Edit2,
     Save,
     UserCircle2,
