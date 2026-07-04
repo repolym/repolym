@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+// src/components/dashboard/sections/PerformanceSection.tsx
+import { useState, useMemo } from 'react'
 import {
     ResponsiveContainer,
     AreaChart,
@@ -26,22 +27,28 @@ import { Skeleton, ErrorMessage, EmptyState } from '../../common/Loading'
 import { toPersianDigits } from '../../../utils/jalali'
 import { formatDateShort, daysAgo, today } from '../../../utils/date-utils'
 
-// ---------- Custom Persian Tooltip ----------
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
-                <p className="font-semibold text-gray-700 mb-1">{label}</p>
-                {payload.map((p: any, idx: number) => (
-                    <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
-                        <span>{p.name === 'minutes' ? 'مدت مطالعه' : p.name === 'tests_count' ? 'تعداد آزمون' : p.name === 'sleep_hours' ? 'خواب (ساعت)' : 'گوشی (دقیقه)'}</span>
-                        <span className="font-mono font-medium">{p.value}</span>
-                    </p>
-                ))}
-            </div>
-        )
-    }
-    return null
+// ---------- Safe Tooltip Components ----------
+const SafeTooltipContent = ({ active, payload, label, unit }: any) => {
+    if (!active || !payload || payload.length === 0) return null
+
+    // Ensure label is a string
+    const safeLabel = typeof label === 'string' ? label : ''
+
+    // Extract and validate the value
+    const raw = payload[0]?.value
+    const numericVal = typeof raw === 'number' && !isNaN(raw) ? raw : null
+
+    return (
+        <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
+            <p className="font-medium text-gray-700 mb-1">{safeLabel}</p>
+            <p className="text-gray-600">
+                {unit}:{' '}
+                <span className="font-bold">
+                    {numericVal !== null ? toPersianDigits(Math.round(numericVal)) : '—'} {unit === 'خواب' ? 'ساعت' : 'دقیقه'}
+                </span>
+            </p>
+        </div>
+    )
 }
 
 const PerformanceSection: React.FC = () => {
@@ -49,23 +56,18 @@ const PerformanceSection: React.FC = () => {
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week')
 
     // داده‌های تحلیلی (مطالعه و آزمون)
-    const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch } = usePerformanceAnalytics({ userId: user?.id ?? null })
+    const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch } =
+        usePerformanceAnalytics({ userId: user?.id ?? null })
 
     // داده‌های روزانه (خواب و گوشی) - ۳۰ روز اخیر
     const dateFrom = daysAgo(30)
     const dateTo = today()
-    const { data: dailyMetrics, loading: dailyLoading, error: dailyError, refetch: refetchDaily } = useDailyMetrics({
-        userId: user?.id ?? null,
-        dateFrom,
-        dateTo,
-    })
-
-    // برای رفع اشکال – لاگ کردن داده‌ها در کنسول (در صورت نیاز حذف شود)
-    useEffect(() => {
-        if (dailyMetrics && dailyMetrics.length > 0) {
-            console.log('📊 Daily Metrics received:', dailyMetrics)
-        }
-    }, [dailyMetrics])
+    const { data: dailyMetrics, loading: dailyLoading, error: dailyError, refetch: refetchDaily } =
+        useDailyMetrics({
+            userId: user?.id ?? null,
+            dateFrom,
+            dateTo,
+        })
 
     // ترکیب داده‌های خواب و گوشی با تاریخ‌های کامل (پر کردن روزهای بدون داده)
     const sleepPhoneData = useMemo(() => {
@@ -73,11 +75,10 @@ const PerformanceSection: React.FC = () => {
         const map = new Map<string, { sleep: number | null; phone: number | null }>()
         dailyMetrics.forEach((d) => {
             map.set(d.date, {
-                sleep: d.sleep_hours ?? null,
-                phone: d.phone_usage_minutes ?? null,
+                sleep: typeof d.sleep_hours === 'number' ? d.sleep_hours : null,
+                phone: typeof d.phone_usage_minutes === 'number' ? d.phone_usage_minutes : null,
             })
         })
-        // ایجاد آرایه‌ای از تمام روزهای بازه
         const result = []
         let current = new Date(dateFrom + 'T00:00:00')
         const end = new Date(dateTo + 'T00:00:00')
@@ -86,7 +87,7 @@ const PerformanceSection: React.FC = () => {
             const data = map.get(dateStr) || { sleep: null, phone: null }
             result.push({
                 date: dateStr,
-                label: formatDateShort(dateStr),
+                label: formatDateShort(dateStr) || dateStr, // fallback to raw date
                 sleep_hours: data.sleep,
                 phone_minutes: data.phone,
             })
@@ -124,9 +125,11 @@ const PerformanceSection: React.FC = () => {
         const { weekly_trend, monthly_trend } = analytics
         const raw = timeRange === 'week' ? (weekly_trend || []) : (monthly_trend || [])
         return raw.map((item: any) => ({
-            label: timeRange === 'week' ? formatDateShort(item.week_start) : formatDateShort(item.month),
-            minutes: item.minutes,
-            tests_count: item.tests_count,
+            label: timeRange === 'week'
+                ? (item.week_start ? formatDateShort(item.week_start) : '')
+                : (item.month ? formatDateShort(item.month) : ''),
+            minutes: item.minutes || 0,
+            tests_count: item.tests_count || 0,
             avg_accuracy_percent: Math.round(item.avg_accuracy_percent || 0),
         }))
     }, [analytics, timeRange])
@@ -136,6 +139,12 @@ const PerformanceSection: React.FC = () => {
 
     // خطاها
     const hasError = analyticsError || dailyError
+
+    // تابع کمکی برای تبدیل عدد به فارسی با مدیریت مقدار null/undefined
+    const toPersian = (num: number | null | undefined): string => {
+        if (num === null || num === undefined || isNaN(num)) return '—'
+        return toPersianDigits(Math.round(num))
+    }
 
     if (isLoading) {
         return (
@@ -155,7 +164,12 @@ const PerformanceSection: React.FC = () => {
     }
 
     if (hasError) {
-        return <ErrorMessage message={analyticsError || dailyError || 'خطا در دریافت داده'} onRetry={() => { refetch(); refetchDaily(); }} />
+        return (
+            <ErrorMessage
+                message={analyticsError || dailyError || 'خطا در دریافت داده'}
+                onRetry={() => { refetch(); refetchDaily(); }}
+            />
+        )
     }
 
     if (!analytics) {
@@ -177,12 +191,6 @@ const PerformanceSection: React.FC = () => {
     } = analytics
 
     const safeSubjectTestStats = subject_test_stats || []
-
-    // تابع کمکی برای تبدیل عدد به فارسی با مدیریت مقدار null/undefined
-    const toPersian = (num: number | null | undefined): string => {
-        if (num === null || num === undefined || isNaN(num)) return '—'
-        return toPersianDigits(Math.round(num))
-    }
 
     return (
         <div className="space-y-6" dir="rtl">
@@ -275,8 +283,8 @@ const PerformanceSection: React.FC = () => {
                             <button
                                 onClick={() => setTimeRange('week')}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 هفته‌ای
@@ -284,8 +292,8 @@ const PerformanceSection: React.FC = () => {
                             <button
                                 onClick={() => setTimeRange('month')}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 ماهانه
@@ -450,20 +458,14 @@ const PerformanceSection: React.FC = () => {
                                     tickFormatter={(val) => toPersianDigits(val)}
                                 />
                                 <Tooltip
-                                    content={({ active, payload, label }) => {
-                                        if (active && payload && payload.length) {
-                                            const val = payload[0].value
-                                            return (
-                                                <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
-                                                    <p className="font-medium text-gray-700">{label}</p>
-                                                    <p className="text-gray-600">
-                                                        خواب: <span className="font-bold">{val !== null && val !== undefined ? toPersian(Number(val)) : '—'} ساعت</span>
-                                                    </p>
-                                                </div>
-                                            )
-                                        }
-                                        return null
-                                    }}
+                                    content={({ active, payload, label }) => (
+                                        <SafeTooltipContent
+                                            active={active}
+                                            payload={payload}
+                                            label={label}
+                                            unit="خواب"
+                                        />
+                                    )}
                                 />
                                 <Line
                                     type="monotone"
@@ -525,20 +527,14 @@ const PerformanceSection: React.FC = () => {
                                     tickFormatter={(val) => toPersianDigits(val)}
                                 />
                                 <Tooltip
-                                    content={({ active, payload, label }) => {
-                                        if (active && payload && payload.length) {
-                                            const val = payload[0].value
-                                            return (
-                                                <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
-                                                    <p className="font-medium text-gray-700">{label}</p>
-                                                    <p className="text-gray-600">
-                                                        گوشی: <span className="font-bold">{val !== null && val !== undefined ? toPersian(Number(val)) : '—'} دقیقه</span>
-                                                    </p>
-                                                </div>
-                                            )
-                                        }
-                                        return null
-                                    }}
+                                    content={({ active, payload, label }) => (
+                                        <SafeTooltipContent
+                                            active={active}
+                                            payload={payload}
+                                            label={label}
+                                            unit="گوشی"
+                                        />
+                                    )}
                                 />
                                 <Line
                                     type="monotone"
@@ -566,7 +562,7 @@ const PerformanceSection: React.FC = () => {
                 </div>
             </div>
 
-            {/* بینش هوشمند (با اضافه شدن تحلیل خواب و گوشی) */}
+            {/* بینش هوشمند */}
             <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
                 <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <Brain className="w-5 h-5 text-indigo-500" />
@@ -576,7 +572,11 @@ const PerformanceSection: React.FC = () => {
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <p className="font-medium text-gray-700">نکته مطالعه</p>
                         <p className="mt-1">
-                            امتیاز ثبات شما <span className="font-bold text-indigo-600">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span> است.
+                            امتیاز ثبات شما{' '}
+                            <span className="font-bold text-indigo-600">
+                                {toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%
+                            </span>
+                            است.
                             {study_consistency?.consistency_score < 50
                                 ? ' سعی کنید هر روز حتی مقدار کم مطالعه کنید تا عادت شکل بگیرد.'
                                 : ' عادت مطالعه خوبی دارید. ادامه دهید!'}
@@ -589,7 +589,8 @@ const PerformanceSection: React.FC = () => {
                                 <>
                                     بر روی درس{' '}
                                     <span className="font-bold text-amber-600">
-                                        {[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'نامشخص'}
+                                        {[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]
+                                            ?.subject_name || 'نامشخص'}
                                     </span>{' '}
                                     بیشتر تمرکز کنید تا میانگین کلی بهبود یابد.
                                 </>
@@ -603,9 +604,14 @@ const PerformanceSection: React.FC = () => {
                         <p className="mt-1">
                             {sleepStats.count > 0 ? (
                                 <>
-                                    میانگین خواب: <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
-                                    {sleepStats.avg !== null && sleepStats.avg < 7 ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.' : ' — خواب مناسبی دارید.'}
-                                    {phoneStats.avg !== null && phoneStats.avg > 120 ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.' : ''}
+                                    میانگین خواب:{' '}
+                                    <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
+                                    {sleepStats.avg !== null && sleepStats.avg < 7
+                                        ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.'
+                                        : ' — خواب مناسبی دارید.'}
+                                    {phoneStats.avg !== null && phoneStats.avg > 120
+                                        ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.'
+                                        : ''}
                                 </>
                             ) : (
                                 'برای دریافت تحلیل خواب و گوشی، اطلاعات روزانه را ثبت کنید.'
@@ -619,6 +625,34 @@ const PerformanceSection: React.FC = () => {
             </div>
         </div>
     )
+}
+
+// ---------- Re-usable Custom Tooltip for the study chart ----------
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const safeLabel = typeof label === 'string' ? label : ''
+        return (
+            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
+                <p className="font-semibold text-gray-700 mb-1">{safeLabel}</p>
+                {payload.map((p: any, idx: number) => {
+                    const value = typeof p.value === 'number' ? p.value : 0
+                    const name = p.name === 'minutes' ? 'مدت مطالعه' :
+                        p.name === 'tests_count' ? 'تعداد آزمون' :
+                            p.name === 'avg_accuracy_percent' ? 'درصد صحت' :
+                                p.name
+                    return (
+                        <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
+                            <span>{name}</span>
+                            <span className="font-mono font-medium">
+                                {p.name === 'avg_accuracy_percent' ? `${toPersianDigits(value)}%` : toPersianDigits(value)}
+                            </span>
+                        </p>
+                    )
+                })}
+            </div>
+        )
+    }
+    return null
 }
 
 export default PerformanceSection
