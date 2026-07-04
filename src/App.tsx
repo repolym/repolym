@@ -15,7 +15,7 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import { DashboardPage } from './components/dashboard/DashboardPage'
-import { SessionsPage } from './components/sessions/SessionsPage'
+import { StudyPage } from './components/study/StudyPage'
 import { GoalsPage } from './components/goals/GoalsPage'
 import { TestsPage } from './components/tests/TestsPage'
 import { ProfilePage } from './components/profile/ProfilePage'
@@ -57,7 +57,7 @@ const App: React.FC = () => {
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
 
               <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
-              <Route path="/sessions" element={<StudentLayout><SessionsPage /></StudentLayout>} />
+              <Route path="/study" element={<StudentLayout><StudyPage /></StudentLayout>} />
               <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
               <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
               <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />

@@ -55,10 +55,18 @@ export const getDaysBetween = (from: string, to: string): string[] => {
   return days
 }
 
-export const getWeekStart = (): string => {
-  const d = new Date()
+export const getWeekStart = (dateStr?: string): string => {
+  const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date()
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Monday
+  d.setDate(diff)
+  return toLocalISODate(d)
+}
+
+export const getWeekEnd = (dateStr?: string): string => {
+  const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? 0 : 7) // Sunday
   d.setDate(diff)
   return toLocalISODate(d)
 }
@@ -69,6 +77,8 @@ export const getMonthStart = (): string => {
 }
 
 export const isToday = (date: string): boolean => date === today()
+
+export const isSameDay = (date1: string, date2: string): boolean => date1 === date2
 
 export const dayOfWeek = (gregorianDate: string): string => {
   return toJalaliLong(gregorianDate).split(' - ')[0] // فقط نام روز

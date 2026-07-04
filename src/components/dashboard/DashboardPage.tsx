@@ -14,17 +14,15 @@ import { DashboardTabs } from './DashboardTabs'
 import { Skeleton } from '../common/Loading'
 
 const OverviewSection = lazy(() => import('./sections/OverviewSection'))
-const StudySection = lazy(() => import('./sections/StudySection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
 const GrowthSection = lazy(() => import('./sections/GrowthSection'))
 const AnalyticsSection = lazy(() => import('./AnalyticsSection'))
 const LeaderboardSection = lazy(() => import('./sections/LeaderboardSection'))
 
-type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics' | 'leaderboard'
+type TabId = 'overview' | 'performance' | 'growth' | 'analytics' | 'leaderboard'
 
 const tabConfig: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'خلاصه' },
-    { id: 'study', label: 'مطالعه' },
     { id: 'performance', label: 'عملکرد' },
     { id: 'growth', label: 'رشد' },
     { id: 'analytics', label: 'تحلیل' },
@@ -118,9 +116,6 @@ export const DashboardPage: React.FC = () => {
                                 sessions={sessions.data}
                                 tests={tests.data}
                             />
-                        )}
-                        {activeTab === 'study' && (
-                            <StudySection />
                         )}
                         {activeTab === 'performance' && (
                             <PerformanceSection

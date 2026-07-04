@@ -23,7 +23,7 @@ const studentNavGroups = [
   {
     label: 'مدیریت جلسات',
     items: [
-      { to: '/sessions', label: 'جلسات مطالعه', icon: Clock },
+      { to: '/study', label: 'مطالعات من', icon: Clock },
     ],
   },
   {
