@@ -1,4 +1,3 @@
-
 import type { Goal, GoalWithProgress, StudySession } from '../types/database'
 import { today, toLocalISODate } from './date-utils'
 

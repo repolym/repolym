@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { LayoutDashboard, Clock, BarChart3, TrendingUp, Activity, Trophy } from 'lucide-react'
 

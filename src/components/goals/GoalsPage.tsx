@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useGoals } from '../../hooks/useGoals'

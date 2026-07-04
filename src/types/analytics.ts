@@ -1,4 +1,3 @@
-
 export interface DailyMetric {
     id: string
     user_id: string
@@ -98,6 +97,42 @@ export interface AnalyticsSnapshot {
         range_days: number
     }
     generated_at: string
+
+    // ===== Performance (solved tests) — merged from the former "Performance" tab =====
+    test_stats: {
+        total_tests: number
+        accuracy_percent: number
+        correct_percent: number
+        wrong_percent: number
+        skipped_percent: number
+        avg_time_seconds: number | null
+        trend: 'up' | 'down' | 'stable' | 'insufficient_data'
+    }
+    subject_test_stats: Array<{
+        subject_id: string | null
+        subject_name: string
+        color: string
+        tests_count: number
+        avg_accuracy_percent: number
+    }>
+    difficulty_distribution: Array<{
+        difficulty: string
+        sessions_count: number
+        minutes: number
+        percent: number
+    }>
+    weekly_trend: Array<{
+        week_start: string
+        minutes: number
+        tests_count: number
+        avg_accuracy_percent: number
+    }>
+    monthly_trend: Array<{
+        month: string
+        minutes: number
+        tests_count: number
+        avg_accuracy_percent: number
+    }>
 }
 
 // Persian weekday labels

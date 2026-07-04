@@ -1,4 +1,3 @@
-
 import * as jalaali from 'jalaali-js'
 
 const PERSIAN_WEEKDAYS = [

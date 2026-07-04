@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react'
 import type { Goal, GoalFormData } from '../../types/database'
 import { Modal } from '../common/Modal'

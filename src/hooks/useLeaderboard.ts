@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { leaderboardService, LeaderboardServiceError } from '../services/leaderboardService'
 import type { LeaderboardSnapshot } from '../types/leaderboard'

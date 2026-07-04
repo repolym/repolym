@@ -1,4 +1,3 @@
-
 import React from 'react'
 import type { StudySession } from '../../../types/database'
 import { StudyTrendChart } from '../StudyTrendChart'

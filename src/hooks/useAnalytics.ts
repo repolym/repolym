@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { analyticsService, AnalyticsServiceError } from '../services/analyticsService'
 import type { AnalyticsSnapshot } from '../types/analytics'

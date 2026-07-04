@@ -1,4 +1,3 @@
-
 export interface User {
   id: string
   email: string
@@ -69,6 +68,12 @@ export interface Test {
   notes: string | null
   created_at: string
   updated_at: string
+  // Optional per-question tracking (used for real correct/wrong/skipped KPIs)
+  correct_count?: number | null
+  wrong_count?: number | null
+  skipped_count?: number | null
+  total_questions?: number | null
+  avg_time_seconds?: number | null
   // Joined
   subjects?: Subject
 }
@@ -112,6 +117,11 @@ export interface TestFormData {
   max_score: number
   date: string
   notes: string
+  correct_count?: number | null
+  wrong_count?: number | null
+  skipped_count?: number | null
+  total_questions?: number | null
+  avg_time_seconds?: number | null
 }
 
 export interface SubjectFormData {

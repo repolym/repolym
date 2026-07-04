@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import type { Todo } from '../../types/database'
 import { formatDate, formatMinutes } from '../../utils/date-utils'

@@ -1,4 +1,3 @@
-
 import React, { useState, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'

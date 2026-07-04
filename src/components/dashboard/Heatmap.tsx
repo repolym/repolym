@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react'
 import type { StudySession } from '../../types/database'
 import { buildHeatmapData } from '../../utils/heatmap-utils'
