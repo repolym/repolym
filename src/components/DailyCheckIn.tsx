@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useDailyMetrics } from '../hooks/useDailyMetrics';
 import { Moon, PhoneOff, CheckCircle, Save, Loader2 } from 'lucide-react';
@@ -9,7 +8,13 @@ import { today } from '../utils/date-utils';
 
 export default function DailyCheckIn() {
     const { user } = useAuth();
-    const { data, loading, logDailyMetric } = useDailyMetrics({ userId: user?.id || '', dateFrom: '', dateTo: '' });
+    // ✅ اصلاح: فقط داده‌های امروز را واکشی کن
+    const todayStr = today();
+    const { data, loading, logDailyMetric } = useDailyMetrics({
+        userId: user?.id ?? null,
+        dateFrom: todayStr,
+        dateTo: todayStr,
+    });
     const [sleepHours, setSleepHours] = useState<string>('');
     const [mobileUsage, setMobileUsage] = useState<string>('');
     const [saving, setSaving] = useState(false);
@@ -29,7 +34,7 @@ export default function DailyCheckIn() {
         setSaving(true);
         try {
             await logDailyMetric({
-                date: today(),
+                date: todayStr,
                 sleep_hours: sleepHours ? parseFloat(sleepHours) : undefined,
                 phone_usage_minutes: mobileUsage ? parseInt(mobileUsage) : undefined,
             });
