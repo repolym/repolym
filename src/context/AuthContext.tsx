@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
@@ -39,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null)
   const initDone = useRef(false)
 
+  // متد کمکی برای دریافت اطلاعات کاربر با مکانیزم پولینگ جهت اطمینان از سینک شدن دیتابیس
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     for (let i = 0; i < 5; i++) {
       const { data, error } = await supabase
@@ -71,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    // بررسی سشن اولیه هنگام بالا آمدن اپلیکیشن
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
@@ -81,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cleanupAuthParams()
     })
 
+    // گوش دادن به تغییرات وضعیت احراز هویت (مثل تایید ایمیل یا خروج)
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (session?.user) {
@@ -89,8 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null)
       }
-      if (event === 'SIGNED_IN') setIsLoading(false)
-      if (event === 'SIGNED_OUT') setIsLoading(false)
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setIsLoading(false)
+      }
       cleanupAuthParams()
     })
 
@@ -99,15 +102,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     setError(null)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw new Error(formatError(error))
-    setSession(data.session)
-    if (data.user) {
-      const profile = await fetchUserProfile(data.user.id)
-      if (!profile) {
-        throw new Error('مشکل در بارگذاری اطلاعات حساب کاربری. لطفاً دوباره تلاش کنید.')
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw new Error(formatError(error))
+      setSession(data.session)
+      if (data.user) {
+        const profile = await fetchUserProfile(data.user.id)
+        if (!profile) {
+          throw new Error('مشکل در بارگذاری اطلاعات حساب کاربری. لطفاً دوباره تلاش کنید.')
+        }
+        setUser(profile)
       }
-      setUser(profile)
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -132,48 +143,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', userId)
   }
 
-  const signUp = async (
-    email: string,
-    name: string,
-    password: string,
-    onboarding?: OnboardingData
-  ) => {
+  const signUp = async (email: string, name: string, password: string, onboarding?: OnboardingData) => {
+    setIsLoading(true)
     setError(null)
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    })
-    if (error) throw new Error(formatError(error))
-    setSession(data.session)
-    if (data.user && data.session) {
-      const profile = await fetchUserProfile(data.user.id)
-      if (profile && onboarding) {
-        try {
-          await applyOnboarding(data.user.id, onboarding)
-          const updated = await fetchUserProfile(data.user.id)
-          setUser(updated)
-        } catch {
+    try {
+      // ساخت ایمن آدرس بازگشت با در نظر گرفتن ساختار ساب‌فولدر گیت‌هاب پیجز
+      const base = import.meta.env.BASE_URL
+      const cleanBase = base.endsWith('/') ? base : `${base}/`
+      const redirectUrl = `${window.location.origin}${cleanBase}`
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: redirectUrl
+        },
+      })
+
+      if (error) throw new Error(formatError(error))
+
+      // حالت اول: اگر اکانت بدون نیاز به تایید ایمیل مستقیماً فعال و لود شد
+      if (data.user && data.session) {
+        setSession(data.session)
+        const profile = await fetchUserProfile(data.user.id)
+        if (profile && onboarding) {
+          try {
+            await applyOnboarding(data.user.id, onboarding)
+            const updated = await fetchUserProfile(data.user.id)
+            setUser(updated)
+          } catch {
+            setUser(profile)
+          }
+        } else {
           setUser(profile)
         }
-      } else {
-        setUser(profile)
+        return { requiresEmailConfirmation: false }
       }
-      return { requiresEmailConfirmation: false }
+
+      // حالت دوم: تایید ایمیل نیاز است، داده‌های Onboarding را موقتاً ذخیره می‌کنیم
+      if (onboarding && data.user) {
+        try {
+          sessionStorage.setItem(`pending_onboarding_${data.user.id}`, JSON.stringify(onboarding))
+        } catch { }
+      }
+      return { requiresEmailConfirmation: true }
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
     }
-    if (onboarding && data.user) {
-      try {
-        sessionStorage.setItem(`pending_onboarding_${data.user.id}`, JSON.stringify(onboarding))
-      } catch { }
-    }
-    return { requiresEmailConfirmation: true }
   }
 
   const completeOnboarding = async (onboarding: OnboardingData) => {
     if (!session?.user) return
-    await applyOnboarding(session.user.id, onboarding)
-    const updated = await fetchUserProfile(session.user.id)
-    setUser(updated)
+    setIsLoading(true)
+    try {
+      await applyOnboarding(session.user.id, onboarding)
+      const updated = await fetchUserProfile(session.user.id)
+      setUser(updated)
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const updateProfile = async (updates: Partial<{ name: string }>) => {
@@ -183,7 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', session.user.id)
     if (error) throw new Error(formatError(error))
-    // Refresh the user profile
+
     const updated = await fetchUserProfile(session.user.id)
     setUser(updated)
   }
@@ -194,19 +229,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null)
   }
 
-  // ========== NEW: Auto-handle session expiry ==========
+  // مدیریت انقضای خودکار سشن
   useEffect(() => {
     const interval = setInterval(async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession()
-      // If session is null but user is still in state → session expired
       if (!currentSession && user) {
         await signOut()
         window.location.hash = '#/login'
       }
-    }, 60000) // check every 60 seconds
+    }, 60000)
 
     return () => clearInterval(interval)
-  }, [user]) // re-run when user changes
+  }, [user])
 
   const clearError = () => setError(null)
 

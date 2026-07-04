@@ -1,26 +1,22 @@
-
 // src/utils/auth-cleanup.ts
 export const cleanupAuthParams = () => {
-    const hash = window.location.hash
-    if (!hash) return
+    const href = window.location.href;
 
-    // Split into path and query string
-    const [path, queryString] = hash.split('?')
-    if (!queryString) return
+    // بررسی می‌کنیم که آیا پارامترهای سوپابیس (در هش یا کوئری) وجود دارند یا خیر
+    if (
+        href.includes('access_token') ||
+        href.includes('refresh_token') ||
+        href.includes('type=recovery') ||
+        href.includes('code=')
+    ) {
+        // ساخت یک URL تمیز که کاربر را مستقیماً به داشبورد هدایت کند
+        // بدون اینکه صفحه رفرش شود (حفظ State اپلیکیشن)
+        const cleanUrl = window.location.origin + import.meta.env.BASE_URL + '#/dashboard';
 
-    // Remove Supabase auth params
-    const params = new URLSearchParams(queryString)
-    const authParams = ['access_token', 'refresh_token', 'expires_in', 'token_type', 'type']
-    let changed = false
-    authParams.forEach(p => {
-        if (params.has(p)) {
-            params.delete(p)
-            changed = true
+        try {
+            window.history.replaceState({}, document.title, cleanUrl);
+        } catch {
+            window.location.hash = '#/dashboard';
         }
-    })
-
-    if (!changed) return
-
-    const newQuery = params.toString()
-    window.location.hash = newQuery ? `${path}?${newQuery}` : path
+    }
 }
