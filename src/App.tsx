@@ -26,24 +26,53 @@ import FocusMode from './components/focus/FocusMode'
 import PublicStudyPage from './components/public/PublicStudyPage'
 import BaselineSurvey from './components/survey/BaselineSurvey'
 
-// ---------- Redirect Based on Baseline ----------
+// ---------- Redirect Based on Onboarding & Baseline ----------
 const RedirectBasedOnBaseline: React.FC = () => {
   const { user, isLoading } = useAuth()
   if (isLoading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
+
+  // If onboarding not completed, send to profile to set olympiad
+  if (!user.onboarding_completed) {
+    return <Navigate to="/profile" replace />
+  }
+
+  // If baseline survey not completed, send to survey
   if (!user.has_completed_baseline_survey) {
     return <Navigate to="/baseline" replace />
   }
+
   return <Navigate to="/dashboard" replace />
+}
+
+// ---------- Guard for all Student Routes (except /baseline) ----------
+const StudentGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading } = useAuth()
+  if (isLoading) return <PageLoader />
+  if (!user) return <Navigate to="/login" replace />
+
+  // If onboarding not completed, redirect to profile
+  if (!user.onboarding_completed) {
+    return <Navigate to="/profile" replace />
+  }
+
+  // If baseline survey not completed, redirect to survey
+  if (!user.has_completed_baseline_survey) {
+    return <Navigate to="/baseline" replace />
+  }
+
+  return <>{children}</>
 }
 
 // ---------- Layouts ----------
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
     <StudentRoute>
-      <DashboardProvider>
-        <AppShell>{children}</AppShell>
-      </DashboardProvider>
+      <StudentGuard>
+        <DashboardProvider>
+          <AppShell>{children}</AppShell>
+        </DashboardProvider>
+      </StudentGuard>
     </StudentRoute>
   </ProtectedRoute>
 )
@@ -70,7 +99,7 @@ const App: React.FC = () => {
 
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
 
-              {/* Baseline Survey – full page, no AppShell */}
+              {/* Baseline Survey – full page, no AppShell, NO StudentGuard */}
               <Route
                 path="/baseline"
                 element={
@@ -92,22 +121,24 @@ const App: React.FC = () => {
                 path="/focus"
                 element={
                   <ProtectedRoute>
-                    <motion.div
-                      key="focus"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <FocusMode />
-                    </motion.div>
+                    <StudentGuard>
+                      <motion.div
+                        key="focus"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <FocusMode />
+                      </motion.div>
+                    </StudentGuard>
                   </ProtectedRoute>
                 }
               />
 
               <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-              {/* Root – check baseline */}
+              {/* Root – check both onboarding and baseline */}
               <Route path="/" element={<RedirectBasedOnBaseline />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

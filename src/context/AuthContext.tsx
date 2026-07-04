@@ -24,7 +24,7 @@ interface AuthContextType {
     onboarding?: OnboardingData
   ) => Promise<{ requiresEmailConfirmation: boolean }>
   completeOnboarding: (onboarding: OnboardingData) => Promise<void>
-  completeBaselineSurvey: (answers: BaselineSurveyAnswers) => Promise<void>  // NEW
+  completeBaselineSurvey: (answers: BaselineSurveyAnswers) => Promise<void>
   updateProfile: (updates: Partial<{ name: string }>) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
@@ -121,17 +121,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const applyOnboarding = async (userId: string, onboarding: OnboardingData) => {
+    // Insert subjects if any
     if (onboarding.subjects.length > 0) {
       const rows = onboarding.subjects.map((s) => ({ user_id: userId, name: s.name, color: s.color }))
-      await supabase.from('subjects').upsert(rows, { onConflict: 'user_id,name', ignoreDuplicates: true })
+      const { error: upsertError } = await supabase
+        .from('subjects')
+        .upsert(rows, { onConflict: 'user_id,name', ignoreDuplicates: true })
+      if (upsertError) {
+        console.error('Error inserting subjects:', upsertError)
+        throw new Error('خطا در ثبت دروس: ' + upsertError.message)
+      }
     }
+
+    // Update user olympiad and flag
     const { data: current } = await supabase
       .from('users')
       .select('preferences')
       .eq('id', userId)
       .single()
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('users')
       .update({
         olympiad_id: onboarding.olympiadId,
@@ -139,6 +148,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         preferences: { ...(current?.preferences ?? {}), olympiad_id: onboarding.olympiadId },
       })
       .eq('id', userId)
+
+    if (updateError) {
+      console.error('Error updating user onboarding:', updateError)
+      throw new Error('خطا در تکمیل ثبت‌نام: ' + updateError.message)
+    }
   }
 
   const signUp = async (email: string, name: string, password: string, onboarding?: OnboardingData) => {
@@ -168,8 +182,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await applyOnboarding(data.user.id, onboarding)
             const updated = await fetchUserProfile(data.user.id)
             setUser(updated)
-          } catch {
-            setUser(profile)
+          } catch (err) {
+            console.error('Onboarding failed:', err)
+            setUser(profile) // fallback to partial profile
           }
         } else {
           setUser(profile)
@@ -206,7 +221,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // NEW: Complete baseline survey
   const completeBaselineSurvey = async (answers: BaselineSurveyAnswers) => {
     if (!session?.user) throw new Error('Not authenticated')
     setIsLoading(true)
@@ -269,18 +283,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => setError(null)
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      isLoading,
-      error,
-      signIn,
-      signUp,
-      completeOnboarding,
-      completeBaselineSurvey,  // NEW
-      updateProfile,
-      signOut,
-      clearError
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      isLoading, 
+      error, 
+      signIn, 
+      signUp, 
+      completeOnboarding, 
+      completeBaselineSurvey,
+      updateProfile, 
+      signOut, 
+      clearError 
     }}>
       {children}
     </AuthContext.Provider>
