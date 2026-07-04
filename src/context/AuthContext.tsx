@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
-import type { User } from '../types/database'
+import type { User, BaselineSurveyAnswers } from '../types/database'
 import { formatError } from '../utils/error-handler'
 import { cleanupAuthParams } from '../utils/auth-cleanup'
 import type { OlympiadSubject } from '../config/olympiads'
@@ -24,6 +24,7 @@ interface AuthContextType {
     onboarding?: OnboardingData
   ) => Promise<{ requiresEmailConfirmation: boolean }>
   completeOnboarding: (onboarding: OnboardingData) => Promise<void>
+  completeBaselineSurvey: (answers: BaselineSurveyAnswers) => Promise<void>  // NEW
   updateProfile: (updates: Partial<{ name: string }>) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
@@ -38,7 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null)
   const initDone = useRef(false)
 
-  // متد کمکی برای دریافت اطلاعات کاربر با مکانیزم پولینگ جهت اطمینان از سینک شدن دیتابیس
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     for (let i = 0; i < 5; i++) {
       const { data, error } = await supabase
@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // بررسی سشن اولیه هنگام بالا آمدن اپلیکیشن
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
@@ -82,7 +81,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cleanupAuthParams()
     })
 
-    // گوش دادن به تغییرات وضعیت احراز هویت (مثل تایید ایمیل یا خروج)
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (session?.user) {
@@ -147,7 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true)
     setError(null)
     try {
-      // ساخت ایمن آدرس بازگشت با در نظر گرفتن ساختار ساب‌فولدر گیت‌هاب پیجز
       const base = import.meta.env.BASE_URL
       const cleanBase = base.endsWith('/') ? base : `${base}/`
       const redirectUrl = `${window.location.origin}${cleanBase}`
@@ -163,7 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw new Error(formatError(error))
 
-      // حالت اول: اگر اکانت بدون نیاز به تایید ایمیل مستقیماً فعال و لود شد
       if (data.user && data.session) {
         setSession(data.session)
         const profile = await fetchUserProfile(data.user.id)
@@ -181,7 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { requiresEmailConfirmation: false }
       }
 
-      // حالت دوم: تایید ایمیل نیاز است، داده‌های Onboarding را موقتاً ذخیره می‌کنیم
       if (onboarding && data.user) {
         try {
           sessionStorage.setItem(`pending_onboarding_${data.user.id}`, JSON.stringify(onboarding))
@@ -211,6 +206,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  // NEW: Complete baseline survey
+  const completeBaselineSurvey = async (answers: BaselineSurveyAnswers) => {
+    if (!session?.user) throw new Error('Not authenticated')
+    setIsLoading(true)
+    try {
+      const { error: insertError } = await supabase
+        .from('baseline_surveys')
+        .insert({
+          user_id: session.user.id,
+          answers: answers,
+          survey_version: 'v1_baseline',
+        })
+      if (insertError) throw insertError
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ has_completed_baseline_survey: true })
+        .eq('id', session.user.id)
+      if (updateError) throw updateError
+
+      const updated = await fetchUserProfile(session.user.id)
+      setUser(updated)
+    } catch (err: any) {
+      setError(err.message)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const updateProfile = async (updates: Partial<{ name: string }>) => {
     if (!session?.user) throw new Error('Not authenticated')
     const { error } = await supabase
@@ -229,7 +254,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null)
   }
 
-  // مدیریت انقضای خودکار سشن
   useEffect(() => {
     const interval = setInterval(async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession()
@@ -245,7 +269,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => setError(null)
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, error, signIn, signUp, completeOnboarding, updateProfile, signOut, clearError }}>
+    <AuthContext.Provider value={{
+      user,
+      session,
+      isLoading,
+      error,
+      signIn,
+      signUp,
+      completeOnboarding,
+      completeBaselineSurvey,  // NEW
+      updateProfile,
+      signOut,
+      clearError
+    }}>
       {children}
     </AuthContext.Provider>
   )

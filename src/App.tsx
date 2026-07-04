@@ -9,6 +9,8 @@ import { ProtectedRoute } from './components/common/ProtectedRoute'
 import { StudentRoute } from './components/common/StudentRoute'
 import { AdminRoute } from './components/common/AdminRoute'
 import { ToastContainer } from './components/common/Toast'
+import { PageLoader } from './components/common/Loading'
+import { useAuth } from './context/AuthContext'
 
 import AdminDashboard from './components/admin/AdminDashboard'
 import { LoginPage } from './components/auth/LoginForm'
@@ -22,7 +24,20 @@ import { PlanningPage } from './components/plans/PlanningPage'
 import { TodosPage } from './components/todos/TodosPage'
 import FocusMode from './components/focus/FocusMode'
 import PublicStudyPage from './components/public/PublicStudyPage'
+import BaselineSurvey from './components/survey/BaselineSurvey'
 
+// ---------- Redirect Based on Baseline ----------
+const RedirectBasedOnBaseline: React.FC = () => {
+  const { user, isLoading } = useAuth()
+  if (isLoading) return <PageLoader />
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.has_completed_baseline_survey) {
+    return <Navigate to="/baseline" replace />
+  }
+  return <Navigate to="/dashboard" replace />
+}
+
+// ---------- Layouts ----------
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
     <StudentRoute>
@@ -55,6 +70,16 @@ const App: React.FC = () => {
 
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
 
+              {/* Baseline Survey – full page, no AppShell */}
+              <Route
+                path="/baseline"
+                element={
+                  <ProtectedRoute>
+                    <BaselineSurvey />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
               <Route path="/study" element={<StudentLayout><StudyPage /></StudentLayout>} />
               <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
@@ -63,7 +88,6 @@ const App: React.FC = () => {
               <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
               <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
 
-              {/* Focus Mode – full screen with smooth transition */}
               <Route
                 path="/focus"
                 element={
@@ -83,8 +107,9 @@ const App: React.FC = () => {
 
               <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              {/* Root – check baseline */}
+              <Route path="/" element={<RedirectBasedOnBaseline />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>
           <ToastContainer />

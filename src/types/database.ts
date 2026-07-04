@@ -5,6 +5,7 @@ export interface User {
   is_admin: boolean
   olympiad_id: string | null
   onboarding_completed: boolean
+  has_completed_baseline_survey: boolean  // NEW
   preferences: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -30,7 +31,7 @@ export interface StudySession {
   resource?: string | null
   question_count?: number | null
   question_difficulty?: string | null
-  estimated_difficulty?: number | null  // ← number, not string
+  estimated_difficulty?: number | null
   question_type?: string | null
   todo_relation?: string | null
   tags?: string | null
@@ -68,13 +69,11 @@ export interface Test {
   notes: string | null
   created_at: string
   updated_at: string
-  // Optional per-question tracking (used for real correct/wrong/skipped KPIs)
   correct_count?: number | null
   wrong_count?: number | null
   skipped_count?: number | null
   total_questions?: number | null
   avg_time_seconds?: number | null
-  // Joined
   subjects?: Subject
 }
 
@@ -87,6 +86,16 @@ export interface Streak {
   updated_at: string
 }
 
+// NEW: Baseline survey answers
+export interface BaselineSurveyAnswers {
+  q1_experience: 'very_easy' | 'easy' | 'normal' | 'hard' | 'very_hard'
+  q2_feeling: 'organized' | 'clear_progress' | 'just_because' | 'not_helpful'
+  q3_distraction: 'only_report' | 'check_messages' | 'distracted' | 'lost_focus'
+  q4_access: 'very_easy' | 'easy' | 'difficult' | 'very_difficult'
+  q5_sleep_consistency: 'very_consistent' | 'mostly_consistent' | 'sometimes_consistent' | 'not_consistent' | 'very_irregular'
+  q6_open_reflection: string | null
+}
+
 // Form types
 export interface SessionFormData {
   subject_id: string | null
@@ -96,7 +105,7 @@ export interface SessionFormData {
   resource?: string | null
   question_count?: number | null
   question_difficulty?: string | null
-  estimated_difficulty?: number | null  // ← number, not string
+  estimated_difficulty?: number | null
   question_type?: string | null
   todo_relation?: string | null
   tags?: string | null
@@ -166,13 +175,13 @@ export interface Plan {
   type: 'daily' | 'weekly' | 'monthly' | 'exam' | 'flexible'
   priority: 'low' | 'medium' | 'high'
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  progress: number // 0-100
+  progress: number
   start_date: string
   end_date: string | null
   due_date: string | null
-  estimated_duration: number | null // minutes
-  dependencies: string[] | null // array of plan IDs
-  recurring: any | null // JSON
+  estimated_duration: number | null
+  dependencies: string[] | null
+  recurring: any | null
   created_at: string
   updated_at: string
 }
@@ -195,7 +204,6 @@ export interface Todo {
   plan_id: string | null
   created_at: string
   updated_at: string
-  // joined
   subjects?: Subject
   study_session?: StudySession
   plan?: Plan
