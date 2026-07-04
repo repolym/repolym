@@ -1,3 +1,4 @@
+// src/components/DailyCheckIn.tsx
 import React, { useState, useEffect } from 'react';
 import { useDailyMetrics } from '../hooks/useDailyMetrics';
 import { Moon, PhoneOff, CheckCircle, Save, Loader2 } from 'lucide-react';
@@ -8,7 +9,6 @@ import { today } from '../utils/date-utils';
 
 export default function DailyCheckIn() {
     const { user } = useAuth();
-    // ✅ اصلاح: فقط داده‌های امروز را واکشی کن
     const todayStr = today();
     const { data, loading, logDailyMetric } = useDailyMetrics({
         userId: user?.id ?? null,
@@ -121,3 +121,4 @@ export default function DailyCheckIn() {
         </div>
     );
 }
+

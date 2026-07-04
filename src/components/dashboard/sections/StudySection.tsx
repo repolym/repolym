@@ -1,3 +1,4 @@
+// src/components/dashboard/sections/StudySection.tsx
 import StudySessions from '../../StudySessions';
 import DailyCheckIn from '../../DailyCheckIn';
 import { useStudySessions } from '../../../hooks/useStudySessions';
@@ -6,7 +7,6 @@ import { Trash2, BookOpen } from 'lucide-react';
 
 export default function StudySection() {
     const { user } = useAuth();
-    // ✅ اصلاح: ارسال null به جای رشته خالی
     const { data: sessions, deleteSession } = useStudySessions({ userId: user?.id ?? null });
 
     return (
@@ -53,11 +53,9 @@ export default function StudySection() {
                                         <td className="px-4 py-3.5 font-semibold text-slate-800">
                                             {session.subjects?.name || 'درس نامشخص'}
                                         </td>
-                                        {/* ✅ اصلاح: استفاده از duration_minutes */}
                                         <td className="px-4 py-3.5 font-mono text-emerald-600 font-bold">
                                             {session.duration_minutes}
                                         </td>
-                                        {/* ✅ اصلاح: استفاده از notes */}
                                         <td className="px-4 py-3.5 text-slate-400 max-w-xs truncate">
                                             {session.notes || '—'}
                                         </td>
@@ -89,3 +87,4 @@ export default function StudySection() {
         </div>
     );
 }
+
