@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
     ResponsiveContainer,
     AreaChart,
@@ -86,14 +86,14 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
 
     const chartData = useMemo(() => {
         if (timeRange === 'week') {
-            return weekly_trend.map(w => ({
+            return (weekly_trend || []).map(w => ({
                 label: formatDateShort(w.week_start),
                 minutes: w.minutes,
                 tests_count: w.tests_count,
                 avg_accuracy_percent: w.avg_accuracy_percent
             }))
         } else {
-            return monthly_trend.map(m => ({
+            return (monthly_trend || []).map(m => ({
                 label: formatDateShort(m.month),
                 minutes: m.minutes,
                 tests_count: m.tests_count,
@@ -101,6 +101,9 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
             }))
         }
     }, [weekly_trend, monthly_trend, timeRange])
+
+    // Defensive fallback in case array is null/empty
+    const safeSubjectTestStats = subject_test_stats || []
 
     return (
         <div className="flex flex-col gap-6 min-h-0" dir="ltr">
@@ -113,12 +116,12 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                         <Target className="w-3 h-3 text-slate-500" />
                     </p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(test_stats.accuracy_percent)}%</span>
-                        {test_stats.trend === 'up' && <span className="text-xs text-emerald-400 font-bold uppercase">Trending Up</span>}
-                        {test_stats.trend === 'down' && <span className="text-xs text-rose-400 font-bold uppercase">Needs Focus</span>}
+                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(test_stats?.accuracy_percent || 0)}%</span>
+                        {test_stats?.trend === 'up' && <span className="text-xs text-emerald-400 font-bold uppercase">Trending Up</span>}
+                        {test_stats?.trend === 'down' && <span className="text-xs text-rose-400 font-bold uppercase">Needs Focus</span>}
                     </div>
                     <div className="mt-3 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div className="bg-indigo-500 h-full shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all" style={{ width: `${test_stats.accuracy_percent}%` }}></div>
+                        <div className="bg-indigo-500 h-full shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all" style={{ width: `${test_stats?.accuracy_percent || 0}%` }}></div>
                     </div>
                 </div>
 
@@ -128,10 +131,10 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                         <Zap className="w-3 h-3 text-slate-500" />
                     </p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(study_streak.current_streak)}</span>
+                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(study_streak?.current_streak || 0)}</span>
                         <span className="text-xs text-slate-500 font-bold uppercase">Days</span>
                     </div>
-                    <p className="text-[10px] font-mono text-indigo-400 mt-2 uppercase italic font-bold">Best: {toPersianDigits(study_streak.longest_streak)} Days</p>
+                    <p className="text-[10px] font-mono text-indigo-400 mt-2 uppercase italic font-bold">Best: {toPersianDigits(study_streak?.longest_streak || 0)} Days</p>
                 </div>
 
                 <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl">
@@ -140,11 +143,11 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                         <Activity className="w-3 h-3 text-slate-500" />
                     </p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{progress_trend.current_avg_minutes ? toPersianDigits(Math.round(progress_trend.current_avg_minutes)) : 0}</span>
+                        <span className="text-4xl font-black text-white tracking-tighter">{progress_trend?.current_avg_minutes ? toPersianDigits(Math.round(progress_trend.current_avg_minutes)) : 0}</span>
                         <span className="text-xs text-slate-500 font-bold uppercase">Min/Day</span>
                     </div>
-                    <p className={`text-[10px] font-mono mt-2 uppercase italic font-bold ${progress_trend.direction === 'improving' ? 'text-emerald-400' : 'text-slate-500'}`}>
-                        {progress_trend.direction === 'improving' ? `+${progress_trend.percent_change_vs_baseline ? Math.round(progress_trend.percent_change_vs_baseline) : 0}% Growth` : 'Stable Velocity'}
+                    <p className={`text-[10px] font-mono mt-2 uppercase italic font-bold ${progress_trend?.direction === 'improving' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {progress_trend?.direction === 'improving' ? `+${progress_trend.percent_change_vs_baseline ? Math.round(progress_trend.percent_change_vs_baseline) : 0}% Growth` : 'Stable Velocity'}
                     </p>
                 </div>
 
@@ -152,7 +155,7 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                     <div className="relative z-10">
                         <p className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-2">Consistency</p>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(Math.round(study_consistency.consistency_score))}%</span>
+                            <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span>
                             <span className="text-xs text-indigo-200 font-bold uppercase underline">Solid</span>
                         </div>
                         <p className="text-[10px] font-mono text-indigo-200 mt-2 uppercase font-bold tracking-tight">Keep it up!</p>
@@ -215,7 +218,7 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                             <div className="w-10 h-10 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 flex shrink-0"></div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase">Subject Variety</p>
-                                <p className="text-sm font-black text-white italic tracking-tight uppercase">{subject_test_stats.length} Subjects Active</p>
+                                <p className="text-sm font-black text-white italic tracking-tight uppercase">{safeSubjectTestStats.length} Subjects Active</p>
                             </div>
                         </div>
                         <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex gap-4 items-center">
@@ -225,7 +228,7 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase">Best Day</p>
                                 <p className="text-sm font-black text-white italic tracking-tight uppercase">
-                                    {best_worst_day.best_date ? formatDateShort(best_worst_day.best_date) : 'N/A'}
+                                    {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : 'N/A'}
                                 </p>
                             </div>
                         </div>
@@ -239,12 +242,12 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
                         <h3 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-4">Skill Diagnostics</h3>
                         <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                            {subject_test_stats.length === 0 ? (
+                            {safeSubjectTestStats.length === 0 ? (
                                 <p className="text-xs text-slate-500 uppercase italic">No test data available for diagnostics.</p>
                             ) : (
-                                subject_test_stats.sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent).map((subject, idx) => {
+                                [...safeSubjectTestStats].sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent).map((subject, idx) => {
                                     const isStrong = idx === 0 || subject.avg_accuracy_percent >= 80;
-                                    const isWeak = idx === subject_test_stats.length - 1 || subject.avg_accuracy_percent < 50;
+                                    const isWeak = idx === safeSubjectTestStats.length - 1 || subject.avg_accuracy_percent < 50;
 
                                     let bgClass = "bg-slate-800/40 border-slate-700/50 opacity-60";
                                     let badgeClass = "bg-slate-700 text-white";
@@ -261,7 +264,7 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                                     }
 
                                     return (
-                                        <div key={subject.subject_id} className={`flex items-center justify-between p-3 rounded-xl border ${bgClass}`}>
+                                        <div key={subject.subject_id || idx} className={`flex items-center justify-between p-3 rounded-xl border ${bgClass}`}>
                                             <span className="text-xs font-bold text-white uppercase italic tracking-tight truncate ml-2" dir="rtl">{subject.subject_name}</span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] font-mono text-slate-400">{subject.avg_accuracy_percent}%</span>
@@ -281,15 +284,15 @@ const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
                             <div className="border-l-2 border-indigo-500 pl-4">
                                 <p className="text-xs font-black text-white uppercase italic mb-1">Optimization Path</p>
                                 <p className="text-[11px] leading-relaxed text-slate-400">
-                                    Your consistency score is <span className="text-white">{Math.round(study_consistency.consistency_score)}%</span>.
-                                    {study_consistency.consistency_score < 50 ? " Try to study a little bit every day to build a habit." : " You are building a solid study habit. Keep pushing!"}
+                                    Your consistency score is <span className="text-white">{Math.round(study_consistency?.consistency_score || 0)}%</span>.
+                                    {(study_consistency?.consistency_score || 0) < 50 ? " Try to study a little bit every day to build a habit." : " You are building a solid study habit. Keep pushing!"}
                                 </p>
                             </div>
-                            {subject_test_stats.length > 0 && (
+                            {safeSubjectTestStats.length > 0 && (
                                 <div className="border-l-2 border-amber-500 pl-4 mt-4">
                                     <p className="text-xs font-black text-slate-500 uppercase italic mb-1">Weakness Detection</p>
                                     <p className="text-[11px] leading-relaxed text-slate-400 font-mono tracking-tight">
-                                        Focus review on <span className="text-amber-500" dir="rtl">{subject_test_stats.sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name}</span> to boost overall metrics.
+                                        Focus review on <span className="text-amber-500" dir="rtl">{[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'N/A'}</span> to boost overall metrics.
                                     </p>
                                 </div>
                             )}

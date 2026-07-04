@@ -10,6 +10,7 @@ import { today, formatDate, getGreeting } from '../../utils/date-utils'
 import { Sunrise, Sun, Sunset, Moon, CalendarDays, LayoutDashboard, Zap, Trophy, TrendingUp } from 'lucide-react'
 import { StatsCards } from './StatsCards'
 import { Skeleton } from '../common/Loading'
+import { ErrorBoundary } from '../common/ErrorBoundary'
 
 const OverviewSection = lazy(() => import('./sections/OverviewSection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
@@ -128,16 +129,22 @@ export const DashboardPage: React.FC = () => {
                             />
                         )}
                         {activeTab === 'performance' && (
-                            <PerformanceSection />
+                            <ErrorBoundary>
+                                <PerformanceSection />
+                            </ErrorBoundary>
                         )}
                         {activeTab === 'growth' && (
-                            <GrowthSection
-                                sessions={sessions.data}
-                                loading={sessions.loading}
-                            />
+                            <ErrorBoundary>
+                                <GrowthSection
+                                    sessions={sessions.data}
+                                    loading={sessions.loading}
+                                />
+                            </ErrorBoundary>
                         )}
                         {activeTab === 'leaderboard' && (
-                            <LeaderboardSection userId={user?.id ?? null} olympiadId={user?.olympiad_id ?? null} />
+                            <ErrorBoundary>
+                                <LeaderboardSection userId={user?.id ?? null} olympiadId={user?.olympiad_id ?? null} />
+                            </ErrorBoundary>
                         )}
                     </Suspense>
                 </motion.div>
