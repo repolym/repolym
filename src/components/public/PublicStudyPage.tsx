@@ -21,19 +21,22 @@ const PublicStudyPage: React.FC = () => {
             setLoading(true)
             setError(null)
             try {
+                // Note: this used to select directly from `study_sessions` /
+                // `subjects`, relying on an RLS policy that granted the anon
+                // role SELECT on every row for every user (not just this
+                // user_id) — a data leak. It now goes through the
+                // get_public_study_profile RPC, which is scoped server-side
+                // to exactly this user_id and only returns these fields.
                 const { data, error: supabaseError } = await supabase
-                    .from('study_sessions')
-                    .select('id, date, duration_minutes, subjects (id, name, color)')
-                    .eq('user_id', userId)
-                    .order('date', { ascending: false })
+                    .rpc('get_public_study_profile', { p_user_id: userId })
 
                 if (supabaseError) throw supabaseError
 
-                // تبدیل داده‌ی خام به فرمت مورد انتظار
-                const formatted = (data || []).map((item: any) => ({
-                    ...item,
-                    // اگر subjects به‌صورت آرایه برگشت (نادر)، اولین عنصر را بگیرد
-                    subjects: Array.isArray(item.subjects) ? item.subjects[0] : item.subjects,
+                const formatted = ((data?.sessions ?? []) as any[]).map((item) => ({
+                    id: item.id,
+                    date: item.date,
+                    duration_minutes: item.duration_minutes,
+                    subjects: item.subject,
                 })) as SessionWithSubject[]
 
                 setSessions(formatted)
