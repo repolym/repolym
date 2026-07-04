@@ -1,3 +1,4 @@
+
 import React from 'react'
 import { AlertCircle, RefreshCw, Home } from 'lucide-react'
 import { logger } from '../../utils/logger'

@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../config/supabase'
 import type { Goal, GoalFormData } from '../types/database'

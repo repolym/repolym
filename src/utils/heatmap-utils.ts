@@ -1,3 +1,4 @@
+
 import type { StudySession, HeatmapDay } from '../types/database'
 import { getDaysBetween } from './date-utils'
 

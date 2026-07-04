@@ -1,3 +1,4 @@
+
 -- =============================================
 -- سامانه المپیاد - Supabase Database Schema (نسخه اصلاح‌شده)
 -- اجرا کنید در: Supabase Dashboard > SQL Editor

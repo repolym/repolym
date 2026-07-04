@@ -1,3 +1,4 @@
+
 -- =============================================
 -- سامانه المپیاد - Supabase Database Schema v2.0 (Production-Ready)
 -- اجرا کنید در: Supabase Dashboard > SQL Editor

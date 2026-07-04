@@ -1,3 +1,4 @@
+
 import React, { useState, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
@@ -17,7 +18,7 @@ const StudySection = lazy(() => import('./sections/StudySection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
 const GrowthSection = lazy(() => import('./sections/GrowthSection'))
 const AnalyticsSection = lazy(() => import('./AnalyticsSection'))
-const LeaderboardSection = lazy(() => import('./LeaderboardSection'))
+const LeaderboardSection = lazy(() => import('./sections/LeaderboardSection'))
 
 type TabId = 'overview' | 'study' | 'performance' | 'growth' | 'analytics' | 'leaderboard'
 

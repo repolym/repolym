@@ -1,4 +1,5 @@
-// src/components/dashboard/sections/LeaderboardSection.tsx
+
+// src/components/dashboard/LeaderboardSection.tsx
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -69,22 +70,17 @@ class LeaderboardErrorBoundary extends React.Component<
 // کامپوننت‌های کمکی
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ScoreBar: React.FC<{ value: number | null | undefined; color: string }> = ({ value, color }) => {
-    const safeValue = value ?? 0
-    const clampedValue = Math.min(100, Math.max(0, safeValue))
-
-    return (
-        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-            <motion.div
-                className="h-full rounded-full"
-                style={{ backgroundColor: color }}
-                initial={{ width: 0 }}
-                animate={{ width: `${clampedValue}%` }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-        </div>
-    )
-}
+const ScoreBar: React.FC<{ value: number; color: string }> = ({ value, color }) => (
+    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <motion.div
+            className="h-full rounded-full"
+            style={{ backgroundColor: color }}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+        />
+    </div>
+)
 
 const StatPill: React.FC<{
     icon: React.ElementType
@@ -112,8 +108,7 @@ interface EntryCardProps {
 
 const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor, index }) => {
     const [expanded, setExpanded] = useState(false)
-    const rank = entry.rank ?? 0
-    const rankCfg = RANK_ICONS[rank]
+    const rankCfg = RANK_ICONS[entry.rank ?? 0]
     const RankIcon = rankCfg?.icon
 
     return (
@@ -145,7 +140,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, isCurrentUser, accentColor
                 `}>
                     {RankIcon
                         ? <RankIcon className="w-4 h-4" aria-hidden="true" />
-                        : <span className="text-xs font-bold tabular-nums">{toPersianDigits(rank)}</span>
+                        : <span className="text-xs font-bold tabular-nums">{toPersianDigits(entry.rank ?? 0)}</span>
                     }
                 </div>
 

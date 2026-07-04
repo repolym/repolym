@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import type { Goal, GoalWithProgress } from '../../types/database'
 import { formatMinutes } from '../../utils/date-utils'

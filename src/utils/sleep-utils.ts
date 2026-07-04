@@ -1,3 +1,4 @@
+
 /**
  * Calculates sleep duration in hours from a bedtime and a wake time.
  * Handles the case where sleep crosses midnight (e.g. 23:30 -> 07:00 = 7.5h).

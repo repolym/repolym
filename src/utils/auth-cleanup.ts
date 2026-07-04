@@ -1,3 +1,4 @@
+
 // src/utils/auth-cleanup.ts
 export const cleanupAuthParams = () => {
     const hash = window.location.hash
