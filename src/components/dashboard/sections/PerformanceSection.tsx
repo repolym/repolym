@@ -1,43 +1,41 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     ResponsiveContainer,
     AreaChart,
     Area,
+    LineChart,
+    Line,
     XAxis,
     YAxis,
     CartesianGrid,
-    Tooltip
+    Tooltip,
 } from 'recharts'
 import {
-    Award,
-    Calendar,
     Zap,
     Target,
     Brain,
-    Activity
+    Activity,
+    CheckCircle,
+    Moon,
+    Smartphone,
 } from 'lucide-react'
 import { usePerformanceAnalytics } from '../../../hooks/usePerformanceAnalytics'
+import { useDailyMetrics } from '../../../hooks/useDailyMetrics'
 import { useAuth } from '../../../context/AuthContext'
 import { Skeleton, ErrorMessage, EmptyState } from '../../common/Loading'
 import { toPersianDigits } from '../../../utils/jalali'
-import { formatDateShort } from '../../../utils/date-utils'
+import { formatDateShort, daysAgo, today } from '../../../utils/date-utils'
 
-interface PerformanceSectionProps {
-    // No props needed since we fetch analytics internally
-}
-
+// ---------- Custom Persian Tooltip ----------
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl shadow-xl text-right font-sans transition-all duration-150">
-                <p className="text-[10px] font-bold text-slate-500 mb-1.5 flex items-center gap-1 justify-end uppercase tracking-widest">
-                    <span>{label}</span>
-                    <Calendar className="w-3 h-3" />
-                </p>
+            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
+                <p className="font-semibold text-gray-700 mb-1">{label}</p>
                 {payload.map((p: any, idx: number) => (
-                    <p key={idx} className={`text-sm font-bold flex items-center gap-1.5 justify-end mt-1`} style={{ color: p.color || p.fill }}>
-                        <span className="font-mono text-base">{p.value}</span>
-                        <span className="text-[10px] uppercase">{p.name === 'minutes' ? 'دقیقه' : p.name === 'tests_count' ? 'تعداد آزمون' : 'درصد'}</span>
+                    <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
+                        <span>{p.name === 'minutes' ? 'مدت مطالعه' : p.name === 'tests_count' ? 'تعداد آزمون' : p.name === 'sleep_hours' ? 'خواب (ساعت)' : 'گوشی (دقیقه)'}</span>
+                        <span className="font-mono font-medium">{p.value}</span>
                     </p>
                 ))}
             </div>
@@ -46,265 +44,579 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null
 }
 
-const PerformanceSection: React.FC<PerformanceSectionProps> = () => {
+const PerformanceSection: React.FC = () => {
     const { user } = useAuth()
-    const { data: analytics, loading: analyticsLoading, error, refetch } = usePerformanceAnalytics({ userId: user?.id ?? null })
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week')
 
-    if (analyticsLoading && !analytics) {
+    // داده‌های تحلیلی (مطالعه و آزمون)
+    const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch } = usePerformanceAnalytics({ userId: user?.id ?? null })
+
+    // داده‌های روزانه (خواب و گوشی) - ۳۰ روز اخیر
+    const dateFrom = daysAgo(30)
+    const dateTo = today()
+    const { data: dailyMetrics, loading: dailyLoading, error: dailyError, refetch: refetchDaily } = useDailyMetrics({
+        userId: user?.id ?? null,
+        dateFrom,
+        dateTo,
+    })
+
+    // برای رفع اشکال – لاگ کردن داده‌ها در کنسول (در صورت نیاز حذف شود)
+    useEffect(() => {
+        if (dailyMetrics && dailyMetrics.length > 0) {
+            console.log('📊 Daily Metrics received:', dailyMetrics)
+        }
+    }, [dailyMetrics])
+
+    // ترکیب داده‌های خواب و گوشی با تاریخ‌های کامل (پر کردن روزهای بدون داده)
+    const sleepPhoneData = useMemo(() => {
+        if (!dailyMetrics || dailyMetrics.length === 0) return []
+        const map = new Map<string, { sleep: number | null; phone: number | null }>()
+        dailyMetrics.forEach((d) => {
+            map.set(d.date, {
+                sleep: d.sleep_hours ?? null,
+                phone: d.phone_usage_minutes ?? null,
+            })
+        })
+        // ایجاد آرایه‌ای از تمام روزهای بازه
+        const result = []
+        let current = new Date(dateFrom + 'T00:00:00')
+        const end = new Date(dateTo + 'T00:00:00')
+        while (current <= end) {
+            const dateStr = current.toISOString().split('T')[0]
+            const data = map.get(dateStr) || { sleep: null, phone: null }
+            result.push({
+                date: dateStr,
+                label: formatDateShort(dateStr),
+                sleep_hours: data.sleep,
+                phone_minutes: data.phone,
+            })
+            current.setDate(current.getDate() + 1)
+        }
+        return result
+    }, [dailyMetrics, dateFrom, dateTo])
+
+    // آمار خلاصه خواب و گوشی
+    const sleepStats = useMemo(() => {
+        const values = sleepPhoneData.filter(d => d.sleep_hours !== null).map(d => d.sleep_hours as number)
+        if (values.length === 0) return { avg: null, min: null, max: null, count: 0 }
+        return {
+            avg: values.reduce((a, b) => a + b, 0) / values.length,
+            min: Math.min(...values),
+            max: Math.max(...values),
+            count: values.length,
+        }
+    }, [sleepPhoneData])
+
+    const phoneStats = useMemo(() => {
+        const values = sleepPhoneData.filter(d => d.phone_minutes !== null).map(d => d.phone_minutes as number)
+        if (values.length === 0) return { avg: null, min: null, max: null, count: 0 }
+        return {
+            avg: values.reduce((a, b) => a + b, 0) / values.length,
+            min: Math.min(...values),
+            max: Math.max(...values),
+            count: values.length,
+        }
+    }, [sleepPhoneData])
+
+    // داده‌های نمودار مطالعه
+    const chartData = useMemo(() => {
+        if (!analytics) return []
+        const { weekly_trend, monthly_trend } = analytics
+        const raw = timeRange === 'week' ? (weekly_trend || []) : (monthly_trend || [])
+        return raw.map((item: any) => ({
+            label: timeRange === 'week' ? formatDateShort(item.week_start) : formatDateShort(item.month),
+            minutes: item.minutes,
+            tests_count: item.tests_count,
+            avg_accuracy_percent: Math.round(item.avg_accuracy_percent || 0),
+        }))
+    }, [analytics, timeRange])
+
+    // وضعیت بارگذاری ترکیبی
+    const isLoading = (analyticsLoading || dailyLoading) && !analytics
+
+    // خطاها
+    const hasError = analyticsError || dailyError
+
+    if (isLoading) {
         return (
             <div className="space-y-6">
-                <div className="grid grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 bg-slate-900/60 rounded-2xl border border-slate-800" />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-28 rounded-2xl" />
+                    ))}
                 </div>
-                <div className="grid grid-cols-12 gap-6">
-                    <div className="col-span-8"><Skeleton className="h-96 bg-slate-900/60 rounded-3xl border border-slate-800" /></div>
-                    <div className="col-span-4"><Skeleton className="h-96 bg-slate-900/60 rounded-3xl border border-slate-800" /></div>
+                <Skeleton className="h-80 rounded-2xl" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Skeleton className="h-64 rounded-2xl" />
+                    <Skeleton className="h-64 rounded-2xl" />
                 </div>
             </div>
         )
     }
 
-    if (error) {
-        return <ErrorMessage message={error} onRetry={refetch} />
+    if (hasError) {
+        return <ErrorMessage message={analyticsError || dailyError || 'خطا در دریافت داده'} onRetry={() => { refetch(); refetchDaily(); }} />
     }
 
     if (!analytics) {
-        return <EmptyState title="تحلیلی یافت نشد" description="داده‌های کافی برای تحلیل موجود نیست" />
+        return (
+            <EmptyState
+                title="تحلیلی موجود نیست"
+                description="برای مشاهده تحلیل‌ها، ابتدا جلسات مطالعه و آزمون ثبت کنید."
+            />
+        )
     }
 
     const {
         test_stats,
         subject_test_stats,
-        weekly_trend,
-        monthly_trend,
         study_streak,
         study_consistency,
         progress_trend,
-        best_worst_day
+        best_worst_day,
     } = analytics
 
-    const chartData = useMemo(() => {
-        if (timeRange === 'week') {
-            return (weekly_trend || []).map(w => ({
-                label: formatDateShort(w.week_start),
-                minutes: w.minutes,
-                tests_count: w.tests_count,
-                avg_accuracy_percent: w.avg_accuracy_percent
-            }))
-        } else {
-            return (monthly_trend || []).map(m => ({
-                label: formatDateShort(m.month),
-                minutes: m.minutes,
-                tests_count: m.tests_count,
-                avg_accuracy_percent: m.avg_accuracy_percent
-            }))
-        }
-    }, [weekly_trend, monthly_trend, timeRange])
-
-    // Defensive fallback in case array is null/empty
     const safeSubjectTestStats = subject_test_stats || []
 
+    // تابع کمکی برای تبدیل عدد به فارسی با مدیریت مقدار null/undefined
+    const toPersian = (num: number | null | undefined): string => {
+        if (num === null || num === undefined || isNaN(num)) return '—'
+        return toPersianDigits(Math.round(num))
+    }
+
     return (
-        <div className="flex flex-col gap-6 min-h-0" dir="ltr">
-
-            {/* SUMMARY KPI STRIP */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
-                <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex justify-between">
-                        <span>Test Accuracy</span>
-                        <Target className="w-3 h-3 text-slate-500" />
-                    </p>
+        <div className="space-y-6" dir="rtl">
+            {/* KPI Cards - 4 ستونه */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* دقت آزمون */}
+                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">دقت آزمون‌ها</span>
+                        <Target className="w-4 h-4 text-indigo-500" />
+                    </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(test_stats?.accuracy_percent || 0)}%</span>
-                        {test_stats?.trend === 'up' && <span className="text-xs text-emerald-400 font-bold uppercase">Trending Up</span>}
-                        {test_stats?.trend === 'down' && <span className="text-xs text-rose-400 font-bold uppercase">Needs Focus</span>}
+                        <span className="text-2xl font-bold text-gray-800">
+                            {toPersianDigits(Math.round(test_stats?.accuracy_percent || 0))}%
+                        </span>
+                        {test_stats?.trend === 'up' && (
+                            <span className="text-xs text-emerald-600 font-medium">▲ رو به بهبود</span>
+                        )}
+                        {test_stats?.trend === 'down' && (
+                            <span className="text-xs text-rose-600 font-medium">▼ نیاز به تمرین</span>
+                        )}
                     </div>
-                    <div className="mt-3 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div className="bg-indigo-500 h-full shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all" style={{ width: `${test_stats?.accuracy_percent || 0}%` }}></div>
+                    <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-indigo-500 rounded-full transition-all"
+                            style={{ width: `${Math.min(100, test_stats?.accuracy_percent || 0)}%` }}
+                        />
                     </div>
                 </div>
 
-                <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex justify-between">
-                        <span>Study Streak</span>
-                        <Zap className="w-3 h-3 text-slate-500" />
-                    </p>
+                {/* روند مطالعه */}
+                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">روند مطالعه</span>
+                        <Zap className="w-4 h-4 text-amber-500" />
+                    </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(study_streak?.current_streak || 0)}</span>
-                        <span className="text-xs text-slate-500 font-bold uppercase">Days</span>
+                        <span className="text-2xl font-bold text-gray-800">
+                            {toPersianDigits(study_streak?.current_streak || 0)}
+                        </span>
+                        <span className="text-sm text-gray-500">روز پیاپی</span>
                     </div>
-                    <p className="text-[10px] font-mono text-indigo-400 mt-2 uppercase italic font-bold">Best: {toPersianDigits(study_streak?.longest_streak || 0)} Days</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        بهترین: {toPersianDigits(study_streak?.longest_streak || 0)} روز
+                    </p>
                 </div>
 
-                <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex justify-between">
-                        <span>Prep Velocity</span>
-                        <Activity className="w-3 h-3 text-slate-500" />
-                    </p>
+                {/* سرعت مطالعه */}
+                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">سرعت مطالعه</span>
+                        <Activity className="w-4 h-4 text-emerald-500" />
+                    </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-white tracking-tighter">{progress_trend?.current_avg_minutes ? toPersianDigits(Math.round(progress_trend.current_avg_minutes)) : 0}</span>
-                        <span className="text-xs text-slate-500 font-bold uppercase">Min/Day</span>
+                        <span className="text-2xl font-bold text-gray-800">
+                            {toPersianDigits(Math.round(progress_trend?.current_avg_minutes || 0))}
+                        </span>
+                        <span className="text-sm text-gray-500">دقیقه/روز</span>
                     </div>
-                    <p className={`text-[10px] font-mono mt-2 uppercase italic font-bold ${progress_trend?.direction === 'improving' ? 'text-emerald-400' : 'text-slate-500'}`}>
-                        {progress_trend?.direction === 'improving' ? `+${progress_trend.percent_change_vs_baseline ? Math.round(progress_trend.percent_change_vs_baseline) : 0}% Growth` : 'Stable Velocity'}
+                    <p className="text-xs text-gray-400 mt-1">
+                        {progress_trend?.direction === 'improving'
+                            ? `▲ ${Math.round(progress_trend?.percent_change_vs_baseline || 0)}% رشد`
+                            : 'پایدار'}
                     </p>
                 </div>
 
-                <div className="bg-indigo-600/90 border border-indigo-400/30 p-5 rounded-2xl relative overflow-hidden">
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-2">Consistency</p>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-white tracking-tighter">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span>
-                            <span className="text-xs text-indigo-200 font-bold uppercase underline">Solid</span>
-                        </div>
-                        <p className="text-[10px] font-mono text-indigo-200 mt-2 uppercase font-bold tracking-tight">Keep it up!</p>
+                {/* ثبات */}
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-5 border border-indigo-200/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-indigo-700">ثبات</span>
+                        <CheckCircle className="w-4 h-4 text-indigo-600" />
                     </div>
-                    <div className="absolute -right-4 -bottom-4 text-white/10">
-                        <svg width="80" height="80" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-indigo-800">
+                            {toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%
+                        </span>
+                        <span className="text-xs text-indigo-600 font-medium">عالی</span>
                     </div>
+                    <p className="text-xs text-indigo-600/70 mt-1">به همین روال ادامه بده</p>
                 </div>
-            </section>
+            </div>
 
-            {/* MAIN ANALYTICS GRID */}
-            <main className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
-
-                {/* COMPREHENSIVE STUDY MATRIX */}
-                <div className="lg:col-span-8 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 lg:p-8 flex flex-col gap-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <h2 className="text-xl font-black text-white italic uppercase tracking-tight">Comprehensive <span className="text-indigo-400">Study Matrix</span></h2>
-                        <div className="flex gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+            {/* ردیف اول: نمودار مطالعه + تحلیل دروس */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* نمودار مطالعه و آزمون (۲/۳ عرض) */}
+                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-base font-semibold text-gray-800">روند مطالعه و آزمون</h3>
+                        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
                             <button
                                 onClick={() => setTimeRange('week')}
-                                className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'week' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week'
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                    }`}
                             >
-                                Weekly
+                                هفته‌ای
                             </button>
                             <button
                                 onClick={() => setTimeRange('month')}
-                                className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'month' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month'
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                    }`}
                             >
-                                Monthly
+                                ماهانه
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex-1 w-full h-64 min-h-[250px]">
+                    <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData as any[]} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                                <XAxis dataKey="label" tickLine={false} axisLine={false} stroke="#64748b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
-                                <YAxis yAxisId="left" tickLine={false} axisLine={false} stroke="#64748b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
-                                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} stroke="#64748b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="label"
+                                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    yAxisId="left"
+                                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => toPersianDigits(val)}
+                                />
+                                <YAxis
+                                    yAxisId="right"
+                                    orientation="right"
+                                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => `${toPersianDigits(val)}%`}
+                                />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Area yAxisId="left" type="monotone" dataKey="minutes" name="minutes" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorMinutes)" />
-                                <Area yAxisId="right" type="monotone" dataKey="avg_accuracy_percent" name="accuracy" stroke="#2dd4bf" strokeWidth={3} fillOpacity={1} fill="url(#colorAccuracy)" />
+                                <Area
+                                    yAxisId="left"
+                                    type="monotone"
+                                    dataKey="minutes"
+                                    name="minutes"
+                                    stroke="#6366f1"
+                                    strokeWidth={2}
+                                    fillOpacity={1}
+                                    fill="url(#colorMinutes)"
+                                />
+                                <Area
+                                    yAxisId="right"
+                                    type="monotone"
+                                    dataKey="avg_accuracy_percent"
+                                    name="avg_accuracy_percent"
+                                    stroke="#10b981"
+                                    strokeWidth={2}
+                                    fillOpacity={1}
+                                    fill="url(#colorAccuracy)"
+                                />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex gap-4 items-center">
-                            <div className="w-10 h-10 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 flex shrink-0"></div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase">Subject Variety</p>
-                                <p className="text-sm font-black text-white italic tracking-tight uppercase">{safeSubjectTestStats.length} Subjects Active</p>
-                            </div>
-                        </div>
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex gap-4 items-center">
-                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                <Award className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase">Best Day</p>
-                                <p className="text-sm font-black text-white italic tracking-tight uppercase">
-                                    {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : 'N/A'}
-                                </p>
-                            </div>
-                        </div>
+                    <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-0.5 bg-indigo-500 rounded-full" />
+                            مدت مطالعه (دقیقه)
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-0.5 bg-emerald-500 rounded-full" />
+                            درصد صحت آزمون
+                        </span>
                     </div>
                 </div>
 
-                {/* DIAGNOSTICS & RECOMMENDATIONS */}
-                <div className="lg:col-span-4 flex flex-col gap-6 min-h-0">
-
-                    {/* STRENGTHS / WEAKNESSES */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <h3 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-4">Skill Diagnostics</h3>
-                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                            {safeSubjectTestStats.length === 0 ? (
-                                <p className="text-xs text-slate-500 uppercase italic">No test data available for diagnostics.</p>
-                            ) : (
-                                [...safeSubjectTestStats].sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent).map((subject, idx) => {
-                                    const isStrong = idx === 0 || subject.avg_accuracy_percent >= 80;
-                                    const isWeak = idx === safeSubjectTestStats.length - 1 || subject.avg_accuracy_percent < 50;
-
-                                    let bgClass = "bg-slate-800/40 border-slate-700/50 opacity-60";
-                                    let badgeClass = "bg-slate-700 text-white";
-                                    let label = "Stable";
-
-                                    if (isStrong && !isWeak) {
-                                        bgClass = "bg-emerald-500/10 border-emerald-500/20";
-                                        badgeClass = "bg-emerald-500 text-slate-950";
-                                        label = "Elite";
-                                    } else if (isWeak) {
-                                        bgClass = "bg-amber-500/10 border-amber-500/20";
-                                        badgeClass = "bg-amber-500 text-slate-950";
-                                        label = "Review";
+                {/* تحلیل دروس (۱/۳ عرض) */}
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">تحلیل دروس</h3>
+                    {safeSubjectTestStats.length === 0 ? (
+                        <p className="text-sm text-gray-400">هنوز داده‌ای برای تحلیل دروس موجود نیست.</p>
+                    ) : (
+                        <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                            {[...safeSubjectTestStats]
+                                .sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent)
+                                .map((subject, idx) => {
+                                    const pct = Math.round(subject.avg_accuracy_percent || 0)
+                                    let label = 'متوسط'
+                                    let labelClass = 'bg-gray-100 text-gray-600'
+                                    if (pct >= 80) {
+                                        label = 'عالی'
+                                        labelClass = 'bg-emerald-100 text-emerald-700'
+                                    } else if (pct < 50) {
+                                        label = 'نیاز به تمرین'
+                                        labelClass = 'bg-amber-100 text-amber-700'
                                     }
-
                                     return (
-                                        <div key={subject.subject_id || idx} className={`flex items-center justify-between p-3 rounded-xl border ${bgClass}`}>
-                                            <span className="text-xs font-bold text-white uppercase italic tracking-tight truncate ml-2" dir="rtl">{subject.subject_name}</span>
+                                        <div key={subject.subject_id || idx} className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-700 truncate ml-2">
+                                                {subject.subject_name}
+                                            </span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-mono text-slate-400">{subject.avg_accuracy_percent}%</span>
-                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${badgeClass}`}>{label}</span>
+                                                <span className="text-xs font-mono text-gray-500">
+                                                    {toPersianDigits(pct)}%
+                                                </span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${labelClass}`}>
+                                                    {label}
+                                                </span>
                                             </div>
                                         </div>
                                     )
-                                })
-                            )}
+                                })}
                         </div>
-                    </div>
-
-                    {/* AI INSIGHTS */}
-                    <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 flex-1 min-h-0 flex flex-col">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Adaptive Insights</h3>
-                        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-                            <div className="border-l-2 border-indigo-500 pl-4">
-                                <p className="text-xs font-black text-white uppercase italic mb-1">Optimization Path</p>
-                                <p className="text-[11px] leading-relaxed text-slate-400">
-                                    Your consistency score is <span className="text-white">{Math.round(study_consistency?.consistency_score || 0)}%</span>.
-                                    {(study_consistency?.consistency_score || 0) < 50 ? " Try to study a little bit every day to build a habit." : " You are building a solid study habit. Keep pushing!"}
-                                </p>
-                            </div>
-                            {safeSubjectTestStats.length > 0 && (
-                                <div className="border-l-2 border-amber-500 pl-4 mt-4">
-                                    <p className="text-xs font-black text-slate-500 uppercase italic mb-1">Weakness Detection</p>
-                                    <p className="text-[11px] leading-relaxed text-slate-400 font-mono tracking-tight">
-                                        Focus review on <span className="text-amber-500" dir="rtl">{[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'N/A'}</span> to boost overall metrics.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                        <button className="mt-4 w-full py-3 bg-white text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-400 transition-colors shadow-lg shadow-white/5 flex items-center justify-center gap-2">
-                            <Brain className="w-4 h-4" />
-                            Sync Study Plan
-                        </button>
+                    )}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-xs text-gray-400">
+                            <span className="font-medium text-gray-600">بهترین روز:</span>{' '}
+                            {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : '—'}
+                        </p>
                     </div>
                 </div>
+            </div>
 
-            </main>
+            {/* ردیف دوم: نمودار خواب و گوشی (دو کارت کنار هم) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* کارت خواب */}
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                            <Moon className="w-5 h-5 text-indigo-500" />
+                            خواب روزانه
+                        </h3>
+                        <div className="text-xs text-gray-400">
+                            {sleepStats.count > 0 ? (
+                                <span>
+                                    میانگین: <span className="font-bold text-gray-700">{toPersian(sleepStats.avg)} ساعت</span>
+                                </span>
+                            ) : (
+                                'داده‌ای موجود نیست'
+                            )}
+                        </div>
+                    </div>
+                    <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="label"
+                                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    interval={Math.floor(sleepPhoneData.length / 10)}
+                                />
+                                <YAxis
+                                    domain={[0, 12]}
+                                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => toPersianDigits(val)}
+                                />
+                                <Tooltip
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const val = payload[0].value
+                                            return (
+                                                <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
+                                                    <p className="font-medium text-gray-700">{label}</p>
+                                                    <p className="text-gray-600">
+                                                        خواب: <span className="font-bold">{val !== null && val !== undefined ? toPersian(Number(val)) : '—'} ساعت</span>
+                                                    </p>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="sleep_hours"
+                                    stroke="#6366f1"
+                                    strokeWidth={2}
+                                    dot={{ r: 2, fill: '#6366f1' }}
+                                    connectNulls
+                                    name="خواب (ساعت)"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {sleepStats.count > 0 ? (
+                        <div className="flex justify-around mt-3 text-xs text-gray-500">
+                            <span>کمترین: {toPersian(sleepStats.min)} ساعت</span>
+                            <span>بیشترین: {toPersian(sleepStats.max)} ساعت</span>
+                            <span>تعداد روزهای ثبت: {toPersianDigits(sleepStats.count)}</span>
+                        </div>
+                    ) : (
+                        <div className="text-center mt-3 text-xs text-gray-400">
+                            برای دیدن نمودار، ابتدا اطلاعات خواب خود را ثبت کنید.
+                        </div>
+                    )}
+                </div>
+
+                {/* کارت گوشی */}
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                            <Smartphone className="w-5 h-5 text-rose-500" />
+                            استفاده از گوشی
+                        </h3>
+                        <div className="text-xs text-gray-400">
+                            {phoneStats.count > 0 ? (
+                                <span>
+                                    میانگین: <span className="font-bold text-gray-700">{toPersian(phoneStats.avg)} دقیقه</span>
+                                </span>
+                            ) : (
+                                'داده‌ای موجود نیست'
+                            )}
+                        </div>
+                    </div>
+                    <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="label"
+                                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    interval={Math.floor(sleepPhoneData.length / 10)}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => toPersianDigits(val)}
+                                />
+                                <Tooltip
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const val = payload[0].value
+                                            return (
+                                                <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
+                                                    <p className="font-medium text-gray-700">{label}</p>
+                                                    <p className="text-gray-600">
+                                                        گوشی: <span className="font-bold">{val !== null && val !== undefined ? toPersian(Number(val)) : '—'} دقیقه</span>
+                                                    </p>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="phone_minutes"
+                                    stroke="#f43f5e"
+                                    strokeWidth={2}
+                                    dot={{ r: 2, fill: '#f43f5e' }}
+                                    connectNulls
+                                    name="گوشی (دقیقه)"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {phoneStats.count > 0 ? (
+                        <div className="flex justify-around mt-3 text-xs text-gray-500">
+                            <span>کمترین: {toPersian(phoneStats.min)} دقیقه</span>
+                            <span>بیشترین: {toPersian(phoneStats.max)} دقیقه</span>
+                            <span>تعداد روزهای ثبت: {toPersianDigits(phoneStats.count)}</span>
+                        </div>
+                    ) : (
+                        <div className="text-center mt-3 text-xs text-gray-400">
+                            برای دیدن نمودار، ابتدا اطلاعات استفاده از گوشی را ثبت کنید.
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* بینش هوشمند (با اضافه شدن تحلیل خواب و گوشی) */}
+            <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-indigo-500" />
+                    بینش هوشمند
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <p className="font-medium text-gray-700">نکته مطالعه</p>
+                        <p className="mt-1">
+                            امتیاز ثبات شما <span className="font-bold text-indigo-600">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span> است.
+                            {study_consistency?.consistency_score < 50
+                                ? ' سعی کنید هر روز حتی مقدار کم مطالعه کنید تا عادت شکل بگیرد.'
+                                : ' عادت مطالعه خوبی دارید. ادامه دهید!'}
+                        </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <p className="font-medium text-gray-700">نقطه ضعف درسی</p>
+                        <p className="mt-1">
+                            {safeSubjectTestStats.length > 0 ? (
+                                <>
+                                    بر روی درس{' '}
+                                    <span className="font-bold text-amber-600">
+                                        {[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'نامشخص'}
+                                    </span>{' '}
+                                    بیشتر تمرکز کنید تا میانگین کلی بهبود یابد.
+                                </>
+                            ) : (
+                                'برای تشخیص نقاط ضعف، آزمون بیشتری ثبت کنید.'
+                            )}
+                        </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <p className="font-medium text-gray-700">تحلیل خواب و گوشی</p>
+                        <p className="mt-1">
+                            {sleepStats.count > 0 ? (
+                                <>
+                                    میانگین خواب: <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
+                                    {sleepStats.avg !== null && sleepStats.avg < 7 ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.' : ' — خواب مناسبی دارید.'}
+                                    {phoneStats.avg !== null && phoneStats.avg > 120 ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.' : ''}
+                                </>
+                            ) : (
+                                'برای دریافت تحلیل خواب و گوشی، اطلاعات روزانه را ثبت کنید.'
+                            )}
+                        </p>
+                    </div>
+                </div>
+                <button className="mt-4 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm">
+                    همگام‌سازی برنامه مطالعه
+                </button>
+            </div>
         </div>
     )
 }
