@@ -1,5 +1,6 @@
 // src/components/admin/AdminDashboard.tsx
 // ترکیب پنل قبلی (جزئیات جلسات) + تحلیل‌های آماری با انتخاب المپیاد و بازه زمانی
+// اکنون با تب Overview و ویجت‌های مدیریتی
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
 import { formatMinutes } from '../../utils/date-utils'
@@ -8,6 +9,12 @@ import { getWeekStart, getMonthStart, today } from '../../utils/date-utils'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { adminService } from '../../services/adminService'
+import { useToast } from '../../context/ToastContext'
+import { formatDate } from '../../utils/date-utils'
+import { Users, BookOpen, ClipboardList, Activity, UserPlus, Clock, ChevronLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { toPersianDigits } from '../../utils/jalali'
 
 // ---------- انواع داده ----------
 interface SessionDetail {
@@ -61,6 +68,149 @@ const parseNotes = (notes: string | null) => {
   }
 }
 
+// ---------- Overview Widgets ----------
+const OverviewTab: React.FC = () => {
+  const [stats, setStats] = useState<{
+    totalUsers: number
+    totalSessions: number
+    totalTests: number
+    activeToday: number
+    recentUsers: any[]
+    recentActivity: any[]
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await adminService.getStats()
+        setStats(data)
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'خطا در دریافت آمار', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [showToast])
+
+  if (loading) {
+    return <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+  }
+
+  if (!stats) return null
+
+  const statCards = [
+    { label: 'کل کاربران', value: stats.totalUsers, icon: Users, color: 'bg-indigo-500' },
+    { label: 'کل جلسات مطالعه', value: stats.totalSessions, icon: BookOpen, color: 'bg-emerald-500' },
+    { label: 'کل آزمون‌ها', value: stats.totalTests, icon: ClipboardList, color: 'bg-purple-500' },
+    { label: 'کاربران فعال امروز', value: stats.activeToday, icon: Activity, color: 'bg-amber-500' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((card) => (
+          <div key={card.label} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{card.label}</p>
+                <p className="text-2xl font-bold text-gray-800">{toPersianDigits(card.value)}</p>
+              </div>
+              <div className={`w-10 h-10 rounded-xl ${card.color} bg-opacity-10 flex items-center justify-center`}>
+                <card.icon className={`w-5 h-5 ${card.color.replace('bg-', 'text-')}`} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Users & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Users */}
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-indigo-500" />
+              کاربران جدید
+            </h3>
+            <Link to="/admin/users" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              مشاهده همه
+              <ChevronLeft className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {stats.recentUsers.length === 0 ? (
+              <p className="text-sm text-gray-400">هیچ کاربر جدیدی ثبت نشده</p>
+            ) : (
+              stats.recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-400">{user.email}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{formatDate(user.created_at)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-indigo-500" />
+              آخرین فعالیت‌ها
+            </h3>
+            <Link to="/admin/logs" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              مشاهده همه
+              <ChevronLeft className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {stats.recentActivity.length === 0 ? (
+              <p className="text-sm text-gray-400">هیچ فعالیتی ثبت نشده</p>
+            ) : (
+              stats.recentActivity.map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{log.users?.name || 'ناشناس'}</p>
+                    <p className="text-xs text-gray-400">{log.action}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{formatDate(log.created_at)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">اقدامات سریع</h3>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/admin/users" className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition">
+            مدیریت کاربران
+          </Link>
+          <Link to="/admin/admins" className="px-4 py-2 bg-purple-50 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-100 transition">
+            مدیریت ادمین‌ها
+          </Link>
+          <Link to="/admin/logs" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition">
+            مشاهده لاگ‌ها
+          </Link>
+          <Link to="/admin/profile" className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition">
+            پروفایل ادمین
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------- Main AdminDashboard ----------
 const AdminDashboard: React.FC = () => {
   // ---------- state مشترک ----------
   const [loading, setLoading] = useState(true)
@@ -68,7 +218,7 @@ const AdminDashboard: React.FC = () => {
   const [olympiads, setOlympiads] = useState<string[]>([])
 
   // ---------- tab کنترل ----------
-  const [activeTab, setActiveTab] = useState<'sessions' | 'analytics'>('sessions')
+  const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'analytics'>('overview')
 
   // ---------- state بخش جلسات ----------
   const [sessions, setSessions] = useState<SessionDetail[]>([])
@@ -265,10 +415,19 @@ const AdminDashboard: React.FC = () => {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">پنل مدیریت</h1>
 
       {/* تب‌ها */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'overview'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+        >
+          نمای کلی
+        </button>
         <button
           onClick={() => setActiveTab('sessions')}
-          className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'sessions'
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'sessions'
             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
@@ -277,7 +436,7 @@ const AdminDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('analytics')}
-          className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'analytics'
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'analytics'
             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
@@ -285,6 +444,9 @@ const AdminDashboard: React.FC = () => {
           تحلیل‌ها
         </button>
       </div>
+
+      {/* محتوای تب Overview */}
+      {activeTab === 'overview' && <OverviewTab />}
 
       {/* محتوای تب جلسات */}
       {activeTab === 'sessions' && (

@@ -1,3 +1,4 @@
+// src/App.tsx
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -13,10 +14,14 @@ import { PageLoader } from './components/common/Loading'
 import { useAuth } from './context/AuthContext'
 
 import AdminDashboard from './components/admin/AdminDashboard'
+import { AdminProfile } from './components/admin/AdminProfile'
+import { UserManagement } from './components/admin/UserManagement'
+import { ActivityLog } from './components/admin/ActivityLog'
+import { AdminManagement } from './components/admin/AdminManagement'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import { DashboardPage } from './components/dashboard/DashboardPage'
-import { StudySessionsPage } from './components/study/StudySessionsPage'  // new name
+import { StudySessionsPage } from './components/study/StudySessionsPage'
 import { GoalsPage } from './components/goals/GoalsPage'
 import { TestsPage } from './components/tests/TestsPage'
 import { ProfilePage } from './components/profile/ProfilePage'
@@ -51,12 +56,10 @@ const StudentGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   if (isLoading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
 
-  // If onboarding not completed, redirect to profile
   if (!user.onboarding_completed) {
     return <Navigate to="/profile" replace />
   }
 
-  // If baseline survey not completed, redirect to survey
   if (!user.has_completed_baseline_survey) {
     return <Navigate to="/baseline" replace />
   }
@@ -98,8 +101,11 @@ const App: React.FC = () => {
               <Route path="/register" element={<RegisterPage />} />
 
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+              <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
+              <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+              <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
+              <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
 
-              {/* Baseline Survey – full page, no AppShell, NO StudentGuard */}
               <Route
                 path="/baseline"
                 element={
@@ -138,7 +144,6 @@ const App: React.FC = () => {
 
               <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-              {/* Root – check both onboarding and baseline */}
               <Route path="/" element={<RedirectBasedOnBaseline />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

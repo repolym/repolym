@@ -31,12 +31,22 @@ export const daysAgo = (days: number): string => {
   return toLocalISODate(d)
 }
 
-export const formatDate = (gregorianDate: string): string => {
-  return toJalaliLong(gregorianDate)
+export const formatDate = (gregorianDate: string | null | undefined): string => {
+  if (!gregorianDate) return '—'
+  try {
+    return toJalaliLong(gregorianDate)
+  } catch {
+    return '—'
+  }
 }
 
-export const formatDateShort = (gregorianDate: string): string => {
-  return toJalaliShort(gregorianDate)
+export const formatDateShort = (gregorianDate: string | null | undefined): string => {
+  if (!gregorianDate) return '—'
+  try {
+    return toJalaliShort(gregorianDate)
+  } catch {
+    return '—'
+  }
 }
 
 export const formatMinutes = (minutes: number): string => {

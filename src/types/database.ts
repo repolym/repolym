@@ -5,10 +5,13 @@ export interface User {
   is_admin: boolean
   olympiad_id: string | null
   onboarding_completed: boolean
-  has_completed_baseline_survey: boolean  // NEW
+  has_completed_baseline_survey: boolean
   preferences: Record<string, unknown>
   created_at: string
   updated_at: string
+  status?: 'active' | 'suspended'
+  last_login?: string | null
+  deleted_at?: string | null
 }
 
 export interface Subject {
@@ -242,4 +245,15 @@ export interface PlanFormData {
   estimated_duration?: number | null
   dependencies?: string[] | null
   recurring?: any | null
+}
+
+export interface ActivityLog {
+  id: string
+  user_id: string
+  action: string
+  details: Record<string, unknown> | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+  users?: User
 }
