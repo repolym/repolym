@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx (add routes for UserDetail and OlympiadManagement)
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -18,6 +18,8 @@ import { AdminProfile } from './components/admin/AdminProfile'
 import { UserManagement } from './components/admin/UserManagement'
 import { ActivityLog } from './components/admin/ActivityLog'
 import { AdminManagement } from './components/admin/AdminManagement'
+import { UserDetail } from './components/admin/UserDetail'
+import { OlympiadManagement } from './components/admin/OlympiadManagement'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import { DashboardPage } from './components/dashboard/DashboardPage'
@@ -37,12 +39,10 @@ const RedirectBasedOnBaseline: React.FC = () => {
   if (isLoading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
 
-  // If onboarding not completed, send to profile to set olympiad
   if (!user.onboarding_completed) {
     return <Navigate to="/profile" replace />
   }
 
-  // If baseline survey not completed, send to survey
   if (!user.has_completed_baseline_survey) {
     return <Navigate to="/baseline" replace />
   }
@@ -103,8 +103,10 @@ const App: React.FC = () => {
               <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
               <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
               <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+              <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
               <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
               <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
+              <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
 
               <Route
                 path="/baseline"

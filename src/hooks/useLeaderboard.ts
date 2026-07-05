@@ -1,3 +1,4 @@
+// src/hooks/useLeaderboard.ts
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { leaderboardService, LeaderboardServiceError } from '../services/leaderboardService'
 import type { LeaderboardSnapshot } from '../types/leaderboard'
@@ -9,9 +10,10 @@ interface UseLeaderboardParams {
     olympiadId: string | null
     window?: 'today' | 'week' | 'month' | 'all'
     limit?: number
+    metric?: string // 'study' | 'consistency' | 'sleep' | 'phone' | 'smart'
 }
 
-export const useLeaderboard = ({ olympiadId, window = 'month', limit }: UseLeaderboardParams) => {
+export const useLeaderboard = ({ olympiadId, window = 'month', limit, metric = 'smart' }: UseLeaderboardParams) => {
     const [data, setData] = useState<LeaderboardSnapshot | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,8 @@ export const useLeaderboard = ({ olympiadId, window = 'month', limit }: UseLeade
                     forceRefresh,
                     referenceDate: refDate,
                     limit,
-                    window, // pass window type
+                    window,
+                    metric,
                 })
                 if (mountedRef.current) {
                     setData(snapshot)
@@ -43,7 +46,7 @@ export const useLeaderboard = ({ olympiadId, window = 'month', limit }: UseLeade
                             ? err.message
                             : formatError(err)
                     setError(message)
-                    logger.error('Failed to fetch leaderboard', err, { olympiadId, refDate, window })
+                    logger.error('Failed to fetch leaderboard', err, { olympiadId, refDate, window, metric })
                 }
             } finally {
                 if (mountedRef.current) {
@@ -51,7 +54,7 @@ export const useLeaderboard = ({ olympiadId, window = 'month', limit }: UseLeade
                 }
             }
         },
-        [olympiadId, refDate, limit, window]
+        [olympiadId, refDate, limit, window, metric]
     )
 
     useEffect(() => {

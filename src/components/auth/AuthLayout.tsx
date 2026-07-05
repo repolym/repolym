@@ -1,3 +1,4 @@
+// src/components/auth/AuthLayout.tsx (fix logo)
 import React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { TrendingUp, Zap } from 'lucide-react'
@@ -58,7 +59,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
                   <OlympiadIcon className="w-12 h-12 text-white" />
                 </div>
               ) : (
-                <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />)}
+                <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
+              )}
               <div className="w-20 h-1.5 bg-yellow-300 rounded-full mt-5" />
             </motion.div>
 
@@ -125,7 +127,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
           className={`w-full transition-[max-width] duration-300 ${wide ? 'max-w-xl' : 'max-w-md'}`}
         >
           <div className="lg:hidden mb-8 text-center">
-            <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />          </div>
+            <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
+          </div>
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-500/10 p-8 border border-white/50">
             {children}
           </div>

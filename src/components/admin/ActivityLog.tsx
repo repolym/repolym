@@ -25,22 +25,22 @@ export const ActivityLog: React.FC = () => {
             )}
 
             <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200 whitespace-nowrap">
-                            <th className="text-right py-3 px-4 font-medium">کاربر</th>
-                            <th className="text-right py-3 px-4 font-medium">اقدام</th>
-                            <th className="text-right py-3 px-4 font-medium">جزئیات</th>
-                            <th className="text-right py-3 px-4 font-medium">زمان</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && logs.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-8 text-gray-400">در حال بارگذاری...</td></tr>
-                        ) : logs.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-8 text-gray-400">هیچ لاگی یافت نشد</td></tr>
-                        ) : (
-                            logs.map((log) => (
+                {loading && logs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+                ) : logs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">هیچ لاگی یافت نشد</div>
+                ) : (
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-gray-50 text-gray-500 border-b border-gray-200 whitespace-nowrap">
+                                <th className="text-right py-3 px-4 font-medium">کاربر</th>
+                                <th className="text-right py-3 px-4 font-medium">اقدام</th>
+                                <th className="text-right py-3 px-4 font-medium">جزئیات</th>
+                                <th className="text-right py-3 px-4 font-medium">زمان</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {logs.map((log) => (
                                 <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                     <td className="py-3 px-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
@@ -58,10 +58,10 @@ export const ActivityLog: React.FC = () => {
                                         {formatDate(log.created_at)}
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     )

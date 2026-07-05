@@ -3,8 +3,22 @@ import { useState, useEffect, useCallback } from 'react'
 import { adminService } from '../services/adminService'
 import type { User } from '../types/database'
 
-export const useAdminUsers = (filters?: { search?: string; status?: 'active' | 'suspended' | 'all'; isAdmin?: boolean }) => {
+interface UseAdminUsersParams {
+    search?: string
+    status?: 'active' | 'suspended' | 'all'
+    isAdmin?: boolean
+    olympiadId?: string | null
+    dateFrom?: string
+    dateTo?: string
+    page?: number
+    limit?: number
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+}
+
+export const useAdminUsers = (params: UseAdminUsersParams = {}) => {
     const [users, setUsers] = useState<User[]>([])
+    const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -12,14 +26,15 @@ export const useAdminUsers = (filters?: { search?: string; status?: 'active' | '
         setLoading(true)
         setError(null)
         try {
-            const data = await adminService.getUsers(filters)
-            setUsers(data)
+            const result = await adminService.getUsers(params)
+            setUsers(result.users)
+            setTotal(result.total)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'خطا در دریافت کاربران')
         } finally {
             setLoading(false)
         }
-    }, [filters])
+    }, [params])
 
     useEffect(() => {
         fetchUsers()
@@ -42,5 +57,5 @@ export const useAdminUsers = (filters?: { search?: string; status?: 'active' | '
 
     const refetch = fetchUsers
 
-    return { users, loading, error, refetch, suspendUser, activateUser, deleteUser }
+    return { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser }
 }

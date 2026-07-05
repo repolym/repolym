@@ -1,22 +1,19 @@
 // src/components/admin/AdminDashboard.tsx
-// ترکیب پنل قبلی (جزئیات جلسات) + تحلیل‌های آماری با انتخاب المپیاد و بازه زمانی
-// اکنون با تب Overview و ویجت‌های مدیریتی
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
-import { formatMinutes } from '../../utils/date-utils'
-import { toJalaliLong, toGregorian } from '../../utils/jalali'
+import { formatMinutes, formatDate } from '../../utils/date-utils'
+import { toJalaliLong, toGregorian, toPersianDigits } from '../../utils/jalali'
 import { getWeekStart, getMonthStart, today } from '../../utils/date-utils'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
 import { adminService } from '../../services/adminService'
 import { useToast } from '../../context/ToastContext'
-import { formatDate } from '../../utils/date-utils'
-import { Users, BookOpen, ClipboardList, Activity, UserPlus, Clock, ChevronLeft } from 'lucide-react'
+import { Users, BookOpen, ClipboardList, Activity, UserPlus, Clock, ChevronLeft, TrendingUp, Calendar, Award } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { toPersianDigits } from '../../utils/jalali'
 
-// ---------- انواع داده ----------
+// ---------- Types ----------
 interface SessionDetail {
   id: string
   user_name: string
@@ -30,29 +27,7 @@ interface SessionDetail {
   phone_hours: string
 }
 
-interface OlympiadStat {
-  olympiad: string
-  avg_minutes: number
-  student_count: number
-}
-
-interface StudentRank {
-  name: string
-  total_minutes: number
-}
-
-// New: Leaderboard with score
-interface LeaderboardEntry {
-  user_id: string
-  name: string
-  total_minutes_30: number
-  active_days_30: number
-  best_streak: number
-  avg_test_score: number
-  composite_score: number
-  rank: number
-}
-
+// ---------- Helpers ----------
 const parseNotes = (notes: string | null) => {
   if (!notes) return { activities: '', wake: '', sleep: '', phone: '' }
   try {
@@ -68,31 +43,52 @@ const parseNotes = (notes: string | null) => {
   }
 }
 
-// ---------- Overview Widgets ----------
+// ---------- OverviewTab ----------
 const OverviewTab: React.FC = () => {
   const [stats, setStats] = useState<{
     totalUsers: number
     totalSessions: number
     totalTests: number
     activeToday: number
+    newUsersToday: number
+    newUsersWeek: number
+    newUsersMonth: number
+    totalOlympiads: number
     recentUsers: any[]
     recentActivity: any[]
   } | null>(null)
+  const [registrationData, setRegistrationData] = useState<{ date: string; count: number }[]>([])
+  const [activityData, setActivityData] = useState<{ date: string; activeUsers: number }[]>([])
+  const [olympiadData, setOlympiadData] = useState<{ olympiad: string; count: number }[]>([])
+  const [submissionData, setSubmissionData] = useState<{ date: string; submissions: number }[]>([])
+  const [topUsers, setTopUsers] = useState<{ user_id: string; name: string; total_minutes: number; sessions_count: number }[]>([])
   const [loading, setLoading] = useState(true)
   const { showToast } = useToast()
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const data = await adminService.getStats()
-        setStats(data)
+        const [statsData, regTrend, actTrend, olympiadPart, subTrend, topUsers] = await Promise.all([
+          adminService.getStats(),
+          adminService.getRegistrationTrend(30),
+          adminService.getActivityTrend(30),
+          adminService.getOlympiadParticipation(),
+          adminService.getSubmissionTrend(30),
+          adminService.getTopActiveUsers(10),
+        ])
+        setStats(statsData)
+        setRegistrationData(regTrend)
+        setActivityData(actTrend)
+        setOlympiadData(olympiadPart)
+        setSubmissionData(subTrend)
+        setTopUsers(topUsers)
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'خطا در دریافت آمار', 'error')
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    fetchData()
   }, [showToast])
 
   if (loading) {
@@ -103,15 +99,43 @@ const OverviewTab: React.FC = () => {
 
   const statCards = [
     { label: 'کل کاربران', value: stats.totalUsers, icon: Users, color: 'bg-indigo-500' },
-    { label: 'کل جلسات مطالعه', value: stats.totalSessions, icon: BookOpen, color: 'bg-emerald-500' },
-    { label: 'کل آزمون‌ها', value: stats.totalTests, icon: ClipboardList, color: 'bg-purple-500' },
-    { label: 'کاربران فعال امروز', value: stats.activeToday, icon: Activity, color: 'bg-amber-500' },
+    { label: 'کاربران فعال امروز', value: stats.activeToday, icon: Activity, color: 'bg-emerald-500' },
+    { label: 'کاربران جدید امروز', value: stats.newUsersToday, icon: UserPlus, color: 'bg-amber-500' },
+    { label: 'جدید این هفته', value: stats.newUsersWeek, icon: Calendar, color: 'bg-purple-500' },
+    { label: 'جدید این ماه', value: stats.newUsersMonth, icon: TrendingUp, color: 'bg-rose-500' },
+    { label: 'تعداد المپیادها', value: stats.totalOlympiads, icon: Award, color: 'bg-sky-500' },
+    { label: 'کل جلسات مطالعه', value: stats.totalSessions, icon: BookOpen, color: 'bg-blue-500' },
+    { label: 'کل آزمون‌ها', value: stats.totalTests, icon: ClipboardList, color: 'bg-violet-500' },
   ]
+
+  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#22c55e', '#14b8a6', '#3b82f6', '#f97316', '#06b6d4']
+
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-lg text-right text-sm">
+          <p className="font-medium text-gray-700 mb-1">{toJalaliLong(label)}</p>
+          {payload.map((p: any, idx: number) => (
+            <p key={idx} className="text-gray-600">
+              {p.name === 'count' ? 'تعداد' :
+                p.name === 'activeUsers' ? 'کاربران فعال' :
+                  p.name === 'submissions' ? 'جلسات' :
+                    p.name === 'value' ? 'تعداد' :
+                      p.name}
+              : <span className="font-bold">{toPersianDigits(p.value)}</span>
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
             <div className="flex items-center justify-between">
@@ -127,9 +151,119 @@ const OverviewTab: React.FC = () => {
         ))}
       </div>
 
+      {/* Charts - Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">ثبت‌نام کاربران (۳۰ روز اخیر)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={registrationData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                interval={4}
+                stroke="#9CA3AF"
+                tickFormatter={(date) => toJalaliLong(date).split(' - ')[1].slice(0, 5)}
+              />
+              <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" tickFormatter={(v) => toPersianDigits(v)} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={2} dot={false} name="تعداد" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">فعالیت روزانه کاربران (۳۰ روز اخیر)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={activityData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                interval={4}
+                stroke="#9CA3AF"
+                tickFormatter={(date) => toJalaliLong(date).split(' - ')[1].slice(0, 5)}
+              />
+              <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" tickFormatter={(v) => toPersianDigits(v)} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="activeUsers" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="کاربران فعال" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts - Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">توزیع المپیادها</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={olympiadData}
+                dataKey="count"
+                nameKey="olympiad"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={({ name }) => name}
+              >
+                {olympiadData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => value != null ? toPersianDigits(value) : ''} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">تعداد جلسات مطالعه (۳۰ روز اخیر)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={submissionData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10 }}
+                interval={4}
+                stroke="#9CA3AF"
+                tickFormatter={(date) => toJalaliLong(date).split(' - ')[1].slice(0, 5)}
+              />
+              <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" tickFormatter={(v) => toPersianDigits(v)} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line type="monotone" dataKey="submissions" stroke="#EC4899" strokeWidth={2} dot={false} name="جلسات" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Top Active Users */}
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">پرکاربردترین کاربران</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-gray-500 bg-gray-50/50">
+                <th className="text-right py-2 px-3 font-medium">کاربر</th>
+                <th className="text-right py-2 px-3 font-medium">جلسات</th>
+                <th className="text-right py-2 px-3 font-medium">مدت کل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topUsers.map((u) => (
+                <tr key={u.user_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-2 px-3 font-medium text-gray-800">{u.name}</td>
+                  <td className="py-2 px-3">{toPersianDigits(u.sessions_count)}</td>
+                  <td className="py-2 px-3 font-mono">{formatMinutes(u.total_minutes)}</td>
+                </tr>
+              ))}
+              {topUsers.length === 0 && (
+                <tr><td colSpan={3} className="py-4 text-center text-gray-400">داده‌ای موجود نیست</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Recent Users & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Users */}
         <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -158,7 +292,6 @@ const OverviewTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -187,89 +320,46 @@ const OverviewTab: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">اقدامات سریع</h3>
-        <div className="flex flex-wrap gap-3">
-          <Link to="/admin/users" className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition">
-            مدیریت کاربران
-          </Link>
-          <Link to="/admin/admins" className="px-4 py-2 bg-purple-50 text-purple-700 rounded-xl text-sm font-medium hover:bg-purple-100 transition">
-            مدیریت ادمین‌ها
-          </Link>
-          <Link to="/admin/logs" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition">
-            مشاهده لاگ‌ها
-          </Link>
-          <Link to="/admin/profile" className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition">
-            پروفایل ادمین
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }
 
-// ---------- Main AdminDashboard ----------
-const AdminDashboard: React.FC = () => {
-  // ---------- state مشترک ----------
+// ---------- Sessions Tab ----------
+const SessionsTab: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<{ id: string; name: string }[]>([])
-  const [olympiads, setOlympiads] = useState<string[]>([])
-
-  // ---------- tab کنترل ----------
-  const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'analytics'>('overview')
-
-  // ---------- state بخش جلسات ----------
   const [sessions, setSessions] = useState<SessionDetail[]>([])
   const [selectedUser, setSelectedUser] = useState<string>('all')
   const [jalaliStart, setJalaliStart] = useState('')
   const [jalaliEnd, setJalaliEnd] = useState('')
 
-  // ---------- state بخش تحلیل ----------
-  const [selectedOlympiad, setSelectedOlympiad] = useState<string>('all')
-  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week')
-  const [topStudents, setTopStudents] = useState<StudentRank[]>([])
-  const [olympiadStats, setOlympiadStats] = useState<OlympiadStat[]>([])
-  const [bestOlympiad, setBestOlympiad] = useState<OlympiadStat | null>(null)
-
-  // New: Leaderboard data for admin
-  const [adminLeaderboard, setAdminLeaderboard] = useState<LeaderboardEntry[]>([])
-
-  // ---------- بارگذاری کاربران و المپیادها ----------
   useEffect(() => {
-    const fetchMeta = async () => {
+    const fetchUsers = async () => {
       const { data } = await supabase
         .from('users')
-        .select('id, name, olympiad_id')
+        .select('id, name')
         .eq('is_admin', false)
         .order('name')
-      if (data) {
-        setUsers(data)
-        const distinctOly = [...new Set(data.map(u => u.olympiad_id || 'نامشخص'))].sort()
-        setOlympiads(distinctOly)
-      }
+      if (data) setUsers(data)
     }
-    fetchMeta()
+    fetchUsers()
   }, [])
 
-  // ---------- بارگذاری جلسات (بر اساس فیلتر) ----------
   useEffect(() => {
-    if (activeTab !== 'sessions') return
     const fetchSessions = async () => {
       setLoading(true)
       try {
         let query = supabase
           .from('study_sessions')
           .select(`
-            id,
-            user_id,
-            date,
-            duration_minutes,
-            notes,
-            users ( name, email ),
-            subjects ( name )
-          `)
+                        id,
+                        user_id,
+                        date,
+                        duration_minutes,
+                        notes,
+                        users ( name, email ),
+                        subjects ( name )
+                    `)
           .order('date', { ascending: false })
           .limit(1000)
 
@@ -309,31 +399,134 @@ const AdminDashboard: React.FC = () => {
       }
     }
     fetchSessions()
-  }, [activeTab, selectedUser, jalaliStart, jalaliEnd])
+  }, [selectedUser, jalaliStart, jalaliEnd])
 
-  // ---------- بارگذاری تحلیل‌ها ----------
+  return (
+    <div>
+      {/* Filters */}
+      <div className="bg-white rounded-2xl p-4 mb-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs text-gray-500 mb-1">کاربر</label>
+          <select
+            value={selectedUser}
+            onChange={(e) => setSelectedUser(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">همه کاربران</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-[180px]">
+          <label className="block text-xs text-gray-500 mb-1">از تاریخ (جلالی)</label>
+          <input
+            type="text"
+            placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
+            value={jalaliStart}
+            onChange={(e) => setJalaliStart(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div className="w-full sm:w-[180px]">
+          <label className="block text-xs text-gray-500 mb-1">تا تاریخ (جلالی)</label>
+          <input
+            type="text"
+            placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
+            value={jalaliEnd}
+            onChange={(e) => setJalaliEnd(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <button
+          onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd('') }}
+          className="text-xs text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-xl transition"
+        >
+          پاک‌کردن فیلترها
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
+        {loading ? (
+          <div className="py-10 text-center text-gray-400">در حال بارگذاری...</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
+                <th className="text-right py-3 px-4 font-medium">کاربر</th>
+                <th className="text-right py-3 px-4 font-medium">تاریخ</th>
+                <th className="text-right py-3 px-4 font-medium">مدت</th>
+                <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
+                <th className="text-right py-3 px-4 font-medium">بیداری</th>
+                <th className="text-right py-3 px-4 font-medium">خواب</th>
+                <th className="text-right py-3 px-4 font-medium">گوشی (ساعت)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.length === 0 ? (
+                <tr><td colSpan={7} className="py-10 text-center text-gray-400">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
+              ) : (
+                sessions.map((s) => (
+                  <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <span className="font-medium text-gray-800">{s.user_name}</span>
+                      <div className="text-xs text-gray-400">{s.user_email}</div>
+                    </td>
+                    <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
+                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
+                    <td className="py-3 px-4 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
+                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.wake_time || '—'}</td>
+                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.sleep_time || '—'}</td>
+                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.phone_hours || '—'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ---------- Analytics Tab (focus on study hours per user) ----------
+const AnalyticsTab: React.FC = () => {
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([])
+  const [selectedUser, setSelectedUser] = useState<string>('all')
+  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week')
+  const [data, setData] = useState<{ date: string; minutes: number }[]>([])
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    if (activeTab !== 'analytics') return
+    const fetchUsers = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('id, name')
+        .eq('is_admin', false)
+        .order('name')
+      if (data) setUsers(data)
+    }
+    fetchUsers()
+  }, [])
+
+  useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true)
       try {
-        // تعیین بازه زمانی
         const todayStr = today()
         let startDate: string | null = null
         if (period === 'week') startDate = getWeekStart()
         else if (period === 'month') startDate = getMonthStart()
 
-        // دریافت جلسات با اطلاعات کاربر (المپیاد)
         let query = supabase
           .from('study_sessions')
-          .select(`
-            id,
-            user_id,
-            duration_minutes,
-            users ( name, olympiad_id )
-          `)
-          .order('date', { ascending: false })
+          .select('date, duration_minutes')
+          .order('date', { ascending: true })
 
+        if (selectedUser !== 'all') {
+          query = query.eq('user_id', selectedUser)
+        }
         if (startDate) {
           query = query.gte('date', startDate).lte('date', todayStr)
         }
@@ -341,65 +534,13 @@ const AdminDashboard: React.FC = () => {
         const { data, error } = await query
         if (error) throw error
 
-        // گروه‌بندی داده‌ها
-        const studentMap: Record<string, { name: string; total: number }> = {}
-        const olympiadMap: Record<string, { total: number; count: number }> = {}
-
-        for (const s of data || []) {
-          const u = s.users as any
-          const oId = u?.olympiad_id || 'نامشخص'
-          if (selectedOlympiad !== 'all' && oId !== selectedOlympiad) continue
-
-          const userId = s.user_id
-          if (!studentMap[userId]) {
-            studentMap[userId] = { name: u?.name || 'ناشناس', total: 0 }
-          }
-          studentMap[userId].total += s.duration_minutes
-
-          if (!olympiadMap[oId]) olympiadMap[oId] = { total: 0, count: 0 }
-          olympiadMap[oId].total += s.duration_minutes
-          olympiadMap[oId].count += 1
-        }
-
-        // رتبه‌بندی دانش‌آموزان
-        const top = Object.values(studentMap)
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 10)
-          .map(v => ({ name: v.name, total_minutes: v.total }))
-        setTopStudents(top)
-
-        // تحلیل المپیادها
-        const stats: OlympiadStat[] = Object.entries(olympiadMap).map(([olymp, v]) => ({
-          olympiad: olymp,
-          avg_minutes: v.count > 0 ? Math.round(v.total / v.count) : 0,
-          student_count: v.count,
-        }))
-        stats.sort((a, b) => b.avg_minutes - a.avg_minutes)
-        setOlympiadStats(stats)
-        setBestOlympiad(stats.length > 0 ? stats[0] : null)
-
-        // Fetch leaderboard for admin (using new RPC)
-        const { data: lbData, error: lbError } = await supabase.rpc('get_olympiad_leaderboard', {
-          p_olympiad_id: selectedOlympiad === 'all' ? null : selectedOlympiad,
-          p_today: todayStr,
-          p_limit: 50,
-          p_window_type: period === 'week' ? 'week' : period === 'month' ? 'month' : 'all'
+        // Aggregate by date
+        const map = new Map<string, number>()
+        data?.forEach(s => {
+          map.set(s.date, (map.get(s.date) || 0) + s.duration_minutes)
         })
-        if (!lbError && lbData) {
-          const entries = lbData.entries || []
-          // Map to our interface
-          const mapped = entries.map((e: any) => ({
-            user_id: e.user_id,
-            name: e.name,
-            total_minutes_30: e.total_minutes_30,
-            active_days_30: e.active_days_30,
-            best_streak: e.best_streak,
-            avg_test_score: e.avg_test_score,
-            composite_score: e.composite_score,
-            rank: e.rank
-          }))
-          setAdminLeaderboard(mapped)
-        }
+        const result = Array.from(map.entries()).map(([date, minutes]) => ({ date, minutes }))
+        setData(result)
       } catch (err) {
         console.error(err)
       } finally {
@@ -407,20 +548,107 @@ const AdminDashboard: React.FC = () => {
       }
     }
     fetchAnalytics()
-  }, [activeTab, selectedOlympiad, period])
+  }, [selectedUser, period])
 
-  // ---------- رندر ----------
+  const totalMinutes = data.reduce((sum, d) => sum + d.minutes, 0)
+  const avgMinutes = data.length > 0 ? Math.round(totalMinutes / data.length) : 0
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-white rounded-2xl p-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs text-gray-500 mb-1">کاربر</label>
+          <select
+            value={selectedUser}
+            onChange={(e) => setSelectedUser(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">همه کاربران</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          {(['week', 'month', 'all'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${period === p
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              {p === 'week' ? 'این هفته' : p === 'month' ? 'این ماه' : 'کل'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+              <p className="text-sm text-gray-500">کل مطالعه</p>
+              <p className="text-2xl font-bold">{formatMinutes(totalMinutes)}</p>
+            </div>
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+              <p className="text-sm text-gray-500">تعداد روزها</p>
+              <p className="text-2xl font-bold">{toPersianDigits(data.length)}</p>
+            </div>
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+              <p className="text-sm text-gray-500">میانگین روزانه</p>
+              <p className="text-2xl font-bold">{formatMinutes(avgMinutes)}</p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">روند مطالعه روزانه</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  interval={Math.floor(data.length / 10)}
+                  stroke="#9CA3AF"
+                  tickFormatter={(date) => toJalaliLong(date).split(' - ')[1].slice(0, 5)}
+                />
+                <YAxis tick={{ fontSize: 10 }} stroke="#9CA3AF" tickFormatter={(v) => formatMinutes(v)} />
+                <Tooltip
+                  formatter={(value: any) => formatMinutes(value)}
+                  labelFormatter={(label) => toJalaliLong(label)}
+                />
+                <Bar dataKey="minutes" fill="#6366F1" radius={[4, 4, 0, 0]} name="دقیقه مطالعه" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ---------- Main AdminDashboard ----------
+const AdminDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'analytics'>('overview')
+
   return (
     <div className="p-4 md:p-6 max-w-full mx-auto" dir="rtl">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">پنل مدیریت</h1>
 
-      {/* تب‌ها */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'overview'
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
         >
           نمای کلی
@@ -428,8 +656,8 @@ const AdminDashboard: React.FC = () => {
         <button
           onClick={() => setActiveTab('sessions')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'sessions'
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
         >
           جزئیات جلسات
@@ -437,233 +665,18 @@ const AdminDashboard: React.FC = () => {
         <button
           onClick={() => setActiveTab('analytics')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'analytics'
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
         >
           تحلیل‌ها
         </button>
       </div>
 
-      {/* محتوای تب Overview */}
+      {/* Content */}
       {activeTab === 'overview' && <OverviewTab />}
-
-      {/* محتوای تب جلسات */}
-      {activeTab === 'sessions' && (
-        <>
-          {/* فیلترها */}
-          <div className="bg-white rounded-2xl p-4 mb-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs text-gray-500 mb-1">کاربر</label>
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">همه کاربران</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="w-full sm:w-[180px]">
-              <label className="block text-xs text-gray-500 mb-1">از تاریخ (جلالی)</label>
-              <input
-                type="text"
-                placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
-                value={jalaliStart}
-                onChange={(e) => setJalaliStart(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div className="w-full sm:w-[180px]">
-              <label className="block text-xs text-gray-500 mb-1">تا تاریخ (جلالی)</label>
-              <input
-                type="text"
-                placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
-                value={jalaliEnd}
-                onChange={(e) => setJalaliEnd(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd('') }}
-              className="text-xs text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-xl transition"
-            >
-              پاک‌کردن فیلترها
-            </button>
-          </div>
-
-          {/* جدول */}
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
-            {loading ? (
-              <div className="py-10 text-center text-gray-400">در حال بارگذاری...</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
-                    <th className="text-right py-3 px-4 font-medium">کاربر</th>
-                    <th className="text-right py-3 px-4 font-medium">تاریخ</th>
-                    <th className="text-right py-3 px-4 font-medium">مدت</th>
-                    <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
-                    <th className="text-right py-3 px-4 font-medium">بیداری</th>
-                    <th className="text-right py-3 px-4 font-medium">خواب</th>
-                    <th className="text-right py-3 px-4 font-medium">گوشی (ساعت)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.length === 0 ? (
-                    <tr><td colSpan={7} className="py-10 text-center text-gray-400">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
-                  ) : (
-                    sessions.map((s) => (
-                      <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="font-medium text-gray-800">{s.user_name}</span>
-                          <div className="text-xs text-gray-400">{s.user_email}</div>
-                        </td>
-                        <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
-                        <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
-                        <td className="py-3 px-4 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
-                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.wake_time || '—'}</td>
-                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.sleep_time || '—'}</td>
-                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.phone_hours || '—'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* محتوای تب تحلیل‌ها */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          {/* فیلترها */}
-          <div className="bg-white rounded-2xl p-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
-            <div className="w-full sm:w-[200px]">
-              <label className="block text-xs text-gray-500 mb-1">المپیاد</label>
-              <select
-                value={selectedOlympiad}
-                onChange={(e) => setSelectedOlympiad(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">همه المپیادها</option>
-                {olympiads.map(o => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              {(['week', 'month', 'all'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-medium transition-colors ${period === p
-                    ? 'bg-indigo-600 text-white shadow'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  {p === 'week' ? 'این هفته' : p === 'month' ? 'این ماه' : 'کل'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-10 text-gray-400">در حال بارگذاری تحلیل‌ها...</div>
-          ) : (
-            <>
-              {/* بهترین المپیاد بازه */}
-              {bestOlympiad && (
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100 shadow-sm">
-                  <p className="text-sm text-indigo-600 mb-1">المپیاد برتر {period === 'week' ? 'این هفته' : period === 'month' ? 'این ماه' : 'کل'}</p>
-                  <p className="text-2xl font-bold text-indigo-700">{bestOlympiad.olympiad}</p>
-                  <p className="text-sm text-indigo-500">میانگین: {formatMinutes(bestOlympiad.avg_minutes)} مطالعه به ازای هر دانش‌آموز</p>
-                </div>
-              )}
-
-              {/* نمودار میانگین المپیادها */}
-              {olympiadStats.length > 0 && (
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">میانگین مطالعه هر المپیاد</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={olympiadStats} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="olympiad" type="category" width={100} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        formatter={(value: any) => formatMinutes(Number(value))}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      />
-                      <Bar dataKey="avg_minutes" fill="#8B5CF6" radius={[0, 8, 8, 0]} barSize={24} name="میانگین دقیقه" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* برترین دانش‌آموزان */}
-              <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  برترین دانش‌آموزان {selectedOlympiad !== 'all' ? `در المپیاد ${selectedOlympiad}` : ''}
-                </h3>
-                {topStudents.length === 0 ? (
-                  <p className="text-gray-400 text-sm">داده‌ای برای بازه انتخاب‌شده موجود نیست.</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={topStudents} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        formatter={(value: any) => formatMinutes(Number(value))}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      />
-                      <Bar dataKey="total_minutes" fill="#4F46E5" radius={[0, 8, 8, 0]} barSize={24} name="دقیقه مطالعه" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              {/* New: Admin Leaderboard with composite scores */}
-              <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 min-w-full">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">جدول امتیازات ترکیبی (بر اساس الگوریتم هوشمند)</h3>
-                {adminLeaderboard.length === 0 ? (
-                  <p className="text-gray-400 text-sm">داده‌ای موجود نیست.</p>
-                ) : (
-                  <div className="overflow-x-auto min-w-full pb-2">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
-                          <th className="text-right py-2 px-3 font-medium">رتبه</th>
-                          <th className="text-right py-2 px-3 font-medium">نام</th>
-                          <th className="text-right py-2 px-3 font-medium">امتیاز ترکیبی</th>
-                          <th className="text-right py-2 px-3 font-medium">مطالعه (۳۰ روز)</th>
-                          <th className="text-right py-2 px-3 font-medium">روزهای فعال</th>
-                          <th className="text-right py-2 px-3 font-medium">میانگین آزمون</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {adminLeaderboard.map((entry) => (
-                          <tr key={entry.user_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                            <td className="py-2 px-3 font-mono whitespace-nowrap">{entry.rank}</td>
-                            <td className="py-2 px-3 font-medium whitespace-nowrap">{entry.name}</td>
-                            <td className="py-2 px-3 font-mono text-indigo-600 whitespace-nowrap">{entry.composite_score}</td>
-                            <td className="py-2 px-3 font-mono whitespace-nowrap">{formatMinutes(entry.total_minutes_30)}</td>
-                            <td className="py-2 px-3 whitespace-nowrap">{entry.active_days_30}</td>
-                            <td className="py-2 px-3 whitespace-nowrap">{entry.avg_test_score}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {activeTab === 'sessions' && <SessionsTab />}
+      {activeTab === 'analytics' && <AnalyticsTab />}
     </div>
   )
 }

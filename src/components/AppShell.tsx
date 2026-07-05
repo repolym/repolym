@@ -1,4 +1,4 @@
-// src/components/AppShell.tsx
+// src/components/AppShell.tsx (updated to include new admin pages and fix logo)
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -18,6 +18,7 @@ import {
   Users,
   Shield,
   FileText,
+  Trophy,
 } from 'lucide-react'
 
 // گروه‌بندی آیتم‌های ناوبری دانش‌آموز
@@ -53,6 +54,7 @@ const adminNavGroups = [
       { to: '/admin/users', label: 'کاربران', icon: Users },
       { to: '/admin/admins', label: 'ادمین‌ها', icon: Shield },
       { to: '/admin/logs', label: 'لاگ فعالیت‌ها', icon: FileText },
+      { to: '/admin/olympiads', label: 'المپیادها', icon: Trophy },
       { to: '/admin/profile', label: 'پروفایل ادمین', icon: UserCog },
     ],
   },
@@ -88,7 +90,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="flex items-center px-5 py-6 border-b border-gray-100">
-          <img src="public/logo.png" alt="لوگو" className="h-12 w-auto object-contain" />
+          <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-12 w-auto object-contain" />
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -151,7 +153,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur-xl border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <img src="public/logo.png" alt="لوگو" className="h-8 w-auto" />
+            <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-8 w-auto" />
             <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
           </div>
 
