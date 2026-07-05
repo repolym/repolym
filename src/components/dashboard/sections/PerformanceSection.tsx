@@ -6,6 +6,9 @@ import {
     Area,
     LineChart,
     Line,
+    PieChart,
+    Pie,
+    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -19,6 +22,11 @@ import {
     CheckCircle,
     Moon,
     Smartphone,
+    BarChart3,
+    BookOpen,
+    AlertCircle,
+    CheckCircle2,
+    Clock, // <--- این رو اضافه کنید
 } from 'lucide-react'
 import { usePerformanceAnalytics } from '../../../hooks/usePerformanceAnalytics'
 import { useDailyMetrics } from '../../../hooks/useDailyMetrics'
@@ -30,14 +38,9 @@ import { formatDateShort, daysAgo, today } from '../../../utils/date-utils'
 // ---------- Safe Tooltip Components ----------
 const SafeTooltipContent = ({ active, payload, label, unit }: any) => {
     if (!active || !payload || payload.length === 0) return null
-
-    // Ensure label is a string
     const safeLabel = typeof label === 'string' ? label : ''
-
-    // Extract and validate the value
     const raw = payload[0]?.value
     const numericVal = typeof raw === 'number' && !isNaN(raw) ? raw : null
-
     return (
         <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
             <p className="font-medium text-gray-700 mb-1">{safeLabel}</p>
@@ -49,6 +52,34 @@ const SafeTooltipContent = ({ active, payload, label, unit }: any) => {
             </p>
         </div>
     )
+}
+
+// ---------- Re-usable Custom Tooltip for the study chart ----------
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const safeLabel = typeof label === 'string' ? label : ''
+        return (
+            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
+                <p className="font-semibold text-gray-700 mb-1">{safeLabel}</p>
+                {payload.map((p: any, idx: number) => {
+                    const value = typeof p.value === 'number' ? p.value : 0
+                    const name = p.name === 'minutes' ? 'مدت مطالعه' :
+                        p.name === 'tests_count' ? 'تعداد آزمون' :
+                            p.name === 'avg_accuracy_percent' ? 'درصد صحت' :
+                                p.name
+                    return (
+                        <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
+                            <span>{name}</span>
+                            <span className="font-mono font-medium">
+                                {p.name === 'avg_accuracy_percent' ? `${toPersianDigits(value)}%` : toPersianDigits(value)}
+                            </span>
+                        </p>
+                    )
+                })}
+            </div>
+        )
+    }
+    return null
 }
 
 const PerformanceSection: React.FC = () => {
@@ -69,7 +100,7 @@ const PerformanceSection: React.FC = () => {
             dateTo,
         })
 
-    // ترکیب داده‌های خواب و گوشی با تاریخ‌های کامل (پر کردن روزهای بدون داده)
+    // ترکیب داده‌های خواب و گوشی با تاریخ‌های کامل
     const sleepPhoneData = useMemo(() => {
         if (!dailyMetrics || dailyMetrics.length === 0) return []
         const map = new Map<string, { sleep: number | null; phone: number | null }>()
@@ -87,7 +118,7 @@ const PerformanceSection: React.FC = () => {
             const data = map.get(dateStr) || { sleep: null, phone: null }
             result.push({
                 date: dateStr,
-                label: formatDateShort(dateStr) || dateStr, // fallback to raw date
+                label: formatDateShort(dateStr) || dateStr,
                 sleep_hours: data.sleep,
                 phone_minutes: data.phone,
             })
@@ -119,7 +150,7 @@ const PerformanceSection: React.FC = () => {
         }
     }, [sleepPhoneData])
 
-    // داده‌های نمودار مطالعه
+    // داده‌های نمودار خطی مطالعه
     const chartData = useMemo(() => {
         if (!analytics) return []
         const { weekly_trend, monthly_trend } = analytics
@@ -134,13 +165,21 @@ const PerformanceSection: React.FC = () => {
         }))
     }, [analytics, timeRange])
 
-    // وضعیت بارگذاری ترکیبی
-    const isLoading = (analyticsLoading || dailyLoading) && !analytics
+    // داده‌های توزیع دروس برای Pie Chart
+    const subjectDistData = useMemo(() => {
+        if (!analytics?.subject_distribution) return []
+        return analytics.subject_distribution.map((s: any) => ({
+            name: s.subject_name,
+            value: s.minutes,
+            percent: Math.round(s.percent),
+            color: s.color || '#3b82f6'
+        }))
+    }, [analytics])
 
-    // خطاها
+    // وضعیت بارگذاری
+    const isLoading = (analyticsLoading || dailyLoading) && !analytics
     const hasError = analyticsError || dailyError
 
-    // تابع کمکی برای تبدیل عدد به فارسی با مدیریت مقدار null/undefined
     const toPersian = (num: number | null | undefined): string => {
         if (num === null || num === undefined || isNaN(num)) return '—'
         return toPersianDigits(Math.round(num))
@@ -150,9 +189,7 @@ const PerformanceSection: React.FC = () => {
         return (
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} className="h-28 rounded-2xl" />
-                    ))}
+                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
                 </div>
                 <Skeleton className="h-80 rounded-2xl" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -188,15 +225,16 @@ const PerformanceSection: React.FC = () => {
         study_consistency,
         progress_trend,
         best_worst_day,
+        subject_study_analysis,
     } = analytics
 
     const safeSubjectTestStats = subject_test_stats || []
+    const studyAnalysis = subject_study_analysis || []
 
     return (
         <div className="space-y-6" dir="rtl">
-            {/* KPI Cards - 4 ستونه */}
+            {/* 1. KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* دقت آزمون */}
                 <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500">دقت آزمون‌ها</span>
@@ -206,12 +244,8 @@ const PerformanceSection: React.FC = () => {
                         <span className="text-2xl font-bold text-gray-800">
                             {toPersianDigits(Math.round(test_stats?.accuracy_percent || 0))}%
                         </span>
-                        {test_stats?.trend === 'up' && (
-                            <span className="text-xs text-emerald-600 font-medium">▲ رو به بهبود</span>
-                        )}
-                        {test_stats?.trend === 'down' && (
-                            <span className="text-xs text-rose-600 font-medium">▼ نیاز به تمرین</span>
-                        )}
+                        {test_stats?.trend === 'up' && <span className="text-xs text-emerald-600 font-medium">▲ رو به بهبود</span>}
+                        {test_stats?.trend === 'down' && <span className="text-xs text-rose-600 font-medium">▼ نیاز به تمرین</span>}
                     </div>
                     <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                         <div
@@ -221,86 +255,55 @@ const PerformanceSection: React.FC = () => {
                     </div>
                 </div>
 
-                {/* روند مطالعه */}
                 <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500">روند مطالعه</span>
                         <Zap className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-800">
-                            {toPersianDigits(study_streak?.current_streak || 0)}
-                        </span>
+                        <span className="text-2xl font-bold text-gray-800">{toPersianDigits(study_streak?.current_streak || 0)}</span>
                         <span className="text-sm text-gray-500">روز پیاپی</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                        بهترین: {toPersianDigits(study_streak?.longest_streak || 0)} روز
-                    </p>
+                    <p className="text-xs text-gray-400 mt-1">بهترین: {toPersianDigits(study_streak?.longest_streak || 0)} روز</p>
                 </div>
 
-                {/* سرعت مطالعه */}
                 <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500">سرعت مطالعه</span>
                         <Activity className="w-4 h-4 text-emerald-500" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-800">
-                            {toPersianDigits(Math.round(progress_trend?.current_avg_minutes || 0))}
-                        </span>
+                        <span className="text-2xl font-bold text-gray-800">{toPersianDigits(Math.round(progress_trend?.current_avg_minutes || 0))}</span>
                         <span className="text-sm text-gray-500">دقیقه/روز</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                        {progress_trend?.direction === 'improving'
-                            ? `▲ ${Math.round(progress_trend?.percent_change_vs_baseline || 0)}% رشد`
-                            : 'پایدار'}
+                        {progress_trend?.direction === 'improving' ? `▲ ${Math.round(progress_trend?.percent_change_vs_baseline || 0)}% رشد` : 'پایدار'}
                     </p>
                 </div>
 
-                {/* ثبات */}
                 <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-5 border border-indigo-200/50">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-indigo-700">ثبات</span>
                         <CheckCircle className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-indigo-800">
-                            {toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%
-                        </span>
+                        <span className="text-2xl font-bold text-indigo-800">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span>
                         <span className="text-xs text-indigo-600 font-medium">عالی</span>
                     </div>
                     <p className="text-xs text-indigo-600/70 mt-1">به همین روال ادامه بده</p>
                 </div>
             </div>
 
-            {/* ردیف اول: نمودار مطالعه + تحلیل دروس */}
+            {/* 2. نمودار مطالعه + تحلیل دروس */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* نمودار مطالعه و آزمون (۲/۳ عرض) */}
                 <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-base font-semibold text-gray-800">روند مطالعه و آزمون</h3>
                         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                            <button
-                                onClick={() => setTimeRange('week')}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                هفته‌ای
-                            </button>
-                            <button
-                                onClick={() => setTimeRange('month')}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                ماهانه
-                            </button>
+                            <button onClick={() => setTimeRange('week')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>هفته‌ای</button>
+                            <button onClick={() => setTimeRange('month')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>ماهانه</button>
                         </div>
                     </div>
-
                     <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
@@ -315,254 +318,188 @@ const PerformanceSection: React.FC = () => {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 11, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <YAxis
-                                    yAxisId="left"
-                                    tick={{ fontSize: 11, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => toPersianDigits(val)}
-                                />
-                                <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    tick={{ fontSize: 11, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => `${toPersianDigits(val)}%`}
-                                />
+                                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} />
+                                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} tickFormatter={(val) => toPersianDigits(val)} />
+                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} tickFormatter={(val) => `${toPersianDigits(val)}%`} />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    yAxisId="left"
-                                    type="monotone"
-                                    dataKey="minutes"
-                                    name="minutes"
-                                    stroke="#6366f1"
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill="url(#colorMinutes)"
-                                />
-                                <Area
-                                    yAxisId="right"
-                                    type="monotone"
-                                    dataKey="avg_accuracy_percent"
-                                    name="avg_accuracy_percent"
-                                    stroke="#10b981"
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill="url(#colorAccuracy)"
-                                />
+                                <Area yAxisId="left" type="monotone" dataKey="minutes" name="minutes" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorMinutes)" />
+                                <Area yAxisId="right" type="monotone" dataKey="avg_accuracy_percent" name="avg_accuracy_percent" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorAccuracy)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-
                     <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-3 h-0.5 bg-indigo-500 rounded-full" />
-                            مدت مطالعه (دقیقه)
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-3 h-0.5 bg-emerald-500 rounded-full" />
-                            درصد صحت آزمون
-                        </span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-indigo-500 rounded-full" />مدت مطالعه (دقیقه)</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-emerald-500 rounded-full" />درصد صحت آزمون</span>
                     </div>
                 </div>
 
-                {/* تحلیل دروس (۱/۳ عرض) */}
                 <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
-                    <h3 className="text-base font-semibold text-gray-800 mb-4">تحلیل دروس</h3>
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">تحلیل آزمون دروس</h3>
                     {safeSubjectTestStats.length === 0 ? (
                         <p className="text-sm text-gray-400">هنوز داده‌ای برای تحلیل دروس موجود نیست.</p>
                     ) : (
                         <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
-                            {[...safeSubjectTestStats]
-                                .sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent)
-                                .map((subject, idx) => {
-                                    const pct = Math.round(subject.avg_accuracy_percent || 0)
-                                    let label = 'متوسط'
-                                    let labelClass = 'bg-gray-100 text-gray-600'
-                                    if (pct >= 80) {
-                                        label = 'عالی'
-                                        labelClass = 'bg-emerald-100 text-emerald-700'
-                                    } else if (pct < 50) {
-                                        label = 'نیاز به تمرین'
-                                        labelClass = 'bg-amber-100 text-amber-700'
-                                    }
-                                    return (
-                                        <div key={subject.subject_id || idx} className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-700 truncate ml-2">
-                                                {subject.subject_name}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-mono text-gray-500">
-                                                    {toPersianDigits(pct)}%
-                                                </span>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${labelClass}`}>
-                                                    {label}
-                                                </span>
-                                            </div>
+                            {[...safeSubjectTestStats].sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent).map((subject, idx) => {
+                                const pct = Math.round(subject.avg_accuracy_percent || 0)
+                                let label = 'متوسط'
+                                let labelClass = 'bg-gray-100 text-gray-600'
+                                if (pct >= 80) { label = 'عالی'; labelClass = 'bg-emerald-100 text-emerald-700' }
+                                else if (pct < 50) { label = 'نیاز به تمرین'; labelClass = 'bg-amber-100 text-amber-700' }
+                                return (
+                                    <div key={subject.subject_id || idx} className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-gray-700 truncate ml-2">{subject.subject_name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-mono text-gray-500">{toPersianDigits(pct)}%</span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${labelClass}`}>{label}</span>
                                         </div>
-                                    )
-                                })}
+                                    </div>
+                                )
+                            })}
                         </div>
                     )}
                     <div className="mt-4 pt-4 border-t border-gray-100">
                         <p className="text-xs text-gray-400">
-                            <span className="font-medium text-gray-600">بهترین روز:</span>{' '}
-                            {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : '—'}
+                            <span className="font-medium text-gray-600">بهترین روز:</span> {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : '—'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* ردیف دوم: نمودار خواب و گوشی (دو کارت کنار هم) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* کارت خواب */}
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                            <Moon className="w-5 h-5 text-indigo-500" />
-                            خواب روزانه
-                        </h3>
-                        <div className="text-xs text-gray-400">
-                            {sleepStats.count > 0 ? (
-                                <span>
-                                    میانگین: <span className="font-bold text-gray-700">{toPersian(sleepStats.avg)} ساعت</span>
-                                </span>
-                            ) : (
-                                'داده‌ای موجود نیست'
-                            )}
-                        </div>
+            {/* 3. سهم زمانی دروس و تصمیم‌گیری هوشمند (NEW) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* نمودار دایره‌ای توزیع ساعات */}
+                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center gap-2 mb-2">
+                        <BarChart3 className="h-5 w-5 text-indigo-500" />
+                        <h3 className="text-base font-semibold text-gray-800">سهم زمانی دروس</h3>
                     </div>
-                    <div className="h-48 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 10, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    interval={Math.floor(sleepPhoneData.length / 10)}
-                                />
-                                <YAxis
-                                    domain={[0, 12]}
-                                    tick={{ fontSize: 10, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => toPersianDigits(val)}
-                                />
-                                <Tooltip
-                                    content={({ active, payload, label }) => (
-                                        <SafeTooltipContent
-                                            active={active}
-                                            payload={payload}
-                                            label={label}
-                                            unit="خواب"
-                                        />
-                                    )}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="sleep_hours"
-                                    stroke="#6366f1"
-                                    strokeWidth={2}
-                                    dot={{ r: 2, fill: '#6366f1' }}
-                                    connectNulls
-                                    name="خواب (ساعت)"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                    {sleepStats.count > 0 ? (
-                        <div className="flex justify-around mt-3 text-xs text-gray-500">
-                            <span>کمترین: {toPersian(sleepStats.min)} ساعت</span>
-                            <span>بیشترین: {toPersian(sleepStats.max)} ساعت</span>
-                            <span>تعداد روزهای ثبت: {toPersianDigits(sleepStats.count)}</span>
-                        </div>
+                    <p className="text-xs text-gray-500 mb-4">توزیع درصد ساعات مطالعه</p>
+                    
+                    {subjectDistData.length > 0 ? (
+                        <>
+                            <div className="h-56 w-full" dir="ltr">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={subjectDistData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
+                                            {subjectDistData.map((entry: any, index: number) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value: any) => [`${toPersianDigits(Math.round(value / 60))} ساعت`, 'مدت زمان']} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="w-full space-y-2 mt-2 max-h-32 overflow-y-auto pr-1">
+                                {subjectDistData.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                            <span className="text-gray-700">{item.name}</span>
+                                        </div>
+                                        <span className="font-mono text-gray-500">{toPersianDigits(item.percent)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     ) : (
-                        <div className="text-center mt-3 text-xs text-gray-400">
-                            برای دیدن نمودار، ابتدا اطلاعات خواب خود را ثبت کنید.
-                        </div>
+                        <p className="text-center text-gray-400 text-sm py-12">داده‌ای از مطالعه دروس ثبت نشده است.</p>
                     )}
                 </div>
 
-                {/* کارت گوشی */}
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                            <Smartphone className="w-5 h-5 text-rose-500" />
-                            استفاده از گوشی
-                        </h3>
-                        <div className="text-xs text-gray-400">
-                            {phoneStats.count > 0 ? (
-                                <span>
-                                    میانگین: <span className="font-bold text-gray-700">{toPersian(phoneStats.avg)} دقیقه</span>
-                                </span>
-                            ) : (
-                                'داده‌ای موجود نیست'
-                            )}
-                        </div>
+                {/* تصمیم‌گیری و تحلیل اختصاصی وضعیت دروس */}
+                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="h-5 w-5 text-indigo-500" />
+                        <h3 className="text-base font-semibold text-gray-800">تحلیل وضعیت دروس</h3>
                     </div>
-                    <div className="h-48 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 10, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    interval={Math.floor(sleepPhoneData.length / 10)}
-                                />
-                                <YAxis
-                                    tick={{ fontSize: 10, fill: '#6b7280' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => toPersianDigits(val)}
-                                />
-                                <Tooltip
-                                    content={({ active, payload, label }) => (
-                                        <SafeTooltipContent
-                                            active={active}
-                                            payload={payload}
-                                            label={label}
-                                            unit="گوشی"
-                                        />
-                                    )}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="phone_minutes"
-                                    stroke="#f43f5e"
-                                    strokeWidth={2}
-                                    dot={{ r: 2, fill: '#f43f5e' }}
-                                    connectNulls
-                                    name="گوشی (دقیقه)"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <p className="text-xs text-gray-500 mb-6">بر اساس توزیع زمان مطالعه در ۳۰ روز گذشته</p>
+
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                        {studyAnalysis.length > 0 ? (
+                            studyAnalysis.map((item: any, idx: number) => (
+                                <div key={idx} className="p-4 border border-gray-100 rounded-xl bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                            <h4 className="font-bold text-sm text-gray-800">{item.subject_name}</h4>
+                                            <span className="text-xs text-gray-500 font-mono">({toPersianDigits(Math.round(item.minutes / 60))} ساعت)</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 leading-relaxed max-w-lg">
+                                            {item.recommendation}
+                                        </p>
+                                    </div>
+                                    <div className="flex sm:justify-end items-center shrink-0">
+                                        {item.study_status === 'کم‌کاری شده' && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                                                <AlertCircle className="w-3.5 h-3.5" /> نیاز به توجه
+                                            </span>
+                                        )}
+                                        {item.study_status === 'متعادل' && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                                <CheckCircle2 className="w-3.5 h-3.5" /> توزیع متناسب
+                                            </span>
+                                        )}
+                                        {item.study_status === 'تمرکز بالا' && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                                                <Clock className="w-3.5 h-3.5" /> حجم مطالعه بالا
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-12 text-gray-400 text-sm">
+                                داده‌ای برای تحلیل در دسترس نیست. ابتدا ساعت مطالعه وارد کنید.
+                            </div>
+                        )}
                     </div>
-                    {phoneStats.count > 0 ? (
-                        <div className="flex justify-around mt-3 text-xs text-gray-500">
-                            <span>کمترین: {toPersian(phoneStats.min)} دقیقه</span>
-                            <span>بیشترین: {toPersian(phoneStats.max)} دقیقه</span>
-                            <span>تعداد روزهای ثبت: {toPersianDigits(phoneStats.count)}</span>
-                        </div>
-                    ) : (
-                        <div className="text-center mt-3 text-xs text-gray-400">
-                            برای دیدن نمودار، ابتدا اطلاعات استفاده از گوشی را ثبت کنید.
-                        </div>
-                    )}
                 </div>
             </div>
 
-            {/* بینش هوشمند */}
+            {/* 4. نمودار خواب و گوشی */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2"><Moon className="w-5 h-5 text-indigo-500" />خواب روزانه</h3>
+                        <div className="text-xs text-gray-400">
+                            {sleepStats.count > 0 ? <span>میانگین: <span className="font-bold text-gray-700">{toPersian(sleepStats.avg)} ساعت</span></span> : 'داده‌ای موجود نیست'}
+                        </div>
+                    </div>
+                    <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} interval={Math.floor(sleepPhoneData.length / 10)} />
+                                <YAxis domain={[0, 12]} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} tickFormatter={(val) => toPersianDigits(val)} />
+                                <Tooltip content={({ active, payload, label }) => <SafeTooltipContent active={active} payload={payload} label={label} unit="خواب" />} />
+                                <Line type="monotone" dataKey="sleep_hours" stroke="#6366f1" strokeWidth={2} dot={{ r: 2, fill: '#6366f1' }} connectNulls name="خواب (ساعت)" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2"><Smartphone className="w-5 h-5 text-rose-500" />استفاده از گوشی</h3>
+                        <div className="text-xs text-gray-400">
+                            {phoneStats.count > 0 ? <span>میانگین: <span className="font-bold text-gray-700">{toPersian(phoneStats.avg)} دقیقه</span></span> : 'داده‌ای موجود نیست'}
+                        </div>
+                    </div>
+                    <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sleepPhoneData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} interval={Math.floor(sleepPhoneData.length / 10)} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} tickFormatter={(val) => toPersianDigits(val)} />
+                                <Tooltip content={({ active, payload, label }) => <SafeTooltipContent active={active} payload={payload} label={label} unit="گوشی" />} />
+                                <Line type="monotone" dataKey="phone_minutes" stroke="#f43f5e" strokeWidth={2} dot={{ r: 2, fill: '#f43f5e' }} connectNulls name="گوشی (دقیقه)" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. بینش هوشمند */}
             <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
                 <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <Brain className="w-5 h-5 text-indigo-500" />
@@ -572,31 +509,16 @@ const PerformanceSection: React.FC = () => {
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <p className="font-medium text-gray-700">نکته مطالعه</p>
                         <p className="mt-1">
-                            امتیاز ثبات شما{' '}
-                            <span className="font-bold text-indigo-600">
-                                {toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%
-                            </span>
-                            است.
-                            {study_consistency?.consistency_score < 50
-                                ? ' سعی کنید هر روز حتی مقدار کم مطالعه کنید تا عادت شکل بگیرد.'
-                                : ' عادت مطالعه خوبی دارید. ادامه دهید!'}
+                            امتیاز ثبات شما <span className="font-bold text-indigo-600">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span> است.
+                            {study_consistency?.consistency_score < 50 ? ' سعی کنید هر روز حتی مقدار کم مطالعه کنید تا عادت شکل بگیرد.' : ' عادت مطالعه خوبی دارید. ادامه دهید!'}
                         </p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <p className="font-medium text-gray-700">نقطه ضعف درسی</p>
                         <p className="mt-1">
                             {safeSubjectTestStats.length > 0 ? (
-                                <>
-                                    بر روی درس{' '}
-                                    <span className="font-bold text-amber-600">
-                                        {[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]
-                                            ?.subject_name || 'نامشخص'}
-                                    </span>{' '}
-                                    بیشتر تمرکز کنید تا میانگین کلی بهبود یابد.
-                                </>
-                            ) : (
-                                'برای تشخیص نقاط ضعف، آزمون بیشتری ثبت کنید.'
-                            )}
+                                <>بر روی درس <span className="font-bold text-amber-600">{[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'نامشخص'}</span> بیشتر تمرکز کنید تا میانگین کلی بهبود یابد.</>
+                            ) : ('برای تشخیص نقاط ضعف، آزمون بیشتری ثبت کنید.')}
                         </p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
@@ -604,55 +526,17 @@ const PerformanceSection: React.FC = () => {
                         <p className="mt-1">
                             {sleepStats.count > 0 ? (
                                 <>
-                                    میانگین خواب:{' '}
-                                    <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
-                                    {sleepStats.avg !== null && sleepStats.avg < 7
-                                        ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.'
-                                        : ' — خواب مناسبی دارید.'}
-                                    {phoneStats.avg !== null && phoneStats.avg > 120
-                                        ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.'
-                                        : ''}
+                                    میانگین خواب: <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
+                                    {sleepStats.avg !== null && sleepStats.avg < 7 ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.' : ' — خواب مناسبی دارید.'}
+                                    {phoneStats.avg !== null && phoneStats.avg > 120 ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.' : ''}
                                 </>
-                            ) : (
-                                'برای دریافت تحلیل خواب و گوشی، اطلاعات روزانه را ثبت کنید.'
-                            )}
+                            ) : ('برای دریافت تحلیل خواب و گوشی، اطلاعات روزانه را ثبت کنید.')}
                         </p>
                     </div>
                 </div>
-                <button className="mt-4 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm">
-                    همگام‌سازی برنامه مطالعه
-                </button>
             </div>
         </div>
     )
-}
-
-// ---------- Re-usable Custom Tooltip for the study chart ----------
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        const safeLabel = typeof label === 'string' ? label : ''
-        return (
-            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
-                <p className="font-semibold text-gray-700 mb-1">{safeLabel}</p>
-                {payload.map((p: any, idx: number) => {
-                    const value = typeof p.value === 'number' ? p.value : 0
-                    const name = p.name === 'minutes' ? 'مدت مطالعه' :
-                        p.name === 'tests_count' ? 'تعداد آزمون' :
-                            p.name === 'avg_accuracy_percent' ? 'درصد صحت' :
-                                p.name
-                    return (
-                        <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
-                            <span>{name}</span>
-                            <span className="font-mono font-medium">
-                                {p.name === 'avg_accuracy_percent' ? `${toPersianDigits(value)}%` : toPersianDigits(value)}
-                            </span>
-                        </p>
-                    )
-                })}
-            </div>
-        )
-    }
-    return null
 }
 
 export default PerformanceSection
