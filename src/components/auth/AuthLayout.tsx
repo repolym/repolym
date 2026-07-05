@@ -58,7 +58,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
                   <OlympiadIcon className="w-12 h-12 text-white" />
                 </div>
               ) : (
-                <img src="public/logo.png" alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
+                <img src="/logo.png" alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
               )}
               <div className="w-20 h-1.5 bg-yellow-300 rounded-full mt-5" />
             </motion.div>
@@ -127,7 +127,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
         >
           <div className="lg:hidden mb-8 text-center">
             <img
-              src="public/logo.png"
+              src="/logo.png"
               alt="لوگو"
               className="h-16 w-auto mx-auto object-contain drop-shadow-lg"
             />

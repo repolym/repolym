@@ -83,7 +83,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       >
         {/* لوگو */}
         <div className="flex items-center px-5 py-6 border-b border-gray-100">
-          <img src="public/logo.png" alt="لوگو" className="h-12 w-auto object-contain" />
+          <img src="/logo.png" alt="لوگو" className="h-12 w-auto object-contain" />
         </div>
 
         {/* ناوبری گروه‌بندی‌شده */}
@@ -151,7 +151,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur-xl border-b border-gray-100">
           {/* لوگو (همیشه) */}
           <div className="flex items-center gap-2">
-            <img src="public/logo.png" alt="لوگو" className="h-8 w-auto" />
+            <img src="/logo.png" alt="لوگو" className="h-8 w-auto" />
             <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
           </div>
 
