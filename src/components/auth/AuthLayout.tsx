@@ -1,7 +1,6 @@
 import React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { TrendingUp, Zap } from 'lucide-react'
-import logo from '../../repolym.png'
 import { OLYMPIAD_ICON_MAP } from '../../config/olympiad-icons'
 import type { OlympiadTheme } from '../../config/olympiads'
 import { OlympiadAmbient } from '../common/OlympiadAmbient'
@@ -59,7 +58,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
                   <OlympiadIcon className="w-12 h-12 text-white" />
                 </div>
               ) : (
-                <img src={logo} alt="" className="h-48 w-auto object-contain drop-shadow-2xl" />
+                <img src="public/logo.png" alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
               )}
               <div className="w-20 h-1.5 bg-yellow-300 rounded-full mt-5" />
             </motion.div>
@@ -128,8 +127,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
         >
           <div className="lg:hidden mb-8 text-center">
             <img
-              src={logo}
-              alt=""
+              src="public/logo.png"
+              alt="لوگو"
               className="h-16 w-auto mx-auto object-contain drop-shadow-lg"
             />
           </div>

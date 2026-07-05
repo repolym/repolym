@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import logo from '../repolym.png'  // ✅ fixed path: two levels up to root
 
 import {
   Clock,
@@ -52,7 +51,7 @@ const adminNavGroups = [
 ]
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth()  // removed unused signOut
+  const { user } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -84,7 +83,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       >
         {/* لوگو */}
         <div className="flex items-center px-5 py-6 border-b border-gray-100">
-          <img src={logo} alt="لوگو" className="h-12 w-auto object-contain" />
+          <img src="public/logo.png" alt="لوگو" className="h-12 w-auto object-contain" />
         </div>
 
         {/* ناوبری گروه‌بندی‌شده */}
@@ -150,29 +149,35 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* هدر (همیشه قابل مشاهده) */}
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-          {/* عنوان (فقط موبایل) */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <img src={logo} alt="لوگو" className="h-8 w-auto" />
+          {/* لوگو (همیشه) */}
+          <div className="flex items-center gap-2">
+            <img src="public/logo.png" alt="لوگو" className="h-8 w-auto" />
+            <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
           </div>
 
-          {/* دکمه داشبورد (همیشه) */}
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
-          >
-            <Home className="w-4 h-4" />
-            <span className="hidden sm:inline">داشبورد</span>
-          </Link>
+          {/* فضای وسط برای تب‌ها یا سرچ (در صورت نیاز) */}
+          <div className="flex-1 flex justify-center">
+            {/* اگر جستجو یا تب دارید، اینجا قرار دهید */}
+          </div>
 
-          {/* دکمه منو (موبایل) */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-xl hover:bg-gray-100 transition-colors"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* دکمه‌های سمت چپ */}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">داشبورد</span>
+            </Link>
+
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </header>
-
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
