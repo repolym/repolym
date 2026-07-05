@@ -45,7 +45,7 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         if (filters.search.trim()) {
             const q = filters.search.trim().toLowerCase();
             list = list.filter(s => {
-                const notes = s.notes?.toLowerCase() || '';
+                const notes = s.activities?.toLowerCase() || '';
                 const subjectName = s.subjects?.name?.toLowerCase() || '';
                 return notes.includes(q) || subjectName.includes(q);
             });

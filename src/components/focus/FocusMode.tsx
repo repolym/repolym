@@ -249,7 +249,7 @@ export const FocusMode: React.FC = () => {
                 subject_id: selectedSubjectId,
                 date: today(),
                 duration_minutes: duration,
-                notes: `${notes}\nزمان: ${formatMinutes(duration)}`,
+                activities: `${notes}\nزمان: ${formatMinutes(duration)}`,
             })
             showToast('جلسه تمرکز با موفقیت ذخیره شد!', 'success')
             setSessionCount((prev) => prev + 1)

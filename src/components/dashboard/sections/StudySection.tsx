@@ -1,88 +1,30 @@
 // src/components/dashboard/sections/StudySection.tsx
-import StudySessions from '../../StudySessions';
-import DailyCheckIn from '../../DailyCheckIn';
-import { useStudySessions } from '../../../hooks/useStudySessions';
-import { useAuth } from '../../../context/AuthContext';
-import { Trash2, BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BookOpen, ArrowLeft } from 'lucide-react';
+import { Button } from '../../common/Button';
 
 export default function StudySection() {
-    const { user } = useAuth();
-    const { data: sessions, deleteSession } = useStudySessions({ userId: user?.id ?? null });
-
     return (
         <div className="space-y-6 dir-rtl text-right">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1">
-                    <DailyCheckIn />
-                </div>
-                <div className="lg:col-span-2">
-                    <StudySessions />
-                </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4 border-b border-slate-50 pb-3">
-                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                        <BookOpen size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800 text-base">تاریخچه مطالعات امروز</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">لیست تمام پارت‌های مطالعی که ثبت کرده‌اید</p>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+                <div className="flex justify-center mb-4">
+                    <div className="p-4 bg-indigo-50 rounded-full">
+                        <BookOpen className="w-12 h-12 text-indigo-600" />
                     </div>
                 </div>
-
-                {sessions && sessions.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400 text-sm">
-                        هنوز هیچ جلسه مطالعه‌ای برای امروز ثبت نشده است. ماراتن امروز را شروع کنید! 🚀
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-right text-slate-500">
-                            <thead className="text-xs text-slate-700 uppercase bg-slate-50 rounded-xl">
-                                <tr>
-                                    <th scope="col" className="px-4 py-3 rounded-r-xl">نام درس</th>
-                                    <th scope="col" className="px-4 py-3">زمان (دقیقه)</th>
-                                    <th scope="col" className="px-4 py-3">یادداشت</th>
-                                    <th scope="col" className="px-4 py-3">زمان ثبت</th>
-                                    <th scope="col" className="px-4 py-3 rounded-l-xl text-center">عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {sessions?.map((session: any) => (
-                                    <tr key={session.id} className="bg-white hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-3.5 font-semibold text-slate-800">
-                                            {session.subjects?.name || 'درس نامشخص'}
-                                        </td>
-                                        <td className="px-4 py-3.5 font-mono text-emerald-600 font-bold">
-                                            {session.duration_minutes}
-                                        </td>
-                                        <td className="px-4 py-3.5 text-slate-400 max-w-xs truncate">
-                                            {session.notes || '—'}
-                                        </td>
-                                        <td className="px-4 py-3.5 text-slate-400 text-xs">
-                                            {new Date(session.created_at).toLocaleTimeString('fa-IR', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </td>
-                                        <td className="px-4 py-3.5 text-center">
-                                            <button
-                                                onClick={() => {
-                                                    if (window.confirm('آیا از حذف این جلسه مطالعه مطمئن هستید؟')) {
-                                                        deleteSession(session.id);
-                                                    }
-                                                }}
-                                                className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                <h3 className="text-xl font-bold text-gray-800">مدیریت جلسات مطالعه</h3>
+                <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+                    برای ثبت جلسات مطالعه جدید، مشاهدهٔ جلسات امروز، انجام چک‌این روزانه و دسترسی به تاریخچه،
+                    به صفحهٔ اختصاصی مطالعات بروید.
+                </p>
+                <div className="mt-6">
+                    <Link to="/study">
+                        <Button variant="primary" size="md" className="gap-2">
+                            رفتن به صفحهٔ مطالعات
+                            <ArrowLeft className="w-4 h-4" />
+                        </Button>
+                    </Link>
+                </div>
             </div>
         </div>
     );
