@@ -64,11 +64,11 @@ export const AdminManagement: React.FC = () => {
 
             <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 mb-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">ارتقا به ادمین</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {nonAdmins.slice(0, 10).map((u) => (
-                        <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                            <span className="text-sm font-medium text-gray-700">{u.name}</span>
-                            <Button variant="primary" size="sm" onClick={() => openConfirm(u.id, 'promote')}>
+                        <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700 truncate ml-2" title={u.name}>{u.name}</span>
+                            <Button variant="primary" size="sm" onClick={() => openConfirm(u.id, 'promote')} className="shrink-0">
                                 <UserPlus className="w-4 h-4" />
                                 ارتقا
                             </Button>
@@ -80,14 +80,14 @@ export const AdminManagement: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto">
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200">
-                            <th className="text-right py-3 px-4">نام</th>
-                            <th className="text-right py-3 px-4">ایمیل</th>
-                            <th className="text-right py-3 px-4">تاریخ عضویت</th>
-                            <th className="text-right py-3 px-4">عملیات</th>
+                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200 whitespace-nowrap">
+                            <th className="text-right py-3 px-4 font-medium">نام</th>
+                            <th className="text-right py-3 px-4 font-medium">ایمیل</th>
+                            <th className="text-right py-3 px-4 font-medium">تاریخ عضویت</th>
+                            <th className="text-right py-3 px-4 font-medium">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -97,14 +97,14 @@ export const AdminManagement: React.FC = () => {
                             <tr><td colSpan={4} className="text-center py-8 text-gray-400">هیچ ادمینی یافت نشد</td></tr>
                         ) : (
                             users.map((admin) => (
-                                <tr key={admin.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                    <td className="py-3 px-4 font-medium text-gray-800">{admin.name}</td>
-                                    <td className="py-3 px-4 text-gray-600">{admin.email}</td>
-                                    <td className="py-3 px-4 text-gray-500">{formatDate(admin.created_at)}</td>
-                                    <td className="py-3 px-4">
+                                <tr key={admin.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td className="py-3 px-4 font-medium text-gray-800 whitespace-nowrap">{admin.name}</td>
+                                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{admin.email}</td>
+                                    <td className="py-3 px-4 text-gray-500 whitespace-nowrap text-xs">{formatDate(admin.created_at)}</td>
+                                    <td className="py-3 px-4 whitespace-nowrap">
                                         <button
                                             onClick={() => openConfirm(admin.id, 'demote')}
-                                            className="text-amber-600 hover:text-amber-800 transition"
+                                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
                                             title="لغو دسترسی ادمین"
                                         >
                                             <UserMinus className="w-4 h-4" />

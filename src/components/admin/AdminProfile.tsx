@@ -95,7 +95,7 @@ export const AdminProfile: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <User className="w-5 h-5 text-gray-400" />
@@ -119,7 +119,7 @@ export const AdminProfile: React.FC = () => {
                         ) : (
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-gray-800">{user?.name}</span>
-                                <button onClick={() => setEditingName(true)} className="text-gray-400 hover:text-indigo-600">
+                                <button onClick={() => setEditingName(true)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
@@ -129,7 +129,7 @@ export const AdminProfile: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="border-t border-gray-100 pt-5 space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Calendar className="w-5 h-5 text-gray-400" />
@@ -152,13 +152,13 @@ export const AdminProfile: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-5">
                     <form onSubmit={handleChangePassword} className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
                             <Key className="w-5 h-5 text-gray-400" />
                             <span className="text-sm font-medium text-gray-700">تغییر رمز عبور</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
                             <Input
                                 type="password"
                                 placeholder="رمز فعلی"
@@ -175,7 +175,7 @@ export const AdminProfile: React.FC = () => {
                             />
                             <Input
                                 type="password"
-                                placeholder="تأید رمز جدید"
+                                placeholder="تأیید رمز جدید"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
@@ -187,7 +187,7 @@ export const AdminProfile: React.FC = () => {
                     </form>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-5">
                     <Button variant="danger" onClick={handleLogout} className="w-full md:w-auto">
                         <LogOut className="w-4 h-4" />
                         خروج از حساب

@@ -146,12 +146,12 @@ const OverviewTab: React.FC = () => {
               <p className="text-sm text-gray-400">هیچ کاربر جدیدی ثبت نشده</p>
             ) : (
               stats.recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{user.name}</p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
+                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
                   </div>
-                  <span className="text-xs text-gray-400">{formatDate(user.created_at)}</span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap mr-2">{formatDate(user.created_at)}</span>
                 </div>
               ))
             )}
@@ -175,12 +175,12 @@ const OverviewTab: React.FC = () => {
               <p className="text-sm text-gray-400">هیچ فعالیتی ثبت نشده</p>
             ) : (
               stats.recentActivity.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{log.users?.name || 'ناشناس'}</p>
-                    <p className="text-xs text-gray-400">{log.action}</p>
+                <div key={log.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{log.users?.name || 'ناشناس'}</p>
+                    <p className="text-xs text-gray-400 truncate">{log.action}</p>
                   </div>
-                  <span className="text-xs text-gray-400">{formatDate(log.created_at)}</span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap mr-2">{formatDate(log.created_at)}</span>
                 </div>
               ))
             )}
@@ -415,7 +415,7 @@ const AdminDashboard: React.FC = () => {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">پنل مدیریت</h1>
 
       {/* تب‌ها */}
-      <div className="flex gap-2 mb-6 overflow-x-auto">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'overview'
@@ -458,7 +458,7 @@ const AdminDashboard: React.FC = () => {
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">همه کاربران</option>
                 {users.map((u) => (
@@ -466,49 +466,49 @@ const AdminDashboard: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="w-[180px]">
+            <div className="w-full sm:w-[180px]">
               <label className="block text-xs text-gray-500 mb-1">از تاریخ (جلالی)</label>
               <input
                 type="text"
                 placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
                 value={jalaliStart}
                 onChange={(e) => setJalaliStart(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            <div className="w-[180px]">
+            <div className="w-full sm:w-[180px]">
               <label className="block text-xs text-gray-500 mb-1">تا تاریخ (جلالی)</label>
               <input
                 type="text"
                 placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
                 value={jalaliEnd}
                 onChange={(e) => setJalaliEnd(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <button
               onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd('') }}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              className="text-xs text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-xl transition"
             >
               پاک‌کردن فیلترها
             </button>
           </div>
 
           {/* جدول */}
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto">
+          <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
             {loading ? (
               <div className="py-10 text-center text-gray-400">در حال بارگذاری...</div>
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-gray-500 bg-gray-50/50">
-                    <th className="text-right py-3 px-3">کاربر</th>
-                    <th className="text-right py-3 px-3">تاریخ</th>
-                    <th className="text-right py-3 px-3">مدت</th>
-                    <th className="text-right py-3 px-3">فعالیت‌ها</th>
-                    <th className="text-right py-3 px-3">بیداری</th>
-                    <th className="text-right py-3 px-3">خواب</th>
-                    <th className="text-right py-3 px-3">گوشی (ساعت)</th>
+                  <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
+                    <th className="text-right py-3 px-4 font-medium">کاربر</th>
+                    <th className="text-right py-3 px-4 font-medium">تاریخ</th>
+                    <th className="text-right py-3 px-4 font-medium">مدت</th>
+                    <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
+                    <th className="text-right py-3 px-4 font-medium">بیداری</th>
+                    <th className="text-right py-3 px-4 font-medium">خواب</th>
+                    <th className="text-right py-3 px-4 font-medium">گوشی (ساعت)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -516,17 +516,17 @@ const AdminDashboard: React.FC = () => {
                     <tr><td colSpan={7} className="py-10 text-center text-gray-400">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
                   ) : (
                     sessions.map((s) => (
-                      <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                        <td className="py-3 px-3">
+                      <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <td className="py-3 px-4 whitespace-nowrap">
                           <span className="font-medium text-gray-800">{s.user_name}</span>
                           <div className="text-xs text-gray-400">{s.user_email}</div>
                         </td>
-                        <td className="py-3 px-3 text-xs">{toJalaliLong(s.date)}</td>
-                        <td className="py-3 px-3 font-mono text-xs">{formatMinutes(s.duration_minutes)}</td>
-                        <td className="py-3 px-3 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
-                        <td className="py-3 px-3 text-xs">{s.wake_time || '—'}</td>
-                        <td className="py-3 px-3 text-xs">{s.sleep_time || '—'}</td>
-                        <td className="py-3 px-3 text-xs">{s.phone_hours || '—'}</td>
+                        <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
+                        <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
+                        <td className="py-3 px-4 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
+                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.wake_time || '—'}</td>
+                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.sleep_time || '—'}</td>
+                        <td className="py-3 px-4 text-xs whitespace-nowrap">{s.phone_hours || '—'}</td>
                       </tr>
                     ))
                   )}
@@ -542,12 +542,12 @@ const AdminDashboard: React.FC = () => {
         <div className="space-y-6">
           {/* فیلترها */}
           <div className="bg-white rounded-2xl p-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
-            <div className="w-[200px]">
+            <div className="w-full sm:w-[200px]">
               <label className="block text-xs text-gray-500 mb-1">المپیاد</label>
               <select
                 value={selectedOlympiad}
                 onChange={(e) => setSelectedOlympiad(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">همه المپیادها</option>
                 {olympiads.map(o => (
@@ -555,12 +555,12 @@ const AdminDashboard: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               {(['week', 'month', 'all'] as const).map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${period === p
+                  className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-medium transition-colors ${period === p
                     ? 'bg-indigo-600 text-white shadow'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
@@ -627,32 +627,32 @@ const AdminDashboard: React.FC = () => {
               </div>
 
               {/* New: Admin Leaderboard with composite scores */}
-              <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+              <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 min-w-full">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">جدول امتیازات ترکیبی (بر اساس الگوریتم هوشمند)</h3>
                 {adminLeaderboard.length === 0 ? (
                   <p className="text-gray-400 text-sm">داده‌ای موجود نیست.</p>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto min-w-full pb-2">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-gray-500 bg-gray-50/50">
-                          <th className="text-right py-2 px-3">رتبه</th>
-                          <th className="text-right py-2 px-3">نام</th>
-                          <th className="text-right py-2 px-3">امتیاز ترکیبی</th>
-                          <th className="text-right py-2 px-3">مطالعه (۳۰ روز)</th>
-                          <th className="text-right py-2 px-3">روزهای فعال</th>
-                          <th className="text-right py-2 px-3">میانگین آزمون</th>
+                        <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
+                          <th className="text-right py-2 px-3 font-medium">رتبه</th>
+                          <th className="text-right py-2 px-3 font-medium">نام</th>
+                          <th className="text-right py-2 px-3 font-medium">امتیاز ترکیبی</th>
+                          <th className="text-right py-2 px-3 font-medium">مطالعه (۳۰ روز)</th>
+                          <th className="text-right py-2 px-3 font-medium">روزهای فعال</th>
+                          <th className="text-right py-2 px-3 font-medium">میانگین آزمون</th>
                         </tr>
                       </thead>
                       <tbody>
                         {adminLeaderboard.map((entry) => (
-                          <tr key={entry.user_id} className="border-b border-gray-50">
-                            <td className="py-2 px-3 font-mono">{entry.rank}</td>
-                            <td className="py-2 px-3 font-medium">{entry.name}</td>
-                            <td className="py-2 px-3 font-mono text-indigo-600">{entry.composite_score}</td>
-                            <td className="py-2 px-3 font-mono">{formatMinutes(entry.total_minutes_30)}</td>
-                            <td className="py-2 px-3">{entry.active_days_30}</td>
-                            <td className="py-2 px-3">{entry.avg_test_score}%</td>
+                          <tr key={entry.user_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                            <td className="py-2 px-3 font-mono whitespace-nowrap">{entry.rank}</td>
+                            <td className="py-2 px-3 font-medium whitespace-nowrap">{entry.name}</td>
+                            <td className="py-2 px-3 font-mono text-indigo-600 whitespace-nowrap">{entry.composite_score}</td>
+                            <td className="py-2 px-3 font-mono whitespace-nowrap">{formatMinutes(entry.total_minutes_30)}</td>
+                            <td className="py-2 px-3 whitespace-nowrap">{entry.active_days_30}</td>
+                            <td className="py-2 px-3 whitespace-nowrap">{entry.avg_test_score}%</td>
                           </tr>
                         ))}
                       </tbody>

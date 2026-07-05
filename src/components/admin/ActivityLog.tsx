@@ -24,14 +24,14 @@ export const ActivityLog: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto">
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200">
-                            <th className="text-right py-3 px-4">کاربر</th>
-                            <th className="text-right py-3 px-4">اقدام</th>
-                            <th className="text-right py-3 px-4">جزئیات</th>
-                            <th className="text-right py-3 px-4">زمان</th>
+                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200 whitespace-nowrap">
+                            <th className="text-right py-3 px-4 font-medium">کاربر</th>
+                            <th className="text-right py-3 px-4 font-medium">اقدام</th>
+                            <th className="text-right py-3 px-4 font-medium">جزئیات</th>
+                            <th className="text-right py-3 px-4 font-medium">زمان</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -41,18 +41,20 @@ export const ActivityLog: React.FC = () => {
                             <tr><td colSpan={4} className="text-center py-8 text-gray-400">هیچ لاگی یافت نشد</td></tr>
                         ) : (
                             logs.map((log) => (
-                                <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                    <td className="py-3 px-4">
+                                <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td className="py-3 px-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <User className="w-4 h-4 text-gray-400" />
                                             <span className="font-medium text-gray-800">{log.users?.name || 'ناشناس'}</span>
                                         </div>
                                     </td>
-                                    <td className="py-3 px-4 text-gray-700">{log.action}</td>
-                                    <td className="py-3 px-4 text-gray-600 max-w-xs truncate">
-                                        {log.details ? JSON.stringify(log.details) : '—'}
+                                    <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{log.action}</td>
+                                    <td className="py-3 px-4 text-gray-600">
+                                        <div className="max-h-20 overflow-y-auto text-[11px] font-mono scrollbar-hide max-w-sm whitespace-pre-wrap bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                            {log.details ? JSON.stringify(log.details, null, 2) : '—'}
+                                        </div>
                                     </td>
-                                    <td className="py-3 px-4 text-gray-500 whitespace-nowrap">
+                                    <td className="py-3 px-4 text-gray-500 whitespace-nowrap text-xs">
                                         {formatDate(log.created_at)}
                                     </td>
                                 </tr>
