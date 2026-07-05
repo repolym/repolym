@@ -83,8 +83,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       >
         {/* لوگو */}
         <div className="flex items-center px-5 py-6 border-b border-gray-100">
-          <img src="/logo.png" alt="لوگو" className="h-12 w-auto object-contain" />
-        </div>
+          <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />        </div>
 
         {/* ناوبری گروه‌بندی‌شده */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -151,8 +150,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur-xl border-b border-gray-100">
           {/* لوگو (همیشه) */}
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="لوگو" className="h-8 w-auto" />
-            <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
+            <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />            <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
           </div>
 
           {/* فضای وسط برای تب‌ها یا سرچ (در صورت نیاز) */}
