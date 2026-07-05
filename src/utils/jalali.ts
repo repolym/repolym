@@ -9,7 +9,7 @@ const PERSIAN_MONTHS = [
     'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
 ]
 
-const toPersianDigits = (num: number): string =>
+const toPersianDigits = (num: number | string): string =>
     num.toString().replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[parseInt(d)])
 
 export const toJalali = (gregorianISODate: string): string => {
