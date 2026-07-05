@@ -1,55 +1,47 @@
-import React, { useState } from 'react'
-import type { StudySession } from '../../types/database'
-import { formatDate, formatMinutes } from '../../utils/date-utils'
-import { ConfirmModal } from '../common/Modal'
+import React, { useState } from 'react';
+import type { StudySession } from '../../types/database';
+import { formatDate, formatMinutes } from '../../utils/date-utils';
+import { ConfirmModal } from '../common/Modal';
 
 interface SessionCardProps {
-  session: StudySession
-  onEdit: (session: StudySession) => void
-  onDelete: (id: string) => Promise<void>
+  session: StudySession;
+  onEdit: (session: StudySession) => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
-const getNotesPreview = (notes: string | null): string => {
-  if (!notes) return ''
-  try {
-    const parsed = JSON.parse(notes)
-    if (parsed.activities) {
-      return parsed.activities.split('\n')[0]?.slice(0, 120) || ''
-    }
-    return notes.slice(0, 120)
-  } catch {
-    return notes.slice(0, 120)
-  }
-}
+const getActivitiesPreview = (activities: string | null): string => {
+  if (!activities) return '';
+  return activities.slice(0, 120);
+};
 
 export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDelete }) => {
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    setDeleting(true)
+    setDeleting(true);
     try {
-      await onDelete(session.id)
+      await onDelete(session.id);
     } finally {
-      setDeleting(false)
-      setConfirmOpen(false)
+      setDeleting(false);
+      setConfirmOpen(false);
     }
-  }
+  };
 
-  const subject = session.subjects
-  const notesPreview = getNotesPreview(session.notes)
+  const subject = session.subjects;
+  const activitiesPreview = getActivitiesPreview(session.activities);
 
   return (
     <>
       <div className="card-hover px-4 py-3 flex flex-col gap-1">
         <div className="flex items-center gap-3">
-          {/* Subject color dot */}
+          {/* نشانگر رنگ درس */}
           <div
             className="w-1.5 h-8 rounded-full flex-shrink-0"
             style={{ backgroundColor: subject?.color || '#3a3a3f' }}
           />
 
-          {/* Main */}
+          {/* اطلاعات اصلی */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-text-primary font-mono">
@@ -64,17 +56,22 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
                 </span>
               )}
             </div>
-            {notesPreview && (
-              <p className="text-xs text-text-tertiary truncate mt-0.5">{notesPreview}</p>
+            {activitiesPreview && (
+              <p className="text-xs text-text-tertiary truncate mt-0.5">{activitiesPreview}</p>
+            )}
+            {session.phone_hours != null && session.phone_hours > 0 && (
+              <p className="text-xs text-text-tertiary mt-0.5">
+                گوشی: {formatMinutes(Math.round(session.phone_hours * 60))}
+              </p>
             )}
           </div>
 
-          {/* Date */}
+          {/* تاریخ */}
           <p className="text-xs text-text-tertiary flex-shrink-0 hidden sm:block">
             {formatDate(session.date)}
           </p>
 
-          {/* Actions */}
+          {/* دکمه‌ها */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => onEdit(session)}
@@ -99,7 +96,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
           </div>
         </div>
 
-        {/* ====== NEW FIELDS DISPLAY ====== */}
+        {/* فیلدهای جدید (اختیاری) */}
         {(session.resource || session.question_count || session.tags) && (
           <div className="mt-1 pt-1 border-t border-gray-100 text-xs text-gray-500 grid grid-cols-2 gap-x-2 gap-y-0.5">
             {session.resource && (
@@ -136,5 +133,5 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
         loading={deleting}
       />
     </>
-  )
-}
+  );
+};

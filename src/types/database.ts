@@ -20,25 +20,28 @@ export interface Subject {
 }
 
 export interface StudySession {
-  id: string
-  user_id: string
-  subject_id: string | null
-  date: string
-  duration_minutes: number
-  notes: string | null
-  created_at: string
-  updated_at: string
-  resource?: string | null
-  question_count?: number | null
-  question_difficulty?: string | null
-  estimated_difficulty?: number | null
-  question_type?: string | null
-  todo_relation?: string | null
-  tags?: string | null
-  plan_id?: string | null
-  plan?: Plan | null
-  subjects?: Subject
+  id: string;
+  user_id: string;
+  subject_id: string | null;
+  date: string;
+  duration_minutes: number;
+  activities: string | null;       // جایگزین notes
+  phone_hours: number | null;      // جدید
+  created_at: string;
+  updated_at: string;
+  resource?: string | null;
+  question_count?: number | null;
+  question_difficulty?: string | null;
+  estimated_difficulty?: number | null;
+  question_type?: string | null;
+  todo_relation?: string | null;
+  tags?: string | null;
+  plan_id?: string | null;
+  plan?: Plan | null;
+  subjects?: Subject;
 }
+
+
 
 export interface Goal {
   id: string
@@ -98,17 +101,18 @@ export interface BaselineSurveyAnswers {
 
 // Form types
 export interface SessionFormData {
-  subject_id: string | null
-  date: string
-  duration_minutes: number
-  notes: string
-  resource?: string | null
-  question_count?: number | null
-  question_difficulty?: string | null
-  estimated_difficulty?: number | null
-  question_type?: string | null
-  todo_relation?: string | null
-  tags?: string | null
+  subject_id: string | null;
+  date: string;
+  duration_minutes: number;
+  activities: string;            // به جای notes
+  phone_hours?: number | null;   // جدید
+  resource?: string | null;
+  question_count?: number | null;
+  question_difficulty?: string | null;
+  estimated_difficulty?: number | null;
+  question_type?: string | null;
+  todo_relation?: string | null;
+  tags?: string | null;
 }
 
 export interface GoalFormData {

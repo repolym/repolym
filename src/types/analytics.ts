@@ -3,6 +3,8 @@ export interface DailyMetric {
     user_id: string
     date: string
     sleep_hours: number | null
+    bedtime: string | null   // جدید
+    wake_time: string | null // جدید
     phone_usage_minutes: number | null
     created_at: string
     updated_at: string
@@ -12,6 +14,8 @@ export interface DailyMetricFormData {
     date: string
     sleep_hours?: number | null
     phone_usage_minutes?: number | null
+    bedtime?: string | null   // جدید
+    wake_time?: string | null // جدید
 }
 
 export interface AnalyticsSnapshot {
