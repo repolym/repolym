@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+// src/components/study/HistorySection/HistorySection.tsx
+import React, { useState, useMemo } from 'react';
 import { useStudySessions } from '../../../hooks/useStudySessions';
 import { Subject } from '../../../types/database';
 import { HistoryFilters } from './HistoryFilters';
@@ -19,20 +20,23 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         sort: 'newest' as 'newest' | 'oldest' | 'longest' | 'shortest',
     });
 
-    const { data: allSessions, loading, refetch } = useStudySessions({
+    // دریافت جلسات بر اساس بازه‌ی تاریخ
+    const { data: allSessions, loading, error } = useStudySessions({
         userId,
         dateFrom: filters.dateRange.from,
         dateTo: filters.dateRange.to,
     });
 
-    // Apply client‑side filtering
+    // اعمال فیلترهای دیگر روی داده‌ها
     const filteredSessions = useMemo(() => {
         let list = [...allSessions];
-        // Subject filter
+
+        // فیلتر بر اساس subject
         if (filters.subjectId) {
             list = list.filter(s => s.subject_id === filters.subjectId);
         }
-        // Tags filter (simple substring)
+
+        // فیلتر بر اساس tags
         if (filters.tags.trim()) {
             const tagQueries = filters.tags.split(',').map(t => t.trim().toLowerCase());
             list = list.filter(s => {
@@ -41,21 +45,31 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
                 return tagQueries.every(q => sessionTags.some(t => t.includes(q)));
             });
         }
-        // Search in notes and subject name
+
+        // جستجو در activities و نام درس
         if (filters.search.trim()) {
             const q = filters.search.trim().toLowerCase();
             list = list.filter(s => {
-                const notes = s.activities?.toLowerCase() || '';
+                const activities = s.activities?.toLowerCase() || '';
                 const subjectName = s.subjects?.name?.toLowerCase() || '';
-                return notes.includes(q) || subjectName.includes(q);
+                return activities.includes(q) || subjectName.includes(q);
             });
         }
-        // Sort
+
+        // مرتب‌سازی
         switch (filters.sort) {
-            case 'newest': list.sort((a, b) => b.date.localeCompare(a.date)); break;
-            case 'oldest': list.sort((a, b) => a.date.localeCompare(b.date)); break;
-            case 'longest': list.sort((a, b) => b.duration_minutes - a.duration_minutes); break;
-            case 'shortest': list.sort((a, b) => a.duration_minutes - b.duration_minutes); break;
+            case 'newest':
+                list.sort((a, b) => b.date.localeCompare(a.date));
+                break;
+            case 'oldest':
+                list.sort((a, b) => a.date.localeCompare(b.date));
+                break;
+            case 'longest':
+                list.sort((a, b) => b.duration_minutes - a.duration_minutes);
+                break;
+            case 'shortest':
+                list.sort((a, b) => a.duration_minutes - b.duration_minutes);
+                break;
         }
         return list;
     }, [allSessions, filters]);
@@ -64,10 +78,20 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     };
 
-    // Refetch when date range changes
-    useEffect(() => {
-        refetch();
-    }, [filters.dateRange, refetch]);
+    // اگر خطایی رخ داده باشد
+    if (error) {
+        return (
+            <div className="text-center py-8 text-red-500">
+                خطا در بارگذاری تاریخچه: {error}
+                <button
+                    onClick={() => window.location.reload()}
+                    className="block mx-auto mt-4 text-indigo-600 hover:underline"
+                >
+                    تلاش مجدد
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
