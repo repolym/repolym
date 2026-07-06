@@ -17,15 +17,24 @@ export class GeminiProvider {
         const start = Date.now();
         try {
             const systemMessage = messages.find(m => m.role === 'system');
-
-            // FIX: Exclude the final message from the history array to prevent turn sequence violations
             const messagesWithoutSystem = messages.filter(m => m.role !== 'system');
-            const history = messagesWithoutSystem
+            let history = messagesWithoutSystem
                 .slice(0, -1)
                 .map(m => ({
                     role: m.role === 'user' ? 'user' : 'model',
                     parts: [{ text: m.content }],
                 }));
+
+            // Ensure the history starts with a user message, otherwise trim leading model messages
+            if (history.length > 0 && history[0].role !== 'user') {
+                const firstUserIdx = history.findIndex(m => m.role === 'user');
+                if (firstUserIdx !== -1) {
+                    history = history.slice(firstUserIdx);
+                } else {
+                    // No user message at all – prepend a dummy user message to satisfy Gemini
+                    history = [{ role: 'user', parts: [{ text: 'Hello' }] }];
+                }
+            }
 
             const model = this.client.getGenerativeModel({
                 model: config.gemini.model,
@@ -39,7 +48,7 @@ export class GeminiProvider {
                 generationConfig: {
                     maxOutputTokens: options?.maxTokens ?? config.ai.maxOutputTokens,
                     temperature: options?.temperature ?? config.ai.temperature,
-                    responseMimeType: "application/json", // FIX: Enforce native JSON generation for stable parsing
+                    responseMimeType: "application/json",
                 },
             });
 
@@ -49,7 +58,10 @@ export class GeminiProvider {
                 throw new Error('No user/assistant message to send');
             }
 
-            const result = await withTimeout(chat.sendMessage(lastMessage.content), config.ai.timeoutMs);
+            const result = await withTimeout(
+                chat.sendMessage(lastMessage.content),
+                config.ai.timeoutMs
+            ) as Awaited<ReturnType<typeof chat.sendMessage>>;
             const response = result.response;
             const text = response.text();
 
