@@ -19,3 +19,11 @@ export const config = {
         ttlSeconds: 300,
     },
 };
+
+export function validateEnv() {
+    const required = ['GEMINI_API_KEY', 'GROQ_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+    const missing = required.filter(key => !Deno.env.get(key));
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+}

@@ -5,7 +5,6 @@ import { logger } from '../utils/logger.ts';
 import { getCached, setCache, generateCacheKey } from './cacheService.ts';
 import { config } from '../config.ts';
 
-// Error classification for retry
 function isTemporaryError(error: unknown): boolean {
     const msg = error instanceof Error ? error.message : String(error);
     const lower = msg.toLowerCase();
@@ -28,7 +27,6 @@ export async function chatWithFallback(
     userId?: string
 ): Promise<{ content: string; provider: string; usage?: any }> {
 
-    // FIX: Execute caching universally, unlinking it from the requirement of a userId for stateless endpoints
     const dataToHash = { messages, options, userId };
     const cacheKey = await generateCacheKey('chat', dataToHash);
 
@@ -40,8 +38,11 @@ export async function chatWithFallback(
 
     const gemini = new GeminiProvider();
     const groq = new GroqProvider();
+    let geminiError: any = null;
+    let groqError: any = null;
 
-    // Try Gemini first with retry
+    // تلاش با Gemini
+    logger.info('Attempting Gemini provider...');
     try {
         const result = await withRetry(
             () => gemini.chat(messages, options),
@@ -49,28 +50,36 @@ export async function chatWithFallback(
             500,
             isTemporaryError
         );
+        logger.info('Gemini succeeded');
         const response = { content: result.content, provider: 'gemini', usage: result.usage };
         await setCache(cacheKey, response);
         return response;
-    } catch (error) {
-        logger.warn('Gemini failed, fallback to Groq', { error: String(error) });
-        if (!config.ai.fallbackEnabled) throw error;
-        if (!isTemporaryError(error)) throw error;
-
-        // Fallback to Groq
-        try {
-            const result = await withRetry(
-                () => groq.chat(messages, options),
-                config.ai.maxRetries,
-                500,
-                isTemporaryError
-            );
-            const response = { content: result.content, provider: 'groq', usage: result.usage };
-            await setCache(cacheKey, response);
-            return response;
-        } catch (fallbackError) {
-            logger.error('Both providers failed', { geminiError: String(error), groqError: String(fallbackError) });
-            throw new Error('All AI providers failed');
-        }
+    } catch (err) {
+        geminiError = err;
+        logger.error('Gemini failed', { error: String(err) });
     }
+
+    // تلاش با Groq (fallback)
+    logger.info('Attempting Groq provider (fallback)...');
+    try {
+        const result = await withRetry(
+            () => groq.chat(messages, options),
+            config.ai.maxRetries,
+            500,
+            isTemporaryError
+        );
+        logger.info('Groq succeeded');
+        const response = { content: result.content, provider: 'groq', usage: result.usage };
+        await setCache(cacheKey, response);
+        return response;
+    } catch (err) {
+        groqError = err;
+        logger.error('Groq also failed', { error: String(err) });
+    }
+
+    // هر دو شکست خوردند
+    const errorMessage = `All AI providers failed.\nGemini error: ${String(geminiError)}\nGroq error: ${String(groqError)}`;
+    const error = new Error(errorMessage);
+    (error as any).details = { geminiError, groqError };
+    throw error;
 }

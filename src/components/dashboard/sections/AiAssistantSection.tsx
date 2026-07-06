@@ -76,6 +76,7 @@ export const AiAssistantSection: React.FC = () => {
     // Call the AI function
     const callAiFunction = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
+        const isDev = import.meta.env.MODE === 'development';
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
@@ -90,7 +91,12 @@ export const AiAssistantSection: React.FC = () => {
             });
 
             const result = await response.json();
-            if (!result.success) throw new Error(result.error || 'خطا در پاسخ هوش مصنوعی');
+            if (!result.success) {
+                const errorMsg = isDev
+                    ? (result.error || 'خطا در پاسخ هوش مصنوعی')
+                    : 'ارتباط با دستیار هوشمند برقرار نشد. لطفاً دوباره تلاش کنید.';
+                throw new Error(errorMsg);
+            }
 
             if (action === 'chat') return result.data?.message || 'پاسخی دریافت نشد';
             if (action === 'analyze') {
@@ -110,8 +116,11 @@ export const AiAssistantSection: React.FC = () => {
             }
             return 'عملیات ناشناخته';
         } catch (err: any) {
-            showToast(err.message || 'خطا در ارتباط با هوش مصنوعی', 'error');
-            return `⚠️ خطا: ${err.message}`;
+            const errorMsg = isDev
+                ? err.message
+                : 'ارتباط با دستیار هوشمند برقرار نشد. لطفاً دوباره تلاش کنید.';
+            showToast(errorMsg, 'error');
+            return `⚠️ ${errorMsg}`;
         } finally {
             setLoading(false);
         }
@@ -170,7 +179,6 @@ export const AiAssistantSection: React.FC = () => {
             label: 'تحلیل عملکرد ماهانه',
             icon: <BrainCircuit className="w-4 h-4" />,
             action: async () => {
-                // Ensure we have a session
                 let sessionId = currentSessionId;
                 if (!sessionId) {
                     const newSession = await createSession({ title: 'تحلیل عملکرد' });

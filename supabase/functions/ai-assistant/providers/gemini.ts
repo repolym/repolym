@@ -25,13 +25,11 @@ export class GeminiProvider {
                     parts: [{ text: m.content }],
                 }));
 
-            // Ensure the history starts with a user message, otherwise trim leading model messages
             if (history.length > 0 && history[0].role !== 'user') {
                 const firstUserIdx = history.findIndex(m => m.role === 'user');
                 if (firstUserIdx !== -1) {
                     history = history.slice(firstUserIdx);
                 } else {
-                    // No user message at all – prepend a dummy user message to satisfy Gemini
                     history = [{ role: 'user', parts: [{ text: 'Hello' }] }];
                 }
             }

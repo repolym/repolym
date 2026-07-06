@@ -46,8 +46,12 @@ Keep it concise and focused.
         try {
             parsed = JSON.parse(result.content);
         } catch (e) {
-            logger.warn('Failed to parse analysis JSON, falling back to raw text');
-            return { success: true, data: { summary: result.content, strengths: [], weaknesses: [], recommendations: [] }, provider: result.provider };
+            logger.warn('Failed to parse analysis JSON, returning raw text');
+            return {
+                success: true,
+                data: { summary: result.content, strengths: [], weaknesses: [], recommendations: [] },
+                provider: result.provider,
+            };
         }
 
         return {

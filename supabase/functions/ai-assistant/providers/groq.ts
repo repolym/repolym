@@ -23,7 +23,7 @@ export class GroqProvider {
                         role: m.role as 'system' | 'user' | 'assistant',
                         content: m.content,
                     })),
-                    response_format: { type: "json_object" }, // FIX: Force JSON object response
+                    response_format: { type: "json_object" },
                     max_tokens: options?.maxTokens ?? config.ai.maxOutputTokens,
                     temperature: options?.temperature ?? config.ai.temperature,
                 }),
