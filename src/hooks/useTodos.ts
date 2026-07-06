@@ -32,6 +32,7 @@ export const useTodos = ({ userId, status, subjectId, search, dateFrom, dateTo }
         if (!session) {
             setData([])
             setError(null)
+            setLoading(false)  // ✅ Add
             return
         }
 

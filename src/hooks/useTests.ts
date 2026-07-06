@@ -28,6 +28,7 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
     if (!session) {
       setData([])
       setError(null)
+      setLoading(false)  // ✅ Add
       return
     }
 

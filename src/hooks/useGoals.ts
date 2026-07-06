@@ -27,6 +27,7 @@ export const useGoals = ({ userId, status = 'active' }: UseGoalsParams) => {
     if (!session) {
       setData([])
       setError(null)
+      setLoading(false)  // ✅ Add
       return
     }
 

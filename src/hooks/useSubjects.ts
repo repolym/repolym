@@ -21,6 +21,7 @@ export const useSubjects = (userId: string | null) => {
     if (!session) {
       setData([])
       setError(null)
+      setLoading(false)  // ✅ Add
       return
     }
 

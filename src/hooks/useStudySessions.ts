@@ -56,6 +56,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
           if (mountedRef.current) {
             setData([])
             setError(null)
+            setLoading(false)  // ✅ Add this
           }
           return
         }

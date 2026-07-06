@@ -31,6 +31,7 @@ export const usePlans = ({ userId, type, status, dateFrom, dateTo }: UsePlansPar
         if (!session) {
             setData([])
             setError(null)
+            setLoading(false)  // ✅ Add
             return
         }
 
