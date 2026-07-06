@@ -2,6 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   THEME VARIABLES
+   Add this block near the very top of src/index.css, right after
+   the @tailwind directives and before @layer base.
+   Colors are "R G B" (space separated, no commas) so Tailwind can
+   apply opacity via rgb(var(--x) / <alpha-value>).
+   ============================================================ */
+
+:root {
+  /* Light theme (default) */
+  --color-surface-0: 255 255 255;
+  --color-surface-1: 250 250 250;
+  --color-surface-2: 244 244 245;
+  --color-surface-3: 229 231 235;
+  --color-surface-4: 209 213 219;
+
+  --color-border-subtle: 243 244 246;
+  --color-border: 229 231 235;
+  --color-border-strong: 156 163 175;
+
+  --color-accent: 79 70 229;
+  --color-accent-hover: 67 56 202;
+  --color-accent-muted: 238 242 255;
+  --color-accent-subtle: 199 210 254;
+
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 107 114 128;
+  --color-text-tertiary: 156 163 175;
+  --color-text-inverse: 255 255 255;
+}
+
+.dark {
+  --color-surface-0: 17 17 20;
+  --color-surface-1: 24 24 27;
+  --color-surface-2: 32 32 36;
+  --color-surface-3: 44 44 50;
+  --color-surface-4: 63 63 70;
+
+  --color-border-subtle: 39 39 42;
+  --color-border: 55 55 61;
+  --color-border-strong: 82 82 91;
+
+  --color-accent: 129 140 248;
+  --color-accent-hover: 99 102 241;
+  --color-accent-muted: 49 46 84;
+  --color-accent-subtle: 67 56 130;
+
+  --color-text-primary: 244 244 245;
+  --color-text-secondary: 161 161 170;
+  --color-text-tertiary: 113 113 122;
+  --color-text-inverse: 17 24 39;
+}
+
+/* NEW THEME: "Sepia" — a warm, paper-like reading theme. Selected the
+   same way as light/dark from the theme picker in the Profile tab. */
+.theme-sepia {
+  --color-surface-0: 250 244 230;
+  --color-surface-1: 245 236 217;
+  --color-surface-2: 238 226 200;
+  --color-surface-3: 224 208 178;
+  --color-surface-4: 205 184 148;
+
+  --color-border-subtle: 232 219 192;
+  --color-border: 214 196 163;
+  --color-border-strong: 168 143 105;
+
+  --color-accent: 154 82 47;
+  --color-accent-hover: 128 65 36;
+  --color-accent-muted: 240 224 200;
+  --color-accent-subtle: 224 195 160;
+
+  --color-text-primary: 59 43 28;
+  --color-text-secondary: 105 82 58;
+  --color-text-tertiary: 148 122 92;
+  --color-text-inverse: 250 244 230;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
