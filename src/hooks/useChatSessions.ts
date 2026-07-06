@@ -117,10 +117,9 @@ export const useChatSessions = (userId: string | null) => {
         try {
             const { error: err } = await supabase
                 .from('chat_sessions')
-                .update({ deleted_at: new Date().toISOString() })
+                .delete()
                 .eq('id', id)
                 .eq('user_id', userId);
-
             if (err) throw err;
             await fetchSessions(true);
             return true;
