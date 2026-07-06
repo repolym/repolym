@@ -25,7 +25,7 @@ interface AuthContextType {
   ) => Promise<{ requiresEmailConfirmation: boolean }>
   completeOnboarding: (onboarding: OnboardingData) => Promise<void>
   completeBaselineSurvey: (answers: BaselineSurveyAnswers) => Promise<void>
-  updateProfile: (updates: Partial<{ name: string }>) => Promise<void>
+  updateProfile: (updates: Partial<{ name: string; preferences: Record<string, unknown> }>) => Promise<void>
   signOut: () => Promise<void>
   clearError: () => void
 }
@@ -301,7 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const updateProfile = async (updates: Partial<{ name: string }>) => {
+  const updateProfile = async (updates: Partial<{ name: string; preferences: Record<string, unknown> }>) => {
     if (!session?.user) throw new Error('Not authenticated')
     const { error } = await supabase
       .from('users')

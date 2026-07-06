@@ -12,6 +12,7 @@ import type { Subject } from '../../types/database'
 import { ConfirmModal } from '../common/Modal'
 import { SubjectForm, SubjectFormData } from '../common/SubjectForm'
 import { OlympiadPicker } from '../common/OlympiadPicker'
+import { AvatarCropModal } from './AvatarCropModal'
 import { getOlympiad } from '../../config/olympiads'
 import { OLYMPIAD_ICON_MAP } from '../../config/olympiad-icons'
 import { formatError } from '../../utils/error-handler'
@@ -40,8 +41,6 @@ import {
 
 // ---------- Constants ----------
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024
-const AVATAR_DIMENSION = 200
-const AVATAR_QUALITY = 0.8
 
 // 'sepia' is the new theme — a warm, paper-like palette (see index.css).
 type ThemeMode = 'light' | 'dark' | 'sepia' | 'system'
@@ -79,36 +78,10 @@ const applyTheme = (theme: ThemeMode) => {
 }
 
 // ---------- Avatar Helpers ----------
-const resizeAndCompressImage = (file: File): Promise<string> => {
+const readFileAsDataURL = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = (e) => {
-            const img = new Image()
-            img.onload = () => {
-                const canvas = document.createElement('canvas')
-                const size = Math.min(img.width, img.height, AVATAR_DIMENSION)
-                canvas.width = size
-                canvas.height = size
-                const ctx = canvas.getContext('2d')
-                if (!ctx) { reject(new Error('Failed to get canvas context')); return }
-                const sx = (img.width - size) / 2
-                const sy = (img.height - size) / 2
-                ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size)
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) { reject(new Error('Failed to compress image')); return }
-                        const reader2 = new FileReader()
-                        reader2.onload = () => resolve(reader2.result as string)
-                        reader2.onerror = () => reject(new Error('Failed to read compressed image'))
-                        reader2.readAsDataURL(blob)
-                    },
-                    'image/jpeg',
-                    AVATAR_QUALITY
-                )
-            }
-            img.onerror = () => reject(new Error('Failed to load image'))
-            img.src = e.target?.result as string
-        }
+        reader.onload = () => resolve(reader.result as string)
         reader.onerror = () => reject(new Error('Failed to read file'))
         reader.readAsDataURL(file)
     })
@@ -149,6 +122,8 @@ export const ProfilePage: React.FC = () => {
     const [deletingSubjectId, setDeletingSubjectId] = useState<string | null>(null)
 
     const [uploadingAvatar, setUploadingAvatar] = useState(false)
+    const [cropModalOpen, setCropModalOpen] = useState(false)
+    const [cropSrc, setCropSrc] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const olympiadTheme = user?.olympiad_id ? getOlympiad(user.olympiad_id) : null
@@ -199,6 +174,8 @@ export const ProfilePage: React.FC = () => {
 
     const handleAvatarClick = () => fileInputRef.current?.click()
 
+    // Selecting a file only validates it and opens the crop modal — the
+    // actual resize/compress/upload happens once the user confirms the crop.
     const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -207,16 +184,34 @@ export const ProfilePage: React.FC = () => {
             showToast(`حجم تصویر نباید بیشتر از ${MAX_AVATAR_SIZE / 1024 / 1024}MB باشد`, 'error')
             return
         }
+        try {
+            const dataUrl = await readFileAsDataURL(file)
+            setCropSrc(dataUrl)
+            setCropModalOpen(true)
+        } catch (err) {
+            showToast(formatError(err), 'error')
+        } finally {
+            // Reset so selecting the same file again still fires onChange.
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    const handleCropModalClose = () => {
+        if (uploadingAvatar) return
+        setCropModalOpen(false)
+        setCropSrc(null)
+    }
+
+    const handleCropConfirm = async (croppedDataUrl: string) => {
         if (!user?.id) return
         setUploadingAvatar(true)
         try {
-            const compressedBase64 = await resizeAndCompressImage(file)
             const fileName = `avatar_${Date.now()}.jpg`
             // Path convention `${userId}/...` matches the storage RLS policy
             // (see supabase/migrations — avatars bucket), which restricts
             // writes to the folder matching auth.uid().
             const filePath = `${user.id}/${fileName}`
-            const blob = await fetch(compressedBase64).then(r => r.blob())
+            const blob = await fetch(croppedDataUrl).then(r => r.blob())
 
             const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, blob, {
                 contentType: 'image/jpeg',
@@ -232,22 +227,17 @@ export const ProfilePage: React.FC = () => {
             // filename pattern can repeat across uploads.
             const versionedUrl = `${publicUrl}?v=${Date.now()}`
 
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ preferences: { ...(user.preferences || {}), avatar_url: versionedUrl } })
-                .eq('id', user.id)
-            if (updateError) {
-                showToast('خطا در ذخیره آواتار: ' + updateError.message, 'error')
-                return
-            }
+            // Goes through the same updateProfile() path as the name field,
+            // which refreshes the user in context — no full page reload needed.
+            await updateProfile({ preferences: { ...(user.preferences || {}), avatar_url: versionedUrl } })
 
             showToast('آواتار با موفقیت به‌روزرسانی شد', 'success')
-            window.location.reload()
+            setCropModalOpen(false)
+            setCropSrc(null)
         } catch (err) {
             showToast(formatError(err), 'error')
         } finally {
             setUploadingAvatar(false)
-            if (fileInputRef.current) fileInputRef.current.value = ''
         }
     }
 
@@ -291,7 +281,7 @@ export const ProfilePage: React.FC = () => {
                                     onClick={handleAvatarClick}
                                     disabled={uploadingAvatar}
                                     className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent hover:bg-accent-hover text-white flex items-center justify-center shadow-lg transition-colors disabled:opacity-50"
-                                    title="تغییر آواتار"
+                                    title="تغییر و برش آواتار"
                                 >
                                     {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                                 </button>
@@ -299,7 +289,7 @@ export const ProfilePage: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-text-primary">{user?.name}</p>
-                                <p className="text-xs text-text-tertiary">تصویر پروفایل • حداکثر ۲MB • ذخیره در Supabase Storage</p>
+                                <p className="text-xs text-text-tertiary">تصویر پروفایل • حداکثر ۲MB • قابل برش قبل از ذخیره</p>
                             </div>
                         </div>
 
@@ -439,6 +429,14 @@ export const ProfilePage: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            <AvatarCropModal
+                isOpen={cropModalOpen}
+                imageSrc={cropSrc}
+                loading={uploadingAvatar}
+                onClose={handleCropModalClose}
+                onConfirm={handleCropConfirm}
+            />
 
             <OlympiadPicker
                 isOpen={olympiadPickerOpen}
