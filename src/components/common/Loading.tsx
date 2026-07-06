@@ -1,3 +1,6 @@
+// ============================================================
+// FILE: src/components/common/Loading.tsx (IMPROVED)
+// ============================================================
 import React from 'react'
 
 export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
@@ -11,7 +14,7 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }
 }
 
 export const PageLoader: React.FC = () => (
-  <div className="flex items-center justify-center h-64">
+  <div className="flex items-center justify-center h-screen">
     <Spinner size="lg" />
   </div>
 )

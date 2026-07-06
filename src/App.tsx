@@ -1,17 +1,16 @@
-// src/App.tsx (add routes for UserDetail and OlympiadManagement)
-import React from 'react'
+// src/App.tsx (SIMPLIFIED)
+import React, { Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { AuthProvider } from './context/AuthContext'
+import { AnimatePresence } from 'framer-motion'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { DashboardProvider } from './context/DashboardContext'
 import { ToastProvider } from './context/ToastContext'
 import { AppShell } from './components/AppShell'
-import { ProtectedRoute } from './components/common/ProtectedRoute'
-import { StudentRoute } from './components/common/StudentRoute'
+import { AuthGuard } from './components/common/AuthGuard'
 import { AdminRoute } from './components/common/AdminRoute'
 import { ToastContainer } from './components/common/Toast'
 import { PageLoader } from './components/common/Loading'
-import { useAuth } from './context/AuthContext'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 import AdminDashboard from './components/admin/AdminDashboard'
 import { AdminProfile } from './components/admin/AdminProfile'
@@ -32,124 +31,106 @@ import { TodosPage } from './components/todos/TodosPage'
 import FocusMode from './components/focus/FocusMode'
 import PublicStudyPage from './components/public/PublicStudyPage'
 import BaselineSurvey from './components/survey/BaselineSurvey'
+import OnboardingFlow from './components/onboarding/OnboardingFlow'
 
-// ---------- Redirect Based on Onboarding & Baseline ----------
-const RedirectBasedOnBaseline: React.FC = () => {
+// ---------- Root handler ----------
+const RootHandler: React.FC = () => {
   const { user, isLoading } = useAuth()
+
   if (isLoading) return <PageLoader />
+
   if (!user) return <Navigate to="/login" replace />
 
-  if (!user.onboarding_completed) {
-    return <Navigate to="/profile" replace />
-  }
+  if (!user.onboarding_completed) return <Navigate to="/onboarding" replace />
 
-  if (!user.has_completed_baseline_survey) {
-    return <Navigate to="/baseline" replace />
-  }
+  if (!user.has_completed_baseline_survey) return <Navigate to="/baseline" replace />
 
   return <Navigate to="/dashboard" replace />
 }
 
-// ---------- Guard for all Student Routes (except /baseline) ----------
-const StudentGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth()
-  if (isLoading) return <PageLoader />
-  if (!user) return <Navigate to="/login" replace />
-
-  if (!user.onboarding_completed) {
-    return <Navigate to="/profile" replace />
-  }
-
-  if (!user.has_completed_baseline_survey) {
-    return <Navigate to="/baseline" replace />
-  }
-
-  return <>{children}</>
-}
-
-// ---------- Layouts ----------
+// ---------- Student Layout ----------
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute>
-    <StudentRoute>
-      <StudentGuard>
-        <DashboardProvider>
-          <AppShell>{children}</AppShell>
-        </DashboardProvider>
-      </StudentGuard>
-    </StudentRoute>
-  </ProtectedRoute>
+  <AuthGuard>
+    <DashboardProvider>
+      <AppShell>{children}</AppShell>
+    </DashboardProvider>
+  </AuthGuard>
 )
 
+// ---------- Admin Layout ----------
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute>
+  <AuthGuard>
     <AdminRoute>
       <DashboardProvider>
         <AppShell>{children}</AppShell>
       </DashboardProvider>
     </AdminRoute>
-  </ProtectedRoute>
+  </AuthGuard>
 )
 
+// ---------- App ----------
 const App: React.FC = () => {
   return (
     <HashRouter>
       <AuthProvider>
         <ToastProvider>
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+          <ErrorBoundary>
+            <AnimatePresence mode="wait">
+              <Routes>
+                {/* Public */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-              <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-              <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
-              <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
-              <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
-              <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
-              <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
-              <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
+                {/* Admin */}
+                <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
+                <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+                <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
+                <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
+                <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
+                <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
 
-              <Route
-                path="/baseline"
-                element={
-                  <ProtectedRoute>
-                    <BaselineSurvey />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Onboarding – no extra guards needed; AuthGuard will handle if user is already onboarded */}
+                <Route
+                  path="/onboarding"
+                  element={
+                    <AuthGuard requireBaseline={false}>
+                      <Suspense fallback={<PageLoader />}>
+                        <OnboardingFlow />
+                      </Suspense>
+                    </AuthGuard>
+                  }
+                />
 
-              <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
-              <Route path="/study" element={<StudentLayout><StudySessionsPage /></StudentLayout>} />
-              <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
-              <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
-              <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
-              <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
-              <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
+                {/* Baseline Survey – AuthGuard will redirect if already done */}
+                <Route
+                  path="/baseline"
+                  element={
+                    <AuthGuard requireOnboarding={true}>
+                      <Suspense fallback={<PageLoader />}>
+                        <BaselineSurvey />
+                      </Suspense>
+                    </AuthGuard>
+                  }
+                />
 
-              <Route
-                path="/focus"
-                element={
-                  <ProtectedRoute>
-                    <StudentGuard>
-                      <motion.div
-                        key="focus"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <FocusMode />
-                      </motion.div>
-                    </StudentGuard>
-                  </ProtectedRoute>
-                }
-              />
+                {/* Student routes */}
+                <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
+                <Route path="/study" element={<StudentLayout><StudySessionsPage /></StudentLayout>} />
+                <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
+                <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
+                <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
+                <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
+                <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
+                <Route path="/focus" element={<StudentLayout><FocusMode /></StudentLayout>} />
 
-              <Route path="/public/:userId" element={<PublicStudyPage />} />
-
-              <Route path="/" element={<RedirectBasedOnBaseline />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AnimatePresence>
+                {/* Root */}
+                <Route path="/" element={<RootHandler />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AnimatePresence>
+          </ErrorBoundary>
           <ToastContainer />
         </ToastProvider>
       </AuthProvider>

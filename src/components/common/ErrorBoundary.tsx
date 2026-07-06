@@ -1,3 +1,6 @@
+// ============================================================
+// FILE: src/components/common/ErrorBoundary.tsx (COMPLETE)
+// ============================================================
 import React from 'react'
 import { AlertCircle, RefreshCw, Home } from 'lucide-react'
 import { logger } from '../../utils/logger'
@@ -45,6 +48,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
         return this.props.fallback
       }
 
+      const isAuthError = this.state.error?.message?.toLowerCase().includes('auth') ||
+        this.state.error?.message?.toLowerCase().includes('jwt') ||
+        this.state.error?.message?.toLowerCase().includes('session')
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-surface-0 p-4" role="alert">
           <div className="max-w-md w-full bg-surface-2 border border-border rounded-xs shadow-2xl p-6">
@@ -52,10 +59,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <AlertCircle className="w-6 h-6 text-danger" aria-hidden="true" />
             </div>
 
-            <h1 className="text-lg font-bold text-center text-text-primary mb-2">مشکلی پیش آمد</h1>
+            <h1 className="text-lg font-bold text-center text-text-primary mb-2">
+              {isAuthError ? 'نشست شما منقضی شده است' : 'مشکلی پیش آمد'}
+            </h1>
 
             <p className="text-sm text-text-secondary text-center mb-4">
-              متأسفانه برنامه با خطایی مواجه شد. می‌توانید دوباره تلاش کنید یا به صفحه اصلی بازگردید.
+              {isAuthError
+                ? 'لطفاً دوباره وارد حساب خود شوید.'
+                : 'متأسفانه برنامه با خطایی مواجه شد. می‌توانید دوباره تلاش کنید یا به صفحه اصلی بازگردید.'
+              }
             </p>
 
             {import.meta.env.MODE === 'development' && this.state.error && (
@@ -70,20 +82,32 @@ export class ErrorBoundary extends React.Component<Props, State> {
             )}
 
             <div className="flex gap-2">
-              <button
-                onClick={this.handleReset}
-                className="btn-primary flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              >
-                <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                تلاش دوباره
-              </button>
-              <button
-                onClick={this.handleGoHome}
-                className="btn-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              >
-                <Home className="w-4 h-4" aria-hidden="true" />
-                صفحه اصلی
-              </button>
+              {isAuthError ? (
+                <button
+                  onClick={this.handleGoHome}
+                  className="btn-primary flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                >
+                  <Home className="w-4 h-4" aria-hidden="true" />
+                  رفتن به صفحه ورود
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={this.handleReset}
+                    className="btn-primary flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  >
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                    تلاش دوباره
+                  </button>
+                  <button
+                    onClick={this.handleGoHome}
+                    className="btn-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  >
+                    <Home className="w-4 h-4" aria-hidden="true" />
+                    صفحه اصلی
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
