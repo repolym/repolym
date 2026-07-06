@@ -16,10 +16,18 @@ export class GroqProvider {
     ) {
         const start = Date.now();
         try {
+            // افزودن کلمه‌ی "json" به system prompt یا آخرین پیام کاربر
+            const modifiedMessages = messages.map((m, index) => {
+                if (m.role === 'system') {
+                    return { ...m, content: m.content + ' Please respond in JSON format.' };
+                }
+                return m;
+            });
+
             const response = await withTimeout(
                 this.client.chat.completions.create({
                     model: config.groq.model,
-                    messages: messages.map(m => ({
+                    messages: modifiedMessages.map(m => ({
                         role: m.role as 'system' | 'user' | 'assistant',
                         content: m.content,
                     })),
