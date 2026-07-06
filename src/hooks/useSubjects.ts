@@ -17,13 +17,14 @@ export const useSubjects = (userId: string | null) => {
     if (fetchingRef.current) return
 
     // ✅ Check for valid session before making request
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    // The fetch function already has this at the top:
+    if (!userId) {
       setData([])
       setError(null)
-      setLoading(false)  // ✅ Add
+      setLoading(false)
       return
     }
+    // Delete the session check entirely – no need to call getSession()
 
     const cached = cache.get(userId)
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
