@@ -12,6 +12,7 @@ import {
     Zap,
     Trophy,
     TrendingUp,
+    Sparkles,
     CalendarDays,
     Sunrise,
     Sun,
@@ -26,14 +27,16 @@ const OverviewSection = lazy(() => import('./sections/OverviewSection'))
 const PerformanceSection = lazy(() => import('./sections/PerformanceSection'))
 const GrowthSection = lazy(() => import('./sections/GrowthSection'))
 const LeaderboardSection = lazy(() => import('./sections/LeaderboardSection'))
+const AiAssistantSection = lazy(() => import('./sections/AiAssistantSection'))
 
-type TabId = 'overview' | 'performance' | 'growth' | 'leaderboard'
+type TabId = 'overview' | 'performance' | 'growth' | 'leaderboard' | 'ai'
 
 const tabConfig: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'خلاصه', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'performance', label: 'عملکرد و تحلیل', icon: <Zap className="w-4 h-4" /> },
     { id: 'growth', label: 'رشد', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'leaderboard', label: 'جدول امتیازات', icon: <Trophy className="w-4 h-4" /> },
+    { id: 'ai', label: 'دستیار هوش مصنوعی', icon: <Sparkles className="w-4 h-4" /> },
 ]
 
 export const DashboardPage: React.FC = () => {
@@ -159,6 +162,11 @@ export const DashboardPage: React.FC = () => {
                         {activeTab === 'leaderboard' && (
                             <ErrorBoundary>
                                 <LeaderboardSection userId={user?.id ?? null} olympiadId={user?.olympiad_id ?? null} />
+                            </ErrorBoundary>
+                        )}
+                        {activeTab === 'ai' && (
+                            <ErrorBoundary>
+                                <AiAssistantSection />
                             </ErrorBoundary>
                         )}
                     </Suspense>
