@@ -155,7 +155,7 @@ export const PlanningPage: React.FC = () => {
         const days = []
         const todayStr = today()
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} className="h-24 border border-gray-100 rounded-lg" />)
+            days.push(<div key={`empty-${i}`} className="h-24 border border-border-subtle rounded-lg" />)
         }
         for (let d = 1; d <= daysInMonth; d++) {
             const dateObj = new Date(calendarYear, calendarMonth - 1, d)
@@ -165,23 +165,23 @@ export const PlanningPage: React.FC = () => {
             days.push(
                 <div
                     key={dateStr}
-                    className={`h-24 border border-gray-100 rounded-lg p-1 overflow-y-auto ${isToday ? 'bg-indigo-50' : ''}`}
+                    className={`h-24 border border-border-subtle rounded-lg p-1 overflow-y-auto ${isToday ? 'bg-accent-muted' : ''}`}
                 >
-                    <div className={`text-xs font-medium ${isToday ? 'text-indigo-700' : 'text-gray-600'}`}>
+                    <div className={`text-xs font-medium ${isToday ? 'text-accent-hover' : 'text-text-secondary'}`}>
                         {toPersianDigits(d)}
                     </div>
                     <div className="space-y-0.5 mt-1">
                         {dayPlans.slice(0, 3).map((p) => (
                             <div
                                 key={p.id}
-                                className="text-2xs truncate px-1 py-0.5 rounded bg-indigo-100 text-indigo-700 cursor-pointer hover:bg-indigo-200"
+                                className="text-2xs truncate px-1 py-0.5 rounded bg-accent-muted text-accent-hover cursor-pointer hover:bg-accent-subtle"
                                 onClick={() => setSelectedPlanId(p.id)}
                             >
                                 {p.title}
                             </div>
                         ))}
                         {dayPlans.length > 3 && (
-                            <div className="text-2xs text-gray-400">+{dayPlans.length - 3} بیشتر</div>
+                            <div className="text-2xs text-text-tertiary">+{dayPlans.length - 3} بیشتر</div>
                         )}
                     </div>
                 </div>
@@ -214,7 +214,7 @@ export const PlanningPage: React.FC = () => {
             <div className="space-y-6 mt-4">
                 {sortedWeeks.map((week) => (
                     <div key={week}>
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">
+                        <h3 className="text-sm font-medium text-text-secondary mb-2">
                             هفته {formatDate(week)}
                         </h3>
                         <div className="space-y-2">
@@ -254,7 +254,7 @@ export const PlanningPage: React.FC = () => {
             </div>
 
             {/* View mode tabs */}
-            <div className="flex gap-2 border-b border-gray-200 pb-2 mb-4">
+            <div className="flex gap-2 border-b border-border pb-2 mb-4">
                 {[
                     { id: 'list', label: 'لیست', icon: ListTodo },
                     { id: 'calendar', label: 'تقویم', icon: CalendarDays },
@@ -264,8 +264,8 @@ export const PlanningPage: React.FC = () => {
                         key={id}
                         onClick={() => setViewMode(id as ViewMode)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${viewMode === id
-                            ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            ? 'bg-accent-muted text-accent-hover shadow-sm'
+                            : 'text-text-secondary hover:bg-surface-2 hover:text-text-secondary'
                             }`}
                     >
                         <Icon className="w-4 h-4" />
@@ -315,7 +315,7 @@ export const PlanningPage: React.FC = () => {
                         <button onClick={prevMonth} className="btn-ghost p-1">
                             <ChevronRight className="w-5 h-5" />
                         </button>
-                        <h2 className="text-lg font-semibold text-gray-800">
+                        <h2 className="text-lg font-semibold text-text-primary">
                             {new Intl.DateTimeFormat('fa-IR', { month: 'long', year: 'numeric' }).format(calendarDate)}
                         </h2>
                         <button onClick={nextMonth} className="btn-ghost p-1">
@@ -324,7 +324,7 @@ export const PlanningPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                         {['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'].map((d) => (
-                            <div key={d} className="text-xs font-medium text-gray-400 text-center py-1">
+                            <div key={d} className="text-xs font-medium text-text-tertiary text-center py-1">
                                 {d}
                             </div>
                         ))}
@@ -337,24 +337,24 @@ export const PlanningPage: React.FC = () => {
 
             {/* Plan linking section */}
             {selectedPlanId && (
-                <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                <div className="mt-8 p-4 bg-surface-2 rounded-2xl border border-border">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-gray-700">
+                        <h3 className="text-sm font-medium text-text-secondary">
                             جلسات مرتبط با برنامه
                         </h3>
                         <button
                             onClick={() => setSelectedPlanId(null)}
-                            className="text-xs text-gray-400 hover:text-gray-600"
+                            className="text-xs text-text-tertiary hover:text-text-secondary"
                         >
                             بستن
                         </button>
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                         {planSessions.length === 0 && (
-                            <p className="text-xs text-gray-400">هیچ جلسه‌ای به این برنامه متصل نیست</p>
+                            <p className="text-xs text-text-tertiary">هیچ جلسه‌ای به این برنامه متصل نیست</p>
                         )}
                         {planSessions.map((s) => (
-                            <div key={s.id} className="flex items-center justify-between bg-white p-2 rounded-lg">
+                            <div key={s.id} className="flex items-center justify-between bg-surface-1 p-2 rounded-lg">
                                 <span className="text-sm truncate">
                                     {formatDate(s.date)} - {s.subjects?.name || 'بدون درس'}
                                 </span>
@@ -368,26 +368,26 @@ export const PlanningPage: React.FC = () => {
                         ))}
                     </div>
                     <div className="mt-3">
-                        <h4 className="text-xs font-medium text-gray-500 mb-2">اتصال جلسه جدید</h4>
+                        <h4 className="text-xs font-medium text-text-secondary mb-2">اتصال جلسه جدید</h4>
                         <div className="space-y-1 max-h-32 overflow-y-auto">
                             {allSessions
                                 .filter((s) => !s.plan_id)
                                 .slice(0, 10)
                                 .map((s) => (
-                                    <div key={s.id} className="flex items-center justify-between bg-white p-2 rounded-lg">
+                                    <div key={s.id} className="flex items-center justify-between bg-surface-1 p-2 rounded-lg">
                                         <span className="text-sm truncate">
                                             {formatDate(s.date)} - {s.subjects?.name || 'بدون درس'}
                                         </span>
                                         <button
                                             onClick={() => handleLinkSession(s.id)}
-                                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                                            className="text-xs text-accent hover:text-accent-hover"
                                         >
                                             <LinkIcon className="w-3 h-3 inline" /> اتصال
                                         </button>
                                     </div>
                                 ))}
                             {allSessions.filter((s) => !s.plan_id).length === 0 && (
-                                <p className="text-xs text-gray-400">همه جلسات به برنامه‌ای متصل هستند</p>
+                                <p className="text-xs text-text-tertiary">همه جلسات به برنامه‌ای متصل هستند</p>
                             )}
                         </div>
                     </div>

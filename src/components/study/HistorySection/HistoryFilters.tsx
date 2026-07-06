@@ -29,10 +29,10 @@ export const HistoryFilters: React.FC<Props> = ({ subjects, filters, onFilterCha
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-surface-1 rounded-2xl border border-border shadow-sm p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">بازه زمانی</label>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">بازه زمانی</label>
                     <div className="flex flex-wrap gap-2 mb-2">
                         <Button variant="secondary" size="sm" onClick={() => setDatePreset('today')}>امروز</Button>
                         <Button variant="secondary" size="sm" onClick={() => setDatePreset('yesterday')}>دیروز</Button>
@@ -45,7 +45,7 @@ export const HistoryFilters: React.FC<Props> = ({ subjects, filters, onFilterCha
                             onChange={(date) => onFilterChange({ dateRange: { ...filters.dateRange, from: date } })}
                             className="flex-1"
                         />
-                        <span className="text-gray-500">تا</span>
+                        <span className="text-text-secondary">تا</span>
                         <JalaliDateInput
                             value={filters.dateRange.to}
                             onChange={(date) => onFilterChange({ dateRange: { ...filters.dateRange, to: date } })}

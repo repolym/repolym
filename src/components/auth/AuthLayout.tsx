@@ -28,12 +28,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
           className={`hidden lg:flex lg:w-5/12 bg-gradient-to-br ${gradient} relative overflow-hidden`}
         >
           <motion.div
-            className="absolute -top-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"
+            className="absolute -top-20 -left-20 w-80 h-80 bg-surface-1/10 rounded-full blur-3xl"
             animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.div
-            className="absolute -bottom-24 -right-16 w-96 h-96 bg-white/5 rounded-full blur-3xl"
+            className="absolute -bottom-24 -right-16 w-96 h-96 bg-surface-1/5 rounded-full blur-3xl"
             animate={{ x: [0, -40, 0], y: [0, 40, 0] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
@@ -55,7 +55,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
               className="mb-10"
             >
               {OlympiadIcon ? (
-                <div className="w-24 h-24 rounded-3xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-24 h-24 rounded-3xl bg-surface-1/15 backdrop-blur-sm flex items-center justify-center">
                   <OlympiadIcon className="w-12 h-12 text-white" />
                 </div>
               ) : (
@@ -119,7 +119,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
         </motion.div>
       </AnimatePresence>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-surface-2">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -129,7 +129,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
           <div className="lg:hidden mb-8 text-center">
             <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
           </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-500/10 p-8 border border-white/50">
+          <div className="bg-surface-1/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-500/10 p-8 border border-white/50">
             {children}
           </div>
         </motion.div>

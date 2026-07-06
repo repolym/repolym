@@ -130,13 +130,13 @@ export const RegisterPage: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="text-center"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">ثبت‌نام تقریباً تمام شد ✉️</h2>
-          <p className="text-sm text-gray-500 mb-8">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">ثبت‌نام تقریباً تمام شد ✉️</h2>
+          <p className="text-sm text-text-secondary mb-8">
             یک ایمیل تأیید برای {email} ارسال کردیم. برای فعال‌سازی حساب، روی لینک داخل ایمیل کلیک کنید.
           </p>
           <Link
             to="/login"
-            className="inline-block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-2xl transition-all"
+            className="inline-block w-full text-center bg-accent hover:bg-accent-hover text-white font-medium py-3.5 rounded-2xl transition-all"
           >
             بازگشت به صفحه ورود
           </Link>
@@ -164,7 +164,7 @@ export const RegisterPage: React.FC = () => {
             <div
               key={s}
               className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                i <= stepIndex ? 'bg-indigo-600' : 'bg-gray-200'
+                i <= stepIndex ? 'bg-accent' : 'bg-surface-3'
               }`}
             />
           ))}
@@ -183,17 +183,17 @@ export const RegisterPage: React.FC = () => {
           >
             {step === 'name' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">اسمت چیه؟</h2>
-                <p className="text-sm text-gray-500 mb-8">بذار بدونیم چطور صدات کنیم</p>
+                <h2 className="text-2xl font-bold text-text-primary mb-1">اسمت چیه؟</h2>
+                <p className="text-sm text-text-secondary mb-8">بذار بدونیم چطور صدات کنیم</p>
                 <div className="relative">
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="نام و نام‌خانوادگی"
                     autoFocus
-                    className="w-full pr-12 pl-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -201,10 +201,10 @@ export const RegisterPage: React.FC = () => {
 
             {step === 'email' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">ایمیلت چیه؟</h2>
-                <p className="text-sm text-gray-500 mb-8">برای ورود و بازیابی حساب استفاده می‌شود</p>
+                <h2 className="text-2xl font-bold text-text-primary mb-1">ایمیلت چیه؟</h2>
+                <p className="text-sm text-text-secondary mb-8">برای ورود و بازیابی حساب استفاده می‌شود</p>
                 <div className="relative">
-                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                   <input
                     type="email"
                     value={email}
@@ -212,7 +212,7 @@ export const RegisterPage: React.FC = () => {
                     placeholder="ایمیل خود را وارد کنید"
                     autoFocus
                     autoComplete="email"
-                    className="w-full pr-12 pl-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -220,10 +220,10 @@ export const RegisterPage: React.FC = () => {
 
             {step === 'password' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">یک رمز عبور بساز</h2>
-                <p className="text-sm text-gray-500 mb-8">حداقل ۸ کاراکتر، هرچه قوی‌تر بهتر</p>
+                <h2 className="text-2xl font-bold text-text-primary mb-1">یک رمز عبور بساز</h2>
+                <p className="text-sm text-text-secondary mb-8">حداقل ۸ کاراکتر، هرچه قوی‌تر بهتر</p>
                 <div className="relative">
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
@@ -231,12 +231,12 @@ export const RegisterPage: React.FC = () => {
                     placeholder="حداقل ۸ کاراکتر"
                     autoFocus
                     autoComplete="new-password"
-                    className="w-full pr-12 pl-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-12 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -247,8 +247,8 @@ export const RegisterPage: React.FC = () => {
 
             {step === 'olympiad' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">کدوم المپیاد؟</h2>
-                <p className="text-sm text-gray-500 mb-6">دروس پیش‌فرض همون رو براش آماده می‌کنیم</p>
+                <h2 className="text-2xl font-bold text-text-primary mb-1">کدوم المپیاد؟</h2>
+                <p className="text-sm text-text-secondary mb-6">دروس پیش‌فرض همون رو براش آماده می‌کنیم</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[440px] overflow-y-auto pr-0.5">
                   {OLYMPIADS.map((o) => {
                     const Icon = OLYMPIAD_ICON_MAP[o.icon] ?? Sparkles
@@ -259,7 +259,7 @@ export const RegisterPage: React.FC = () => {
                         type="button"
                         onClick={() => chooseOlympiad(o.id)}
                         className={`relative text-right p-4 rounded-2xl border-2 transition-all overflow-hidden ${
-                          active ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-gray-300'
+                          active ? 'border-accent ring-2 ring-indigo-100' : 'border-border hover:border-border-strong'
                         }`}
                       >
                         <div className={`absolute inset-0 bg-gradient-to-br ${o.gradient} opacity-[0.08]`} />
@@ -270,11 +270,11 @@ export const RegisterPage: React.FC = () => {
                           >
                             <Icon className="w-5 h-5" />
                           </div>
-                          <p className="text-sm font-semibold text-gray-900">{o.shortLabel}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{o.tagline}</p>
+                          <p className="text-sm font-semibold text-text-primary">{o.shortLabel}</p>
+                          <p className="text-xs text-text-secondary mt-0.5">{o.tagline}</p>
                         </div>
                         {active && (
-                          <div className="absolute top-3 left-3 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                          <div className="absolute top-3 left-3 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
                             <Check className="w-3 h-3 text-white" />
                           </div>
                         )}
@@ -287,8 +287,8 @@ export const RegisterPage: React.FC = () => {
 
             {step === 'subjects' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">دروس رو تنظیم کن</h2>
-                <p className="text-sm text-gray-500 mb-6">
+                <h2 className="text-2xl font-bold text-text-primary mb-1">دروس رو تنظیم کن</h2>
+                <p className="text-sm text-text-secondary mb-6">
                   می‌تونی دروس پیشنهادی {selectedOlympiad?.shortLabel} رو نگه داری، حذف کنی یا دروس دلخواه اضافه کنی — این مرحله اختیاری است
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4 min-h-[2rem]">
@@ -305,7 +305,7 @@ export const RegisterPage: React.FC = () => {
                     </span>
                   ))}
                   {subjects.length === 0 && (
-                    <p className="text-xs text-gray-400">هنوز درسی اضافه نشده — می‌تونی از پایین اضافه کنی</p>
+                    <p className="text-xs text-text-tertiary">هنوز درسی اضافه نشده — می‌تونی از پایین اضافه کنی</p>
                   )}
                 </div>
                 <div className="relative">
@@ -317,12 +317,12 @@ export const RegisterPage: React.FC = () => {
                       if (e.key === 'Enter') { e.preventDefault(); addSubject() }
                     }}
                     placeholder="نام درس دلخواه…"
-                    className="w-full pr-4 pl-11 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-4 pl-11 py-3 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                   <button
                     type="button"
                     onClick={addSubject}
-                    className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors"
+                    className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-accent hover:bg-accent-hover text-white flex items-center justify-center transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -347,7 +347,7 @@ export const RegisterPage: React.FC = () => {
             <button
               type="button"
               onClick={goBack}
-              className="flex items-center justify-center w-12 h-12 shrink-0 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-center w-12 h-12 shrink-0 rounded-2xl border border-border text-text-secondary hover:bg-surface-2 transition-colors"
               aria-label="مرحله قبل"
             >
               <ArrowRight className="w-5 h-5" />
@@ -357,7 +357,7 @@ export const RegisterPage: React.FC = () => {
             type="button"
             onClick={goNext}
             disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70"
+            className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70"
           >
             {loading ? (
               <motion.div
@@ -380,9 +380,9 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {stepIndex === 0 && (
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-text-secondary">
             حساب دارید؟{' '}
-            <Link to="/login" className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors">
+            <Link to="/login" className="text-accent font-medium hover:text-accent-hover transition-colors">
               وارد شوید
             </Link>
           </p>

@@ -59,7 +59,7 @@ export const UserDetail: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
                     {error || 'کاربر یافت نشد'}
                 </div>
-                <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800">
+                <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
                     <ArrowRight className="w-4 h-4" />
                     بازگشت به لیست کاربران
                 </Link>
@@ -70,29 +70,29 @@ export const UserDetail: React.FC = () => {
     return (
         <div className="p-5 md:p-8 max-w-4xl mx-auto space-y-6" dir="rtl">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">پروفایل کاربر</h1>
-                <Link to="/admin/users" className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
+                <Link to="/admin/users" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
                     <ArrowRight className="w-4 h-4" />
                     بازگشت
                 </Link>
             </div>
 
             {/* User Info */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white text-2xl font-bold">
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex items-center gap-6">
+                <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-white text-2xl font-bold">
                     {user.name?.charAt(0) || '?'}
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-gray-800">{user.name}</h2>
-                    <p className="text-sm text-gray-500 flex items-center gap-1"><Mail className="w-4 h-4" /> {user.email}</p>
+                    <h2 className="text-xl font-bold text-text-primary">{user.name}</h2>
+                    <p className="text-sm text-text-secondary flex items-center gap-1"><Mail className="w-4 h-4" /> {user.email}</p>
                     <div className="flex flex-wrap gap-3 mt-2 text-xs">
-                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="flex items-center gap-1 bg-surface-3 px-2 py-1 rounded-full">
                             <Award className="w-3 h-3" /> {user.olympiad_id || 'بدون المپیاد'}
                         </span>
-                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="flex items-center gap-1 bg-surface-3 px-2 py-1 rounded-full">
                             <Calendar className="w-3 h-3" /> عضویت: {formatDate(user.created_at)}
                         </span>
-                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="flex items-center gap-1 bg-surface-3 px-2 py-1 rounded-full">
                             <Activity className="w-3 h-3" /> وضعیت: {user.status === 'suspended' ? 'تعلیق' : 'فعال'}
                         </span>
                     </div>
@@ -101,39 +101,39 @@ export const UserDetail: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
-                    <p className="text-sm text-gray-500">جلسات مطالعه</p>
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
+                    <p className="text-sm text-text-secondary">جلسات مطالعه</p>
                     <p className="text-2xl font-bold">{toPersianDigits(stats?.totalSessions || 0)}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
-                    <p className="text-sm text-gray-500">مدت کل</p>
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
+                    <p className="text-sm text-text-secondary">مدت کل</p>
                     <p className="text-2xl font-bold">{formatMinutes(stats?.totalMinutes || 0)}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
-                    <p className="text-sm text-gray-500">آزمون‌ها</p>
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
+                    <p className="text-sm text-text-secondary">آزمون‌ها</p>
                     <p className="text-2xl font-bold">{toPersianDigits(stats?.totalTests || 0)}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
-                    <p className="text-sm text-gray-500">میانگین نمره</p>
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
+                    <p className="text-sm text-text-secondary">میانگین نمره</p>
                     <p className="text-2xl font-bold">{toPersianDigits(Math.round(stats?.avgTestScore || 0))}%</p>
                 </div>
             </div>
 
             {/* Session History */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-indigo-600" />
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-accent" />
                     آخرین جلسات مطالعه
                 </h3>
                 {sessions.length === 0 ? (
-                    <p className="text-gray-400 text-sm">هیچ جلسه‌ای ثبت نشده</p>
+                    <p className="text-text-tertiary text-sm">هیچ جلسه‌ای ثبت نشده</p>
                 ) : (
                     <div className="space-y-2">
                         {sessions.map(s => (
-                            <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <div key={s.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
                                 <div>
                                     <p className="text-sm font-medium">{s.subjects?.name || 'بدون درس'}</p>
-                                    <p className="text-xs text-gray-400">{formatDate(s.date)}</p>
+                                    <p className="text-xs text-text-tertiary">{formatDate(s.date)}</p>
                                 </div>
                                 <span className="font-mono text-sm">{formatMinutes(s.duration_minutes)}</span>
                             </div>
@@ -143,19 +143,19 @@ export const UserDetail: React.FC = () => {
             </div>
 
             {/* Activity Logs */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-indigo-600" />
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-accent" />
                     فعالیت‌های اخیر
                 </h3>
                 {logs.length === 0 ? (
-                    <p className="text-gray-400 text-sm">هیچ فعالیتی ثبت نشده</p>
+                    <p className="text-text-tertiary text-sm">هیچ فعالیتی ثبت نشده</p>
                 ) : (
                     <div className="space-y-2">
                         {logs.map(log => (
-                            <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <div key={log.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
                                 <span className="text-sm">{log.action}</span>
-                                <span className="text-xs text-gray-400">{formatDate(log.created_at)}</span>
+                                <span className="text-xs text-text-tertiary">{formatDate(log.created_at)}</span>
                             </div>
                         ))}
                     </div>

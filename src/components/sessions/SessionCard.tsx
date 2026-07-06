@@ -98,7 +98,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
 
         {/* فیلدهای جدید (اختیاری) */}
         {(session.resource || session.question_count || session.tags) && (
-          <div className="mt-1 pt-1 border-t border-gray-100 text-xs text-gray-500 grid grid-cols-2 gap-x-2 gap-y-0.5">
+          <div className="mt-1 pt-1 border-t border-border-subtle text-xs text-text-secondary grid grid-cols-2 gap-x-2 gap-y-0.5">
             {session.resource && (
               <p><span className="font-medium">منبع:</span> {session.resource}</p>
             )}

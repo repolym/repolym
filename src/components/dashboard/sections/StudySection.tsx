@@ -6,14 +6,14 @@ import { Button } from '../../common/Button';
 export default function StudySection() {
     return (
         <div className="space-y-6 dir-rtl text-right">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+            <div className="bg-surface-1 rounded-2xl border border-border shadow-sm p-8 text-center">
                 <div className="flex justify-center mb-4">
-                    <div className="p-4 bg-indigo-50 rounded-full">
-                        <BookOpen className="w-12 h-12 text-indigo-600" />
+                    <div className="p-4 bg-accent-muted rounded-full">
+                        <BookOpen className="w-12 h-12 text-accent" />
                     </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">مدیریت جلسات مطالعه</h3>
-                <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+                <h3 className="text-xl font-bold text-text-primary">مدیریت جلسات مطالعه</h3>
+                <p className="text-sm text-text-secondary mt-2 max-w-md mx-auto">
                     برای ثبت جلسات مطالعه جدید، مشاهدهٔ جلسات امروز، انجام چک‌این روزانه و دسترسی به تاریخچه،
                     به صفحهٔ اختصاصی مطالعات بروید.
                 </p>

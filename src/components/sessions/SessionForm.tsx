@@ -274,8 +274,8 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         />
 
         {/* جزئیات بیشتر (اختیاری) */}
-        <details className="mt-4 border-t border-gray-200 pt-4">
-          <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-700">
+        <details className="mt-4 border-t border-border pt-4">
+          <summary className="cursor-pointer text-sm font-medium text-accent hover:text-accent-hover">
             جزئیات بیشتر (اختیاری)
           </summary>
           <div className="mt-4 space-y-4">

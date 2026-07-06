@@ -85,7 +85,7 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
                 خطا در بارگذاری تاریخچه: {error}
                 <button
                     onClick={() => window.location.reload()}
-                    className="block mx-auto mt-4 text-indigo-600 hover:underline"
+                    className="block mx-auto mt-4 text-accent hover:underline"
                 >
                     تلاش مجدد
                 </button>

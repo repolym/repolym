@@ -49,7 +49,7 @@ export const AdminManagement: React.FC = () => {
     return (
         <div className="p-5 md:p-8 max-w-6xl mx-auto" dir="rtl">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">مدیریت ادمین‌ها</h1>
+                <h1 className="text-2xl font-bold text-text-primary">مدیریت ادمین‌ها</h1>
                 <Button variant="secondary" onClick={() => refetch()} loading={loading}>
                     <RefreshCw className="w-4 h-4" />
                     بروزرسانی
@@ -62,12 +62,12 @@ export const AdminManagement: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 mb-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">ارتقا به ادمین</h2>
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 mb-6">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">ارتقا به ادمین</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {nonAdmins.slice(0, 10).map((u) => (
-                        <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <span className="text-sm font-medium text-gray-700 truncate ml-2" title={u.name}>{u.name}</span>
+                        <div key={u.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
+                            <span className="text-sm font-medium text-text-secondary truncate ml-2" title={u.name}>{u.name}</span>
                             <Button variant="primary" size="sm" onClick={() => openConfirm(u.id, 'promote')} className="shrink-0">
                                 <UserPlus className="w-4 h-4" />
                                 ارتقا
@@ -75,15 +75,15 @@ export const AdminManagement: React.FC = () => {
                         </div>
                     ))}
                     {nonAdmins.length === 0 && (
-                        <p className="text-gray-400 text-sm">همه کاربران ادمین هستند.</p>
+                        <p className="text-text-tertiary text-sm">همه کاربران ادمین هستند.</p>
                     )}
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-x-auto min-w-full">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-gray-50 text-gray-500 border-b border-gray-200 whitespace-nowrap">
+                        <tr className="bg-surface-2 text-text-secondary border-b border-border whitespace-nowrap">
                             <th className="text-right py-3 px-4 font-medium">نام</th>
                             <th className="text-right py-3 px-4 font-medium">ایمیل</th>
                             <th className="text-right py-3 px-4 font-medium">تاریخ عضویت</th>
@@ -92,15 +92,15 @@ export const AdminManagement: React.FC = () => {
                     </thead>
                     <tbody>
                         {loading && users.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-8 text-gray-400">در حال بارگذاری...</td></tr>
+                            <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">در حال بارگذاری...</td></tr>
                         ) : users.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-8 text-gray-400">هیچ ادمینی یافت نشد</td></tr>
+                            <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">هیچ ادمینی یافت نشد</td></tr>
                         ) : (
                             users.map((admin) => (
-                                <tr key={admin.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                    <td className="py-3 px-4 font-medium text-gray-800 whitespace-nowrap">{admin.name}</td>
-                                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{admin.email}</td>
-                                    <td className="py-3 px-4 text-gray-500 whitespace-nowrap text-xs">{formatDate(admin.created_at)}</td>
+                                <tr key={admin.id} className="border-b border-border-subtle hover:bg-surface-2 transition-colors">
+                                    <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">{admin.name}</td>
+                                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{admin.email}</td>
+                                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap text-xs">{formatDate(admin.created_at)}</td>
                                     <td className="py-3 px-4 whitespace-nowrap">
                                         <button
                                             onClick={() => openConfirm(admin.id, 'demote')}

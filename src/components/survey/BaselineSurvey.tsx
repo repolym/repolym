@@ -103,27 +103,27 @@ const BaselineSurvey: React.FC = () => {
     // Render
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-            <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-6 md:p-10">
+            <div className="max-w-2xl w-full bg-surface-1 rounded-3xl shadow-2xl p-6 md:p-10">
                 {/* Progress */}
                 <div className="flex items-center gap-4 mb-6">
-                    <span className="text-sm text-gray-400 font-medium">
+                    <span className="text-sm text-text-tertiary font-medium">
                         سوال {step + 1} از {questions.length}
                     </span>
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-surface-3 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-sm text-gray-400 font-medium">{Math.round(progress)}%</span>
+                    <span className="text-sm text-text-tertiary font-medium">{Math.round(progress)}%</span>
                 </div>
 
                 {/* Question */}
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">{currentQ.label}</h2>
+                <h2 className="text-2xl font-bold text-text-primary mb-6">{currentQ.label}</h2>
 
                 {currentQ.isText ? (
                     <textarea
-                        className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all resize-none text-lg"
+                        className="w-full p-4 border-2 border-border rounded-2xl focus:border-accent focus:ring-4 focus:ring-indigo-100 transition-all resize-none text-lg"
                         rows={4}
                         placeholder={currentQ.placeholder}
                         value={answers[currentQ.id] || ''}
@@ -136,7 +136,7 @@ const BaselineSurvey: React.FC = () => {
                             <button
                                 key={opt}
                                 onClick={() => handleSelect(opt)}
-                                className="w-full text-right px-5 py-4 border-2 border-gray-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50 transition-all text-base font-medium"
+                                className="w-full text-right px-5 py-4 border-2 border-border rounded-2xl hover:border-accent hover:bg-accent-muted transition-all text-base font-medium"
                             >
                                 {opt}
                             </button>
@@ -150,13 +150,13 @@ const BaselineSurvey: React.FC = () => {
                     </div>
                 )}
 
-                <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-8 pt-6 border-t border-border-subtle">
                     <button
                         onClick={goBack}
                         disabled={step === 0}
                         className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${step === 0
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-600 hover:bg-gray-100'
+                            ? 'text-text-tertiary cursor-not-allowed'
+                            : 'text-text-secondary hover:bg-surface-3'
                             }`}
                     >
                         ← قبلی
@@ -166,7 +166,7 @@ const BaselineSurvey: React.FC = () => {
                         <button
                             onClick={handleSubmit}
                             disabled={loading}
-                            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-70"
+                            className="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-70"
                         >
                             {loading ? 'در حال ثبت...' : 'ثبت و رفتن به داشبورد 🚀'}
                         </button>
@@ -177,7 +177,7 @@ const BaselineSurvey: React.FC = () => {
                                 setStep(prev => Math.min(prev + 1, questions.length - 1))
                             }}
                             disabled={!currentQ.isText && !answers[currentQ.id]}
-                            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-50"
+                            className="px-8 py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-50"
                         >
                             بعدی →
                         </button>
@@ -185,7 +185,7 @@ const BaselineSurvey: React.FC = () => {
                 </div>
 
                 {isLast && (
-                    <p className="text-center text-gray-400 text-sm mt-4">
+                    <p className="text-center text-text-tertiary text-sm mt-4">
                         سوال آخر اختیاری است، می‌توانی خالی بگذاری
                     </p>
                 )}

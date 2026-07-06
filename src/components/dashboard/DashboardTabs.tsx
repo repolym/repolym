@@ -24,7 +24,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export const DashboardTabs: React.FC<DashboardTabsProps> = ({ tabs, activeTab, onChange }) => {
     return (
-        <div className="flex gap-2 border-b border-gray-200 pb-2 overflow-x-auto">
+        <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
@@ -34,8 +34,8 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({ tabs, activeTab, o
                         className={`
               flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap
               ${isActive
-                                ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                ? 'bg-accent-muted text-accent-hover shadow-sm'
+                                : 'text-text-secondary hover:bg-surface-2 hover:text-text-secondary'
                             }
             `}
                     >

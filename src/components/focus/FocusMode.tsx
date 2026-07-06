@@ -328,13 +328,13 @@ export const FocusMode: React.FC = () => {
                 transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            <div className="relative z-10 w-full max-w-xl flex flex-col items-center backdrop-blur-3xl bg-white/[0.02] border border-white/5 shadow-[0_24px_80px_rgba(0,0,0,0.4)] rounded-[2.5rem] p-8 md:p-12">
+            <div className="relative z-10 w-full max-w-xl flex flex-col items-center backdrop-blur-3xl bg-surface-1/[0.02] border border-white/5 shadow-[0_24px_80px_rgba(0,0,0,0.4)] rounded-[2.5rem] p-8 md:p-12">
 
                 {/* Minimalist Top Nav */}
                 <div className="flex items-center justify-between w-full mb-10">
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-white/80 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                        className="p-3 rounded-2xl bg-surface-1/[0.04] border border-white/10 hover:bg-surface-1/[0.08] text-white/80 hover:text-white transition-all flex items-center justify-center shadow-sm"
                         title="بازگشت به داشبورد"
                     >
                         <ArrowRight className="w-5 h-5" />
@@ -349,7 +349,7 @@ export const FocusMode: React.FC = () => {
                         {mode === 'pomodoro' ? (
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-white/80 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                className="p-3 rounded-2xl bg-surface-1/[0.04] border border-white/10 hover:bg-surface-1/[0.08] text-white/80 hover:text-white transition-all flex items-center justify-center shadow-sm"
                                 title="تنظیمات"
                             >
                                 <Settings className="w-5 h-5" />
@@ -370,7 +370,7 @@ export const FocusMode: React.FC = () => {
                             setTimeRemaining(focusMinutes * 60)
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'pomodoro' && !isBreak
-                            ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
+                            ? 'bg-surface-1/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
                             : 'text-white/40 hover:text-white/80'
                             }`}
                     >
@@ -385,7 +385,7 @@ export const FocusMode: React.FC = () => {
                             setTimeRemaining(DEEP_FOCUS_MINUTES * 60)
                         }}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'deep-focus' && !isBreak
-                            ? 'bg-white/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
+                            ? 'bg-surface-1/[0.08] text-white shadow-md border border-white/10 backdrop-blur-md'
                             : 'text-white/40 hover:text-white/80'
                             }`}
                     >
@@ -456,7 +456,7 @@ export const FocusMode: React.FC = () => {
 
                 {/* Subtitle / Session Information */}
                 {selectedSubjectName && (
-                    <div className="flex items-center gap-2 text-white/50 text-xs mb-8 bg-white/[0.02] border border-white/5 px-4 py-1.5 rounded-full shadow-sm">
+                    <div className="flex items-center gap-2 text-white/50 text-xs mb-8 bg-surface-1/[0.02] border border-white/5 px-4 py-1.5 rounded-full shadow-sm">
                         <BookOpen className="w-3.5 h-3.5 text-white/40" />
                         <span>مبحث فعال: <strong className="text-white/80 font-medium">{selectedSubjectName}</strong></span>
                     </div>
@@ -466,7 +466,7 @@ export const FocusMode: React.FC = () => {
                 <div className="flex items-center gap-6 justify-center w-full">
                     <motion.button
                         onClick={resetTimer}
-                        className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] text-white/60 hover:text-white transition-all shadow-sm flex items-center justify-center"
+                        className="p-4 rounded-2xl bg-surface-1/[0.03] border border-white/5 hover:bg-surface-1/[0.07] text-white/60 hover:text-white transition-all shadow-sm flex items-center justify-center"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
@@ -475,7 +475,7 @@ export const FocusMode: React.FC = () => {
 
                     <motion.button
                         onClick={handleStartPause}
-                        className="h-16 w-32 rounded-2xl bg-white text-slate-950 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(255,255,255,0.2)] font-semibold text-sm hover:bg-white/90 transition-all"
+                        className="h-16 w-32 rounded-2xl bg-surface-1 text-slate-950 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(255,255,255,0.2)] font-semibold text-sm hover:bg-surface-1/90 transition-all"
                         whileHover={{ scale: 1.03, y: -1 }}
                         whileTap={{ scale: 0.98 }}
                     >
@@ -522,7 +522,7 @@ export const FocusMode: React.FC = () => {
                                 <h3 className="text-sm font-bold tracking-wide text-white/90">تنظیمات پومودورو</h3>
                                 <button
                                     onClick={() => setShowSettings(false)}
-                                    className="p-1.5 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                                    className="p-1.5 rounded-xl hover:bg-surface-1/10 text-white/50 hover:text-white transition-colors"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -535,7 +535,7 @@ export const FocusMode: React.FC = () => {
                                         type="number"
                                         value={focusMinutes}
                                         onChange={(e) => updateFocusMinutes(Number(e.target.value))}
-                                        className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:bg-white/[0.06] transition-all font-mono"
+                                        className="w-full px-4 py-3 bg-surface-1/[0.03] rounded-xl border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:bg-surface-1/[0.06] transition-all font-mono"
                                         min={1}
                                         max={120}
                                     />
@@ -547,7 +547,7 @@ export const FocusMode: React.FC = () => {
                                         type="number"
                                         value={breakMinutes}
                                         onChange={(e) => updateBreakMinutes(Number(e.target.value))}
-                                        className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:bg-white/[0.06] transition-all font-mono"
+                                        className="w-full px-4 py-3 bg-surface-1/[0.03] rounded-xl border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:bg-surface-1/[0.06] transition-all font-mono"
                                         min={1}
                                         max={30}
                                     />
@@ -573,7 +573,7 @@ export const FocusMode: React.FC = () => {
 
                                 <button
                                     onClick={() => setShowSettings(false)}
-                                    className="w-full mt-2 px-4 py-3 bg-white text-slate-950 hover:bg-white/90 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md"
+                                    className="w-full mt-2 px-4 py-3 bg-surface-1 text-slate-950 hover:bg-surface-1/90 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md"
                                 >
                                     ذخیره و اعمال تغییرات
                                 </button>

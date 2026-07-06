@@ -48,9 +48,9 @@ export const DailyCheckInCard: React.FC = () => {
     }
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100" dir="rtl">
+        <div className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle" dir="rtl">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-800">چک‌این امروز</h3>
+                <h3 className="text-sm font-semibold text-text-primary">چک‌این امروز</h3>
                 {existing && (
                     <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
                         <Check className="w-3.5 h-3.5" aria-hidden="true" />
@@ -61,7 +61,7 @@ export const DailyCheckInCard: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label htmlFor="checkin-sleep" className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
+                    <label htmlFor="checkin-sleep" className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-1.5">
                         <Moon className="w-3.5 h-3.5" aria-hidden="true" />
                         ساعت خواب
                     </label>
@@ -75,11 +75,11 @@ export const DailyCheckInCard: React.FC = () => {
                         value={sleepHours}
                         onChange={(e) => setSleepHours(e.target.value)}
                         placeholder="مثلاً ۷"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full px-3 py-2 bg-surface-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                 </div>
                 <div>
-                    <label htmlFor="checkin-phone" className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5">
+                    <label htmlFor="checkin-phone" className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-1.5">
                         <Smartphone className="w-3.5 h-3.5" aria-hidden="true" />
                         استفاده از موبایل (دقیقه)
                     </label>
@@ -93,7 +93,7 @@ export const DailyCheckInCard: React.FC = () => {
                         value={phoneMinutes}
                         onChange={(e) => setPhoneMinutes(e.target.value)}
                         placeholder="مثلاً ۹۰"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full px-3 py-2 bg-surface-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                 </div>
             </div>
@@ -102,7 +102,7 @@ export const DailyCheckInCard: React.FC = () => {
                 onClick={handleSave}
                 disabled={saving}
                 aria-busy={saving}
-                className="w-full mt-4 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-xl transition-all disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+                className="w-full mt-4 flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2.5 rounded-xl transition-all disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
             >
                 {saving ? 'در حال ذخیره...' : 'ذخیره وضعیت امروز'}
             </button>

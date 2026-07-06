@@ -72,7 +72,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const navGroups = user?.is_admin ? adminNavGroups : studentNavGroups
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden" dir="rtl">
+    <div className="flex h-screen bg-surface-2 overflow-hidden" dir="rtl">
       {mobileOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
@@ -83,20 +83,20 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <aside
         className={`
           fixed lg:static inset-y-0 right-0 z-30 w-64 flex flex-col
-          bg-white/80 backdrop-blur-2xl border-l border-gray-200/60
+          bg-surface-1/80 backdrop-blur-2xl border-l border-border/60
           shadow-xl shadow-gray-200/50 rounded-l-3xl lg:rounded-none
           transform transition-transform duration-300 ease-out
           ${mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="flex items-center px-5 py-6 border-b border-gray-100">
+        <div className="flex items-center px-5 py-6 border-b border-border-subtle">
           <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-12 w-auto object-contain" />
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navGroups.map((group, idx) => (
             <div key={idx} className="mb-6">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 mb-2">
+              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider px-3 mb-2">
                 {group.label}
               </p>
               <div className="space-y-1">
@@ -111,18 +111,18 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                       className={`
                         group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
                         ${isActive
-                          ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'bg-accent-muted text-accent-hover shadow-sm'
+                          : 'text-text-secondary hover:bg-surface-3 hover:text-text-primary'
                         }
                         relative
                       `}
                     >
-                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-accent' : 'text-text-tertiary group-hover:text-text-secondary'}`} />
                       <span>{item.label}</span>
                       {isActive && (
-                        <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-600 rounded-full" />
+                        <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-full" />
                       )}
-                      {isActive && <ChevronRight className="w-4 h-4 mr-auto text-indigo-400" />}
+                      {isActive && <ChevronRight className="w-4 h-4 mr-auto text-accent" />}
                     </Link>
                   )
                 })}
@@ -133,28 +133,28 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         <Link
           to="/profile"
-          className="mx-3 mb-4 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors block group"
+          className="mx-3 mb-4 p-3 rounded-2xl bg-surface-2 border border-border-subtle hover:bg-surface-3 transition-colors block group"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-white text-sm font-bold">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate group-hover:text-indigo-700 transition-colors">
+              <p className="text-sm font-medium text-text-primary truncate group-hover:text-accent-hover transition-colors">
                 {user?.name}
               </p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <p className="text-xs text-text-tertiary truncate">{user?.email}</p>
             </div>
-            <UserCog className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+            <UserCog className="w-4 h-4 text-text-tertiary group-hover:text-accent transition-colors" />
           </div>
         </Link>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-border-subtle">
           <div className="flex items-center gap-2">
             <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-8 w-auto" />
-            <span className="text-sm font-bold text-gray-700 hidden sm:inline">علامه حلی 10</span>
+            <span className="text-sm font-bold text-text-secondary hidden sm:inline">علامه حلی 10</span>
           </div>
 
           <div className="flex-1 flex justify-center"></div>
@@ -162,7 +162,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <div className="flex items-center gap-2">
             <Link
               to="/dashboard"
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
             >
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">داشبورد</span>
@@ -170,7 +170,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+              className="lg:hidden text-text-secondary hover:text-text-primary p-2 rounded-xl hover:bg-surface-3 transition-colors"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

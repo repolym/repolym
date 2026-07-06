@@ -42,7 +42,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ sessions, goal
     }, [sessions, goals, todayStr])
 
     if (loading) {
-        return <div className="animate-pulse h-40 bg-gray-100 rounded-2xl mt-6"></div>
+        return <div className="animate-pulse h-40 bg-surface-3 rounded-2xl mt-6"></div>
     }
 
     return (
@@ -51,11 +51,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ sessions, goal
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h2 className="text-2xl font-bold mb-1">خلاصه وضعیت امروز</h2>
-                        <p className="text-indigo-200 text-sm">بررسی سریع عملکرد شما در امروز</p>
+                        <p className="text-accent-subtle text-sm">بررسی سریع عملکرد شما در امروز</p>
                     </div>
 
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex flex-col items-center min-w-[120px]">
-                        <span className="text-xs text-indigo-100 mb-2 font-medium">نمره امروز شما</span>
+                    <div className="bg-surface-1/10 backdrop-blur-md rounded-2xl p-4 flex flex-col items-center min-w-[120px]">
+                        <span className="text-xs text-accent-subtle mb-2 font-medium">نمره امروز شما</span>
                         <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
@@ -69,30 +69,30 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ sessions, goal
 
                 <div className="grid grid-cols-2 gap-4 mt-8">
                     <div className="bg-black/10 rounded-2xl p-4 flex items-center gap-3 text-right">
-                        <Clock className="text-indigo-200 w-8 h-8 flex-shrink-0" />
+                        <Clock className="text-accent-subtle w-8 h-8 flex-shrink-0" />
                         <div>
-                            <p className="text-xs text-indigo-200">مدت مطالعه</p>
+                            <p className="text-xs text-accent-subtle">مدت مطالعه</p>
                             <p className="text-lg font-bold">{formatMinutesPersian(todayData.totalMinutes)}</p>
                         </div>
                     </div>
                     <div className="bg-black/10 rounded-2xl p-4 flex items-center gap-3 text-right">
-                        <Target className="text-indigo-200 w-8 h-8 flex-shrink-0" />
+                        <Target className="text-accent-subtle w-8 h-8 flex-shrink-0" />
                         <div>
-                            <p className="text-xs text-indigo-200">اهداف باقی‌مانده</p>
+                            <p className="text-xs text-accent-subtle">اهداف باقی‌مانده</p>
                             <p className="text-lg font-bold">{toPersianDigits(todayData.remainingGoals.length)} هدف</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-right">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <div className="bg-surface-1 rounded-3xl p-6 shadow-sm border border-border-subtle text-right">
+                <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                     اهداف فعال و برنامه‌های امروز
                 </h3>
 
                 {todayData.remainingGoals.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400 text-sm">
+                    <div className="text-center py-8 text-text-tertiary text-sm">
                         عالیه! تمامی اهداف برنامه‌ریزی شده را انجام داده‌اید یا هدفی ثبت نشده است. 🎉
                     </div>
                 ) : (
@@ -102,11 +102,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({ sessions, goal
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 key={goal.id || idx}
-                                className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 text-right"
+                                className="flex items-center gap-3 p-3 hover:bg-surface-2 rounded-xl transition-colors border border-border-subtle text-right"
                             >
-                                <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                                <Circle className="w-5 h-5 text-text-tertiary flex-shrink-0" />
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-700">{goal.title || 'هدف بدون عنوان'}</p>
+                                    <p className="text-sm font-medium text-text-secondary">{goal.title || 'هدف بدون عنوان'}</p>
                                 </div>
                             </motion.div>
                         ))}

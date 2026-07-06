@@ -51,15 +51,15 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="bg-surface-1 rounded-2xl border border-border shadow-sm p-6">
+            <h2 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                 <span>چک‌این روزانه</span>
-                <span className="text-sm text-gray-400 font-normal">(پایان روز)</span>
+                <span className="text-sm text-text-tertiary font-normal">(پایان روز)</span>
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <label className="block text-sm font-medium text-text-secondary mb-1 flex items-center gap-2">
                             <Sun className="w-4 h-4 text-amber-500" />
                             ساعت بیداری
                         </label>
@@ -67,25 +67,25 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
                             type="time"
                             value={wakeTime}
                             onChange={(e) => setWakeTime(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                            <Moon className="w-4 h-4 text-indigo-500" />
+                        <label className="block text-sm font-medium text-text-secondary mb-1 flex items-center gap-2">
+                            <Moon className="w-4 h-4 text-accent" />
                             ساعت خواب
                         </label>
                         <input
                             type="time"
                             value={sleepTime}
                             onChange={(e) => setSleepTime(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <label className="block text-sm font-medium text-text-secondary mb-1 flex items-center gap-2">
                             <Smartphone className="w-4 h-4 text-rose-500" />
                             استفاده از موبایل (دقیقه)
                         </label>
@@ -96,7 +96,7 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
                             value={phoneMinutes}
                             onChange={(e) => setPhoneMinutes(e.target.value)}
                             placeholder="مثلاً 120"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         />
                     </div>
                     <div>
@@ -104,13 +104,13 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
                     </div>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">یادداشت روزانه (اختیاری)</label>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">یادداشت روزانه (اختیاری)</label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={2}
                         placeholder="هر نکته‌ای که می‌خواهید ثبت کنید..."
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     />
                 </div>
                 <Button type="submit" variant="primary" loading={saving} className="w-full md:w-auto">

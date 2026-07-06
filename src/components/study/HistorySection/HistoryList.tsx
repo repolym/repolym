@@ -20,16 +20,16 @@ export const HistoryList: React.FC<Props> = ({ sessions, loading }) => {
     const loadMore = () => setVisibleCount(prev => prev + PAGE_SIZE);
 
     if (loading) {
-        return <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>;
+        return <div className="text-center py-8 text-text-tertiary">در حال بارگذاری...</div>;
     }
 
     if (sessions.length === 0) {
-        return <div className="text-center py-8 text-gray-400">هیچ جلسه‌ای با این فیلترها یافت نشد.</div>;
+        return <div className="text-center py-8 text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد.</div>;
     }
 
     return (
         <div>
-            <div className="text-sm text-gray-500 mb-4">
+            <div className="text-sm text-text-secondary mb-4">
                 {toPersianDigits(sessions.length)} جلسه یافت شد
             </div>
             <div className="space-y-1">

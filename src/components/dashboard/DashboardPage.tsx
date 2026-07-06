@@ -75,22 +75,22 @@ export const DashboardPage: React.FC = () => {
     }, [greeting.period])
 
     return (
-        <div className="h-full bg-gray-50 text-gray-800 font-sans p-4 md:p-8 flex flex-col gap-6 overflow-y-auto" dir="rtl">
+        <div className="h-full bg-surface-2 text-text-primary font-sans p-4 md:p-8 flex flex-col gap-6 overflow-y-auto" dir="rtl">
             {/* Header */}
-            <header className="flex items-center justify-between border-b border-gray-200 pb-6 shrink-0">
+            <header className="flex items-center justify-between border-b border-border pb-6 shrink-0">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="h-3 w-3 bg-indigo-500 rounded-full" />
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1">
+                        <span className="h-3 w-3 bg-accent rounded-full" />
+                        <span className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
                             <CalendarDays className="w-3 h-3" />
                             {formatDate(today())}
                         </span>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                        {greeting.text}، <span className="text-indigo-600">{firstName}</span>
+                    <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
+                        {greeting.text}، <span className="text-accent">{firstName}</span>
                     </h1>
                 </div>
-                <div className="text-gray-400">
+                <div className="text-text-tertiary">
                     <GreetingIcon className="w-8 h-8" />
                 </div>
             </header>
@@ -105,7 +105,7 @@ export const DashboardPage: React.FC = () => {
             </motion.div>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-gray-200 pb-2 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto scrollbar-hide">
                 {tabConfig.map((tab) => {
                     const isActive = activeTab === tab.id
                     return (
@@ -115,8 +115,8 @@ export const DashboardPage: React.FC = () => {
                             className={`
                 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap
                 ${isActive
-                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                    ? 'bg-accent-muted text-accent-hover shadow-sm'
+                                    : 'text-text-secondary hover:bg-surface-2 hover:text-text-secondary'
                                 }
               `}
                         >
@@ -171,7 +171,7 @@ export const DashboardPage: React.FC = () => {
 const SectionSkeleton: React.FC = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
         {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-card space-y-4">
+            <div key={i} className="bg-surface-1 rounded-2xl p-6 border border-border-subtle shadow-card space-y-4">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />

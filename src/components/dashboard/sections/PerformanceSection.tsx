@@ -42,9 +42,9 @@ const SafeTooltipContent = ({ active, payload, label, unit }: any) => {
     const raw = payload[0]?.value
     const numericVal = typeof raw === 'number' && !isNaN(raw) ? raw : null
     return (
-        <div className="bg-white border border-gray-200 p-2 rounded-lg shadow-lg text-right text-sm">
-            <p className="font-medium text-gray-700 mb-1">{safeLabel}</p>
-            <p className="text-gray-600">
+        <div className="bg-surface-1 border border-border p-2 rounded-lg shadow-lg text-right text-sm">
+            <p className="font-medium text-text-secondary mb-1">{safeLabel}</p>
+            <p className="text-text-secondary">
                 {unit}:{' '}
                 <span className="font-bold">
                     {numericVal !== null ? toPersianDigits(Math.round(numericVal)) : '—'} {unit === 'خواب' ? 'ساعت' : 'دقیقه'}
@@ -59,8 +59,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         const safeLabel = typeof label === 'string' ? label : ''
         return (
-            <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-lg text-right text-sm">
-                <p className="font-semibold text-gray-700 mb-1">{safeLabel}</p>
+            <div className="bg-surface-1 border border-border p-3 rounded-xl shadow-lg text-right text-sm">
+                <p className="font-semibold text-text-secondary mb-1">{safeLabel}</p>
                 {payload.map((p: any, idx: number) => {
                     const value = typeof p.value === 'number' ? p.value : 0
                     const name = p.name === 'minutes' ? 'مدت مطالعه' :
@@ -68,7 +68,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                             p.name === 'avg_accuracy_percent' ? 'درصد صحت' :
                                 p.name
                     return (
-                        <p key={idx} className="flex items-center justify-between gap-4 text-gray-600">
+                        <p key={idx} className="flex items-center justify-between gap-4 text-text-secondary">
                             <span>{name}</span>
                             <span className="font-mono font-medium">
                                 {p.name === 'avg_accuracy_percent' ? `${toPersianDigits(value)}%` : toPersianDigits(value)}
@@ -236,73 +236,73 @@ const PerformanceSection: React.FC = () => {
         <div className="space-y-6" dir="rtl">
             {/* 1. KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                <div className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500">دقت آزمون‌ها</span>
-                        <Target className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-medium text-text-secondary">دقت آزمون‌ها</span>
+                        <Target className="w-4 h-4 text-accent" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-800">
+                        <span className="text-2xl font-bold text-text-primary">
                             {toPersianDigits(Math.round(test_stats?.accuracy_percent || 0))}%
                         </span>
                         {test_stats?.trend === 'up' && <span className="text-xs text-emerald-600 font-medium">▲ رو به بهبود</span>}
                         {test_stats?.trend === 'down' && <span className="text-xs text-rose-600 font-medium">▼ نیاز به تمرین</span>}
                     </div>
-                    <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="mt-2 h-1.5 w-full bg-surface-3 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-indigo-500 rounded-full transition-all"
+                            className="h-full bg-accent rounded-full transition-all"
                             style={{ width: `${Math.min(100, test_stats?.accuracy_percent || 0)}%` }}
                         />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                <div className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500">روند مطالعه</span>
+                        <span className="text-xs font-medium text-text-secondary">روند مطالعه</span>
                         <Zap className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-800">{toPersianDigits(study_streak?.current_streak || 0)}</span>
-                        <span className="text-sm text-gray-500">روز پیاپی</span>
+                        <span className="text-2xl font-bold text-text-primary">{toPersianDigits(study_streak?.current_streak || 0)}</span>
+                        <span className="text-sm text-text-secondary">روز پیاپی</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">بهترین: {toPersianDigits(study_streak?.longest_streak || 0)} روز</p>
+                    <p className="text-xs text-text-tertiary mt-1">بهترین: {toPersianDigits(study_streak?.longest_streak || 0)} روز</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100">
+                <div className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500">سرعت مطالعه</span>
+                        <span className="text-xs font-medium text-text-secondary">سرعت مطالعه</span>
                         <Activity className="w-4 h-4 text-emerald-500" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-800">{toPersianDigits(Math.round(progress_trend?.current_avg_minutes || 0))}</span>
-                        <span className="text-sm text-gray-500">دقیقه/روز</span>
+                        <span className="text-2xl font-bold text-text-primary">{toPersianDigits(Math.round(progress_trend?.current_avg_minutes || 0))}</span>
+                        <span className="text-sm text-text-secondary">دقیقه/روز</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-text-tertiary mt-1">
                         {progress_trend?.direction === 'improving' ? `▲ ${Math.round(progress_trend?.percent_change_vs_baseline || 0)}% رشد` : 'پایدار'}
                     </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-5 border border-indigo-200/50">
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-5 border border-accent-subtle/50">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-indigo-700">ثبات</span>
-                        <CheckCircle className="w-4 h-4 text-indigo-600" />
+                        <span className="text-xs font-medium text-accent-hover">ثبات</span>
+                        <CheckCircle className="w-4 h-4 text-accent" />
                     </div>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-indigo-800">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span>
-                        <span className="text-xs text-indigo-600 font-medium">عالی</span>
+                        <span className="text-2xl font-bold text-accent-hover">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span>
+                        <span className="text-xs text-accent font-medium">عالی</span>
                     </div>
-                    <p className="text-xs text-indigo-600/70 mt-1">به همین روال ادامه بده</p>
+                    <p className="text-xs text-accent/70 mt-1">به همین روال ادامه بده</p>
                 </div>
             </div>
 
             {/* 2. نمودار مطالعه + تحلیل دروس */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <div className="lg:col-span-2 bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-semibold text-gray-800">روند مطالعه و آزمون</h3>
-                        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                            <button onClick={() => setTimeRange('week')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>هفته‌ای</button>
-                            <button onClick={() => setTimeRange('month')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>ماهانه</button>
+                        <h3 className="text-base font-semibold text-text-primary">روند مطالعه و آزمون</h3>
+                        <div className="flex gap-1 bg-surface-3 p-1 rounded-xl">
+                            <button onClick={() => setTimeRange('week')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'week' ? 'bg-surface-1 text-accent shadow-sm' : 'text-text-secondary hover:text-text-secondary'}`}>هفته‌ای</button>
+                            <button onClick={() => setTimeRange('month')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${timeRange === 'month' ? 'bg-surface-1 text-accent shadow-sm' : 'text-text-secondary hover:text-text-secondary'}`}>ماهانه</button>
                         </div>
                     </div>
                     <div className="h-64 w-full">
@@ -328,29 +328,29 @@ const PerformanceSection: React.FC = () => {
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
-                        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-indigo-500 rounded-full" />مدت مطالعه (دقیقه)</span>
+                    <div className="flex items-center justify-center gap-6 mt-4 text-xs text-text-secondary">
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-accent rounded-full" />مدت مطالعه (دقیقه)</span>
                         <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-emerald-500 rounded-full" />درصد صحت آزمون</span>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
-                    <h3 className="text-base font-semibold text-gray-800 mb-4">تحلیل آزمون دروس</h3>
+                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
+                    <h3 className="text-base font-semibold text-text-primary mb-4">تحلیل آزمون دروس</h3>
                     {safeSubjectTestStats.length === 0 ? (
-                        <p className="text-sm text-gray-400">هنوز داده‌ای برای تحلیل دروس موجود نیست.</p>
+                        <p className="text-sm text-text-tertiary">هنوز داده‌ای برای تحلیل دروس موجود نیست.</p>
                     ) : (
                         <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
                             {[...safeSubjectTestStats].sort((a, b) => b.avg_accuracy_percent - a.avg_accuracy_percent).map((subject, idx) => {
                                 const pct = Math.round(subject.avg_accuracy_percent || 0)
                                 let label = 'متوسط'
-                                let labelClass = 'bg-gray-100 text-gray-600'
+                                let labelClass = 'bg-surface-3 text-text-secondary'
                                 if (pct >= 80) { label = 'عالی'; labelClass = 'bg-emerald-100 text-emerald-700' }
                                 else if (pct < 50) { label = 'نیاز به تمرین'; labelClass = 'bg-amber-100 text-amber-700' }
                                 return (
                                     <div key={subject.subject_id || idx} className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700 truncate ml-2">{subject.subject_name}</span>
+                                        <span className="text-sm font-medium text-text-secondary truncate ml-2">{subject.subject_name}</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono text-gray-500">{toPersianDigits(pct)}%</span>
+                                            <span className="text-xs font-mono text-text-secondary">{toPersianDigits(pct)}%</span>
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${labelClass}`}>{label}</span>
                                         </div>
                                     </div>
@@ -358,9 +358,9 @@ const PerformanceSection: React.FC = () => {
                             })}
                         </div>
                     )}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-400">
-                            <span className="font-medium text-gray-600">بهترین روز:</span> {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : '—'}
+                    <div className="mt-4 pt-4 border-t border-border-subtle">
+                        <p className="text-xs text-text-tertiary">
+                            <span className="font-medium text-text-secondary">بهترین روز:</span> {best_worst_day?.best_date ? formatDateShort(best_worst_day.best_date) : '—'}
                         </p>
                     </div>
                 </div>
@@ -369,12 +369,12 @@ const PerformanceSection: React.FC = () => {
             {/* 3. سهم زمانی دروس و تصمیم‌گیری هوشمند (NEW) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* نمودار دایره‌ای توزیع ساعات */}
-                <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <div className="lg:col-span-1 bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                     <div className="flex items-center gap-2 mb-2">
-                        <BarChart3 className="h-5 w-5 text-indigo-500" />
-                        <h3 className="text-base font-semibold text-gray-800">سهم زمانی دروس</h3>
+                        <BarChart3 className="h-5 w-5 text-accent" />
+                        <h3 className="text-base font-semibold text-text-primary">سهم زمانی دروس</h3>
                     </div>
-                    <p className="text-xs text-gray-500 mb-4">توزیع درصد ساعات مطالعه</p>
+                    <p className="text-xs text-text-secondary mb-4">توزیع درصد ساعات مطالعه</p>
 
                     {subjectDistData.length > 0 ? (
                         <>
@@ -395,37 +395,37 @@ const PerformanceSection: React.FC = () => {
                                     <div key={i} className="flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-2">
                                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                            <span className="text-gray-700">{item.name}</span>
+                                            <span className="text-text-secondary">{item.name}</span>
                                         </div>
-                                        <span className="font-mono text-gray-500">{toPersianDigits(item.percent)}%</span>
+                                        <span className="font-mono text-text-secondary">{toPersianDigits(item.percent)}%</span>
                                     </div>
                                 ))}
                             </div>
                         </>
                     ) : (
-                        <p className="text-center text-gray-400 text-sm py-12">داده‌ای از مطالعه دروس ثبت نشده است.</p>
+                        <p className="text-center text-text-tertiary text-sm py-12">داده‌ای از مطالعه دروس ثبت نشده است.</p>
                     )}
                 </div>
 
                 {/* تصمیم‌گیری و تحلیل اختصاصی وضعیت دروس */}
-                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <div className="lg:col-span-2 bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                     <div className="flex items-center gap-2 mb-2">
-                        <BookOpen className="h-5 w-5 text-indigo-500" />
-                        <h3 className="text-base font-semibold text-gray-800">تحلیل وضعیت دروس</h3>
+                        <BookOpen className="h-5 w-5 text-accent" />
+                        <h3 className="text-base font-semibold text-text-primary">تحلیل وضعیت دروس</h3>
                     </div>
-                    <p className="text-xs text-gray-500 mb-6">بر اساس توزیع زمان مطالعه در ۳۰ روز گذشته</p>
+                    <p className="text-xs text-text-secondary mb-6">بر اساس توزیع زمان مطالعه در ۳۰ روز گذشته</p>
 
                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                         {studyAnalysis.length > 0 ? (
                             studyAnalysis.map((item: any, idx: number) => (
-                                <div key={idx} className="p-4 border border-gray-100 rounded-xl bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div key={idx} className="p-4 border border-border-subtle rounded-xl bg-surface-2/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
                                             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                            <h4 className="font-bold text-sm text-gray-800">{item.subject_name}</h4>
-                                            <span className="text-xs text-gray-500 font-mono">({toPersianDigits(Math.round(item.minutes / 60))} ساعت)</span>
+                                            <h4 className="font-bold text-sm text-text-primary">{item.subject_name}</h4>
+                                            <span className="text-xs text-text-secondary font-mono">({toPersianDigits(Math.round(item.minutes / 60))} ساعت)</span>
                                         </div>
-                                        <p className="text-xs text-gray-600 leading-relaxed max-w-lg">
+                                        <p className="text-xs text-text-secondary leading-relaxed max-w-lg">
                                             {item.recommendation}
                                         </p>
                                     </div>
@@ -449,7 +449,7 @@ const PerformanceSection: React.FC = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-12 text-gray-400 text-sm">
+                            <div className="text-center py-12 text-text-tertiary text-sm">
                                 داده‌ای برای تحلیل در دسترس نیست. ابتدا ساعت مطالعه وارد کنید.
                             </div>
                         )}
@@ -459,11 +459,11 @@ const PerformanceSection: React.FC = () => {
 
             {/* 4. نمودار خواب و گوشی */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2"><Moon className="w-5 h-5 text-indigo-500" />خواب روزانه</h3>
-                        <div className="text-xs text-gray-400">
-                            {sleepStats.count > 0 ? <span>میانگین: <span className="font-bold text-gray-700">{toPersian(sleepStats.avg)} ساعت</span></span> : 'داده‌ای موجود نیست'}
+                        <h3 className="text-base font-semibold text-text-primary flex items-center gap-2"><Moon className="w-5 h-5 text-accent" />خواب روزانه</h3>
+                        <div className="text-xs text-text-tertiary">
+                            {sleepStats.count > 0 ? <span>میانگین: <span className="font-bold text-text-secondary">{toPersian(sleepStats.avg)} ساعت</span></span> : 'داده‌ای موجود نیست'}
                         </div>
                     </div>
                     <div className="h-48 w-full">
@@ -479,11 +479,11 @@ const PerformanceSection: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2"><Smartphone className="w-5 h-5 text-rose-500" />استفاده از گوشی</h3>
-                        <div className="text-xs text-gray-400">
-                            {phoneStats.count > 0 ? <span>میانگین: <span className="font-bold text-gray-700">{toPersian(phoneStats.avg)} دقیقه</span></span> : 'داده‌ای موجود نیست'}
+                        <h3 className="text-base font-semibold text-text-primary flex items-center gap-2"><Smartphone className="w-5 h-5 text-rose-500" />استفاده از گوشی</h3>
+                        <div className="text-xs text-text-tertiary">
+                            {phoneStats.count > 0 ? <span>میانگین: <span className="font-bold text-text-secondary">{toPersian(phoneStats.avg)} دقیقه</span></span> : 'داده‌ای موجود نیست'}
                         </div>
                     </div>
                     <div className="h-48 w-full">
@@ -501,33 +501,33 @@ const PerformanceSection: React.FC = () => {
             </div>
 
             {/* 5. بینش هوشمند */}
-            <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
-                <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-indigo-500" />
+            <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
+                <h3 className="text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-accent" />
                     بینش هوشمند
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="font-medium text-gray-700">نکته مطالعه</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-text-secondary">
+                    <div className="bg-surface-2 rounded-xl p-4 border border-border-subtle">
+                        <p className="font-medium text-text-secondary">نکته مطالعه</p>
                         <p className="mt-1">
-                            امتیاز ثبات شما <span className="font-bold text-indigo-600">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span> است.
+                            امتیاز ثبات شما <span className="font-bold text-accent">{toPersianDigits(Math.round(study_consistency?.consistency_score || 0))}%</span> است.
                             {study_consistency?.consistency_score < 50 ? ' سعی کنید هر روز حتی مقدار کم مطالعه کنید تا عادت شکل بگیرد.' : ' عادت مطالعه خوبی دارید. ادامه دهید!'}
                         </p>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="font-medium text-gray-700">نقطه ضعف درسی</p>
+                    <div className="bg-surface-2 rounded-xl p-4 border border-border-subtle">
+                        <p className="font-medium text-text-secondary">نقطه ضعف درسی</p>
                         <p className="mt-1">
                             {safeSubjectTestStats.length > 0 ? (
                                 <>بر روی درس <span className="font-bold text-amber-600">{[...safeSubjectTestStats].sort((a, b) => a.avg_accuracy_percent - b.avg_accuracy_percent)[0]?.subject_name || 'نامشخص'}</span> بیشتر تمرکز کنید تا میانگین کلی بهبود یابد.</>
                             ) : ('برای تشخیص نقاط ضعف، آزمون بیشتری ثبت کنید.')}
                         </p>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="font-medium text-gray-700">تحلیل خواب و گوشی</p>
+                    <div className="bg-surface-2 rounded-xl p-4 border border-border-subtle">
+                        <p className="font-medium text-text-secondary">تحلیل خواب و گوشی</p>
                         <p className="mt-1">
                             {sleepStats.count > 0 ? (
                                 <>
-                                    میانگین خواب: <span className="font-bold text-indigo-600">{toPersian(sleepStats.avg)} ساعت</span>
+                                    میانگین خواب: <span className="font-bold text-accent">{toPersian(sleepStats.avg)} ساعت</span>
                                     {sleepStats.avg !== null && sleepStats.avg < 7 ? ' — خواب کمتر از حد توصیه شده (۷ ساعت) ممکن است روی تمرکز تأثیر بگذارد.' : ' — خواب مناسبی دارید.'}
                                     {phoneStats.avg !== null && phoneStats.avg > 120 ? ' استفاده از گوشی بیش از حد معمول (بیش از ۲ ساعت) می‌تواند بازدهی را کاهش دهد.' : ''}
                                 </>

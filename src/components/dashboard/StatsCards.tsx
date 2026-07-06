@@ -47,7 +47,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => 
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cardConfig.map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 space-y-3">
+          <div key={i} className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle space-y-3">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-8 w-24" />
             <Skeleton className="h-4 w-16" />
@@ -63,16 +63,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => 
         <motion.div
           key={key}
           whileHover={{ y: -2, scale: 1.02 }}
-          className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 transition-all"
+          className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle transition-all"
         >
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Icon className="w-4 h-4 text-indigo-600" />
+            <div className="w-8 h-8 rounded-xl bg-accent-muted flex items-center justify-center">
+              <Icon className="w-4 h-4 text-accent" />
             </div>
-            <span className="text-sm font-medium text-gray-600">{label}</span>
+            <span className="text-sm font-medium text-text-secondary">{label}</span>
           </div>
-          <p className="text-2xl font-bold text-gray-800 tabular-nums">{values[key]}</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-2xl font-bold text-text-primary tabular-nums">{values[key]}</p>
+          <p className="text-xs text-text-tertiary mt-1">
             {key === 'monthMins'
               ? `${toPersianDigits(stats.monthDays)} روز فعال`
               : 'مطالعه'}

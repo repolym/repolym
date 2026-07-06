@@ -75,31 +75,31 @@ export const AdminProfile: React.FC = () => {
 
     return (
         <div className="p-5 md:p-8 max-w-3xl mx-auto" dir="rtl">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">پروفایل ادمین</h1>
+            <h1 className="text-2xl font-bold text-text-primary mb-6">پروفایل ادمین</h1>
 
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 space-y-6">
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 space-y-6">
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-white text-2xl font-bold">
                         {user?.name?.charAt(0) || 'A'}
                     </div>
                     <div>
-                        <p className="text-lg font-semibold text-gray-900">{user?.name}</p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="text-lg font-semibold text-text-primary">{user?.name}</p>
+                        <p className="text-sm text-text-secondary flex items-center gap-1">
                             <Mail className="w-4 h-4" />
                             {user?.email}
                         </p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="text-sm text-text-secondary flex items-center gap-1">
                             <Shield className="w-4 h-4" />
                             {user?.is_admin ? 'مدیر سیستم' : 'کاربر عادی'}
                         </p>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-5">
+                <div className="border-t border-border-subtle pt-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <User className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">نام</span>
+                            <User className="w-5 h-5 text-text-tertiary" />
+                            <span className="text-sm font-medium text-text-secondary">نام</span>
                         </div>
                         {editingName ? (
                             <div className="flex items-center gap-2">
@@ -118,8 +118,8 @@ export const AdminProfile: React.FC = () => {
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-800">{user?.name}</span>
-                                <button onClick={() => setEditingName(true)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                                <span className="text-sm text-text-primary">{user?.name}</span>
+                                <button onClick={() => setEditingName(true)} className="p-1.5 rounded-lg text-text-tertiary hover:text-accent hover:bg-accent-muted transition">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
@@ -129,34 +129,34 @@ export const AdminProfile: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-5 space-y-4">
+                <div className="border-t border-border-subtle pt-5 space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">تاریخ عضویت</span>
+                            <Calendar className="w-5 h-5 text-text-tertiary" />
+                            <span className="text-sm font-medium text-text-secondary">تاریخ عضویت</span>
                         </div>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-text-secondary">
                             {user?.created_at ? formatDate(user.created_at) : '—'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm font-medium text-gray-700">آخرین ورود</span>
+                            <span className="text-sm font-medium text-text-secondary">آخرین ورود</span>
                         </div>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-text-secondary">
                             {user?.last_login ? formatDate(user.last_login) : '—'}
                         </span>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-5">
+                <div className="border-t border-border-subtle pt-5">
                     <form onSubmit={handleChangePassword} className="space-y-4">
                         <div className="flex items-center gap-2 mb-3">
-                            <Key className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">تغییر رمز عبور</span>
+                            <Key className="w-5 h-5 text-text-tertiary" />
+                            <span className="text-sm font-medium text-text-secondary">تغییر رمز عبور</span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
                             <Input
@@ -187,7 +187,7 @@ export const AdminProfile: React.FC = () => {
                     </form>
                 </div>
 
-                <div className="border-t border-gray-100 pt-5">
+                <div className="border-t border-border-subtle pt-5">
                     <Button variant="danger" onClick={handleLogout} className="w-full md:w-auto">
                         <LogOut className="w-4 h-4" />
                         خروج از حساب

@@ -119,7 +119,7 @@ export const TodosPage: React.FC = () => {
             {/* Filters and search */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <div className="flex-1 relative">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
                     <Input
                         type="text"
                         placeholder="جستجو در عنوان وظایف..."
@@ -131,7 +131,7 @@ export const TodosPage: React.FC = () => {
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                    className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm w-36"
+                    className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm w-36"
                 >
                     <option value="all">همه وضعیت‌ها</option>
                     <option value="pending">در انتظار</option>
@@ -142,7 +142,7 @@ export const TodosPage: React.FC = () => {
                 <select
                     value={subjectFilter}
                     onChange={(e) => setSubjectFilter(e.target.value)}
-                    className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm w-36"
+                    className="rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm w-36"
                 >
                     <option value="all">همه دروس</option>
                     {subjects.map((s) => (

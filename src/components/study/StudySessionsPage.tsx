@@ -88,8 +88,8 @@ export const StudySessionsPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">مطالعات من</h1>
-                    <p className="text-gray-500 text-sm mt-1">ثبت و مدیریت جلسات مطالعه روزانه</p>
+                    <h1 className="text-3xl font-bold text-text-primary">مطالعات من</h1>
+                    <p className="text-text-secondary text-sm mt-1">ثبت و مدیریت جلسات مطالعه روزانه</p>
                 </div>
                 <Button variant="primary" onClick={() => setIsFormOpen(true)}>
                     <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,12 +111,12 @@ export const StudySessionsPage: React.FC = () => {
                         <TodaySummary sessions={todaySessions} loading={todayLoading} />
 
                         {/* Today's Sessions List */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mt-6">
-                            <h2 className="text-lg font-bold text-gray-800 mb-4">جلسات امروز</h2>
+                        <div className="bg-surface-1 rounded-2xl border border-border shadow-sm p-6 mt-6">
+                            <h2 className="text-lg font-bold text-text-primary mb-4">جلسات امروز</h2>
                             {todayLoading ? (
-                                <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+                                <div className="text-center py-8 text-text-tertiary">در حال بارگذاری...</div>
                             ) : todaySessions.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400">
+                                <div className="text-center py-8 text-text-tertiary">
                                     امروز هنوز جلسه‌ای ثبت نشده است.
                                     <Button variant="secondary" className="mt-3" onClick={() => setIsFormOpen(true)}>
                                         ثبت اولین جلسه امروز

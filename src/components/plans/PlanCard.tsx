@@ -17,14 +17,14 @@ interface PlanCardProps {
 }
 
 const statusConfig = {
-    pending: { label: 'در انتظار', color: 'text-gray-500', bg: 'bg-gray-100' },
+    pending: { label: 'در انتظار', color: 'text-text-secondary', bg: 'bg-surface-3' },
     in_progress: { label: 'در حال انجام', color: 'text-blue-600', bg: 'bg-blue-50' },
     completed: { label: 'تکمیل شده', color: 'text-green-600', bg: 'bg-green-50' },
     cancelled: { label: 'لغو شده', color: 'text-red-600', bg: 'bg-red-50' },
 }
 
 const priorityConfig = {
-    low: { label: 'کم', color: 'text-gray-500' },
+    low: { label: 'کم', color: 'text-text-secondary' },
     medium: { label: 'متوسط', color: 'text-yellow-600' },
     high: { label: 'بالا', color: 'text-red-600' },
 }
@@ -94,7 +94,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             >
                 <div className="flex items-start gap-3">
                     {dragHandle && (
-                        <div {...attributes} {...listeners} className="cursor-grab text-gray-300 hover:text-gray-500 mt-1">
+                        <div {...attributes} {...listeners} className="cursor-grab text-text-tertiary hover:text-text-secondary mt-1">
                             <GripVertical className="w-4 h-4" />
                         </div>
                     )}
@@ -164,9 +164,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
                 {/* Progress bar */}
                 <div className="flex items-center gap-3">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                            className="h-full bg-accent rounded-full transition-all duration-300"
                             style={{ width: `${plan.progress}%` }}
                         />
                     </div>
@@ -178,7 +178,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                             max="100"
                             value={plan.progress}
                             onChange={handleProgressChange}
-                            className="w-16 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-indigo-600"
+                            className="w-16 h-1.5 bg-surface-3 rounded-full appearance-none cursor-pointer accent-indigo-600"
                         />
                     )}
                 </div>

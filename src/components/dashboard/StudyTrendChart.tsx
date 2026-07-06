@@ -39,7 +39,7 @@ export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, load
 
     if (loading) {
         return (
-            <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+            <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                 <div className="flex items-center gap-2 mb-5">
                     <Skeleton className="h-5 w-32" />
                 </div>
@@ -50,16 +50,16 @@ export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, load
 
     if (data.every((d) => d.minutes === 0)) {
         return (
-            <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+            <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                         <TrendingUp className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-800">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
+                    <h3 className="font-semibold text-text-primary">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
                 </div>
                 <div className="flex flex-col items-center py-12 text-center">
-                    <p className="text-gray-500">هنوز داده‌ای برای نمایش وجود ندارد</p>
-                    <p className="text-sm text-gray-400 mt-1">جلسات مطالعه‌ی خود را ثبت کنید تا روند پیشرفتتان را ببینید</p>
+                    <p className="text-text-secondary">هنوز داده‌ای برای نمایش وجود ندارد</p>
+                    <p className="text-sm text-text-tertiary mt-1">جلسات مطالعه‌ی خود را ثبت کنید تا روند پیشرفتتان را ببینید</p>
                 </div>
             </div>
         )
@@ -69,12 +69,12 @@ export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, load
     const yAxisMax = Math.ceil(maxMinutes / 30) * 30
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100">
+        <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-gray-800">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
+                <h3 className="font-semibold text-text-primary">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
             </div>
 
             <div className="h-64 w-full">

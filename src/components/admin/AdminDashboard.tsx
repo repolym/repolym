@@ -92,13 +92,13 @@ const OverviewTab: React.FC = () => {
   }, [showToast])
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+    return <div className="text-center py-8 text-text-tertiary">در حال بارگذاری...</div>
   }
 
   if (!stats) return null
 
   const statCards = [
-    { label: 'کل کاربران', value: stats.totalUsers, icon: Users, color: 'bg-indigo-500' },
+    { label: 'کل کاربران', value: stats.totalUsers, icon: Users, color: 'bg-accent' },
     { label: 'کاربران فعال امروز', value: stats.activeToday, icon: Activity, color: 'bg-emerald-500' },
     { label: 'کاربران جدید امروز', value: stats.newUsersToday, icon: UserPlus, color: 'bg-amber-500' },
     { label: 'جدید این هفته', value: stats.newUsersWeek, icon: Calendar, color: 'bg-purple-500' },
@@ -114,10 +114,10 @@ const OverviewTab: React.FC = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-lg text-right text-sm">
-          <p className="font-medium text-gray-700 mb-1">{toJalaliLong(label)}</p>
+        <div className="bg-surface-1 border border-border rounded-xl p-3 shadow-lg text-right text-sm">
+          <p className="font-medium text-text-secondary mb-1">{toJalaliLong(label)}</p>
           {payload.map((p: any, idx: number) => (
-            <p key={idx} className="text-gray-600">
+            <p key={idx} className="text-text-secondary">
               {p.name === 'count' ? 'تعداد' :
                 p.name === 'activeUsers' ? 'کاربران فعال' :
                   p.name === 'submissions' ? 'جلسات' :
@@ -137,11 +137,11 @@ const OverviewTab: React.FC = () => {
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statCards.map((card) => (
-          <div key={card.label} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+          <div key={card.label} className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-2xl font-bold text-gray-800">{toPersianDigits(card.value)}</p>
+                <p className="text-sm text-text-secondary">{card.label}</p>
+                <p className="text-2xl font-bold text-text-primary">{toPersianDigits(card.value)}</p>
               </div>
               <div className={`w-10 h-10 rounded-xl ${card.color} bg-opacity-10 flex items-center justify-center`}>
                 <card.icon className={`w-5 h-5 ${card.color.replace('bg-', 'text-')}`} />
@@ -153,8 +153,8 @@ const OverviewTab: React.FC = () => {
 
       {/* Charts - Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">ثبت‌نام کاربران (۳۰ روز اخیر)</h3>
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">ثبت‌نام کاربران (۳۰ روز اخیر)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={registrationData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -171,8 +171,8 @@ const OverviewTab: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">فعالیت روزانه کاربران (۳۰ روز اخیر)</h3>
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">فعالیت روزانه کاربران (۳۰ روز اخیر)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={activityData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -193,8 +193,8 @@ const OverviewTab: React.FC = () => {
 
       {/* Charts - Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">توزیع المپیادها</h3>
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">توزیع المپیادها</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -214,8 +214,8 @@ const OverviewTab: React.FC = () => {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">تعداد جلسات مطالعه (۳۰ روز اخیر)</h3>
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">تعداد جلسات مطالعه (۳۰ روز اخیر)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={submissionData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -235,12 +235,12 @@ const OverviewTab: React.FC = () => {
       </div>
 
       {/* Top Active Users */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">پرکاربردترین کاربران</h3>
+      <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+        <h3 className="text-sm font-semibold text-text-secondary mb-4">پرکاربردترین کاربران</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-500 bg-gray-50/50">
+              <tr className="text-text-secondary bg-surface-2/50">
                 <th className="text-right py-2 px-3 font-medium">کاربر</th>
                 <th className="text-right py-2 px-3 font-medium">جلسات</th>
                 <th className="text-right py-2 px-3 font-medium">مدت کل</th>
@@ -248,14 +248,14 @@ const OverviewTab: React.FC = () => {
             </thead>
             <tbody>
               {topUsers.map((u) => (
-                <tr key={u.user_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-2 px-3 font-medium text-gray-800">{u.name}</td>
+                <tr key={u.user_id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
+                  <td className="py-2 px-3 font-medium text-text-primary">{u.name}</td>
                   <td className="py-2 px-3">{toPersianDigits(u.sessions_count)}</td>
                   <td className="py-2 px-3 font-mono">{formatMinutes(u.total_minutes)}</td>
                 </tr>
               ))}
               {topUsers.length === 0 && (
-                <tr><td colSpan={3} className="py-4 text-center text-gray-400">داده‌ای موجود نیست</td></tr>
+                <tr><td colSpan={3} className="py-4 text-center text-text-tertiary">داده‌ای موجود نیست</td></tr>
               )}
             </tbody>
           </table>
@@ -264,56 +264,56 @@ const OverviewTab: React.FC = () => {
 
       {/* Recent Users & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-accent" />
               کاربران جدید
             </h3>
-            <Link to="/admin/users" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            <Link to="/admin/users" className="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
               مشاهده همه
               <ChevronLeft className="w-3 h-3" />
             </Link>
           </div>
           <div className="space-y-2">
             {stats.recentUsers.length === 0 ? (
-              <p className="text-sm text-gray-400">هیچ کاربر جدیدی ثبت نشده</p>
+              <p className="text-sm text-text-tertiary">هیچ کاربر جدیدی ثبت نشده</p>
             ) : (
               stats.recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <div key={user.id} className="flex items-center justify-between p-2 hover:bg-surface-2 rounded-lg transition-colors">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                    <p className="text-sm font-medium text-text-primary truncate">{user.name}</p>
+                    <p className="text-xs text-text-tertiary truncate">{user.email}</p>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap mr-2">{formatDate(user.created_at)}</span>
+                  <span className="text-xs text-text-tertiary whitespace-nowrap mr-2">{formatDate(user.created_at)}</span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
+        <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2">
+              <Clock className="w-4 h-4 text-accent" />
               آخرین فعالیت‌ها
             </h3>
-            <Link to="/admin/logs" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            <Link to="/admin/logs" className="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
               مشاهده همه
               <ChevronLeft className="w-3 h-3" />
             </Link>
           </div>
           <div className="space-y-2">
             {stats.recentActivity.length === 0 ? (
-              <p className="text-sm text-gray-400">هیچ فعالیتی ثبت نشده</p>
+              <p className="text-sm text-text-tertiary">هیچ فعالیتی ثبت نشده</p>
             ) : (
               stats.recentActivity.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <div key={log.id} className="flex items-center justify-between p-2 hover:bg-surface-2 rounded-lg transition-colors">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{log.users?.name || 'ناشناس'}</p>
-                    <p className="text-xs text-gray-400 truncate">{log.action}</p>
+                    <p className="text-sm font-medium text-text-primary truncate">{log.users?.name || 'ناشناس'}</p>
+                    <p className="text-xs text-text-tertiary truncate">{log.action}</p>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap mr-2">{formatDate(log.created_at)}</span>
+                  <span className="text-xs text-text-tertiary whitespace-nowrap mr-2">{formatDate(log.created_at)}</span>
                 </div>
               ))
             )}
@@ -404,13 +404,13 @@ const SessionsTab: React.FC = () => {
   return (
     <div>
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 mb-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
+      <div className="bg-surface-1 rounded-2xl p-4 mb-4 shadow-card border border-border-subtle flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-gray-500 mb-1">کاربر</label>
+          <label className="block text-xs text-text-secondary mb-1">کاربر</label>
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">همه کاربران</option>
             {users.map((u) => (
@@ -419,41 +419,41 @@ const SessionsTab: React.FC = () => {
           </select>
         </div>
         <div className="w-full sm:w-[180px]">
-          <label className="block text-xs text-gray-500 mb-1">از تاریخ (جلالی)</label>
+          <label className="block text-xs text-text-secondary mb-1">از تاریخ (جلالی)</label>
           <input
             type="text"
             placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
             value={jalaliStart}
             onChange={(e) => setJalaliStart(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         <div className="w-full sm:w-[180px]">
-          <label className="block text-xs text-gray-500 mb-1">تا تاریخ (جلالی)</label>
+          <label className="block text-xs text-text-secondary mb-1">تا تاریخ (جلالی)</label>
           <input
             type="text"
             placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
             value={jalaliEnd}
             onChange={(e) => setJalaliEnd(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         <button
           onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd('') }}
-          className="text-xs text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 px-3 py-2 rounded-xl transition"
+          className="text-xs text-text-secondary hover:text-accent bg-surface-3 hover:bg-accent-muted px-3 py-2 rounded-xl transition"
         >
           پاک‌کردن فیلترها
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto min-w-full">
+      <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-x-auto min-w-full">
         {loading ? (
-          <div className="py-10 text-center text-gray-400">در حال بارگذاری...</div>
+          <div className="py-10 text-center text-text-tertiary">در حال بارگذاری...</div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-500 bg-gray-50/50 whitespace-nowrap">
+              <tr className="text-text-secondary bg-surface-2/50 whitespace-nowrap">
                 <th className="text-right py-3 px-4 font-medium">کاربر</th>
                 <th className="text-right py-3 px-4 font-medium">تاریخ</th>
                 <th className="text-right py-3 px-4 font-medium">مدت</th>
@@ -465,13 +465,13 @@ const SessionsTab: React.FC = () => {
             </thead>
             <tbody>
               {sessions.length === 0 ? (
-                <tr><td colSpan={7} className="py-10 text-center text-gray-400">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
+                <tr><td colSpan={7} className="py-10 text-center text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
               ) : (
                 sessions.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <tr key={s.id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-800">{s.user_name}</span>
-                      <div className="text-xs text-gray-400">{s.user_email}</div>
+                      <span className="font-medium text-text-primary">{s.user_name}</span>
+                      <div className="text-xs text-text-tertiary">{s.user_email}</div>
                     </td>
                     <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
                     <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
@@ -556,13 +556,13 @@ const AnalyticsTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 shadow-card border border-gray-100 flex flex-wrap gap-4 items-end">
+      <div className="bg-surface-1 rounded-2xl p-4 shadow-card border border-border-subtle flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-gray-500 mb-1">کاربر</label>
+          <label className="block text-xs text-text-secondary mb-1">کاربر</label>
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">همه کاربران</option>
             {users.map((u) => (
@@ -576,8 +576,8 @@ const AnalyticsTab: React.FC = () => {
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${period === p
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-accent text-white shadow'
+                  : 'bg-surface-3 text-text-secondary hover:bg-surface-3'
                 }`}
             >
               {p === 'week' ? 'این هفته' : p === 'month' ? 'این ماه' : 'کل'}
@@ -587,28 +587,28 @@ const AnalyticsTab: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400">در حال بارگذاری...</div>
+        <div className="text-center py-8 text-text-tertiary">در حال بارگذاری...</div>
       ) : (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-              <p className="text-sm text-gray-500">کل مطالعه</p>
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+              <p className="text-sm text-text-secondary">کل مطالعه</p>
               <p className="text-2xl font-bold">{formatMinutes(totalMinutes)}</p>
             </div>
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-              <p className="text-sm text-gray-500">تعداد روزها</p>
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+              <p className="text-sm text-text-secondary">تعداد روزها</p>
               <p className="text-2xl font-bold">{toPersianDigits(data.length)}</p>
             </div>
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-              <p className="text-sm text-gray-500">میانگین روزانه</p>
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+              <p className="text-sm text-text-secondary">میانگین روزانه</p>
               <p className="text-2xl font-bold">{formatMinutes(avgMinutes)}</p>
             </div>
           </div>
 
           {/* Chart */}
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">روند مطالعه روزانه</h3>
+          <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
+            <h3 className="text-sm font-semibold text-text-secondary mb-4">روند مطالعه روزانه</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -640,15 +640,15 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-full mx-auto" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">پنل مدیریت</h1>
+      <h1 className="text-2xl font-bold text-text-primary mb-6">پنل مدیریت</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'overview'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-accent text-white shadow-lg shadow-indigo-200'
+              : 'bg-surface-1 text-text-secondary border border-border hover:bg-surface-2'
             }`}
         >
           نمای کلی
@@ -656,8 +656,8 @@ const AdminDashboard: React.FC = () => {
         <button
           onClick={() => setActiveTab('sessions')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'sessions'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-accent text-white shadow-lg shadow-indigo-200'
+              : 'bg-surface-1 text-text-secondary border border-border hover:bg-surface-2'
             }`}
         >
           جزئیات جلسات
@@ -665,8 +665,8 @@ const AdminDashboard: React.FC = () => {
         <button
           onClick={() => setActiveTab('analytics')}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'analytics'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              ? 'bg-accent text-white shadow-lg shadow-indigo-200'
+              : 'bg-surface-1 text-text-secondary border border-border hover:bg-surface-2'
             }`}
         >
           تحلیل‌ها

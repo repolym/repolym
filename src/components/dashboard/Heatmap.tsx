@@ -10,11 +10,11 @@ interface HeatmapProps {
 }
 
 const levelColors = [
-  'bg-gray-100',           // 0 - بدون مطالعه
-  'bg-indigo-200',         // 1 - کمتر از ۳۰ دقیقه
-  'bg-indigo-400',         // 2 - کمتر از ۹۰ دقیقه
-  'bg-indigo-500',         // 3 - کمتر از ۱۸۰ دقیقه
-  'bg-indigo-600',         // 4 - بیش از ۱۸۰ دقیقه
+  'bg-surface-3',           // 0 - بدون مطالعه
+  'bg-accent-subtle',         // 1 - کمتر از ۳۰ دقیقه
+  'bg-accent',         // 2 - کمتر از ۹۰ دقیقه
+  'bg-accent',         // 3 - کمتر از ۱۸۰ دقیقه
+  'bg-accent',         // 4 - بیش از ۱۸۰ دقیقه
 ]
 
 const PERSIAN_DAY_CHARS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
@@ -70,22 +70,22 @@ export const Heatmap: React.FC<HeatmapProps> = ({ sessions }) => {
   const activeDays = useMemo(() => days.filter((d) => d.minutes > 0).length, [days])
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100" dir="ltr">
+    <div className="bg-surface-1 rounded-2xl p-5 shadow-card border border-border-subtle" dir="ltr">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <h3 className="font-semibold text-text-primary flex items-center gap-2">
+            <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             فعالیت
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-text-secondary mt-1">
             {toPersianDigits(activeDays)} روز فعال · {formatMinutes(totalMinutes)} مجموع
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
           <span>کمتر</span>
           {levelColors.map((c, i) => (
             <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
@@ -102,7 +102,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ sessions }) => {
             {weeks.map((_, i) => {
               const label = monthLabels.find((m) => m.col === i)
               return (
-                <div key={i} className="w-4 text-xs text-gray-400 font-medium leading-none mr-0.5">
+                <div key={i} className="w-4 text-xs text-text-tertiary font-medium leading-none mr-0.5">
                   {label ? label.label : ''}
                 </div>
               )
@@ -113,7 +113,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ sessions }) => {
             {/* Day labels */}
             <div className="flex flex-col mr-1.5 gap-0.5">
               {PERSIAN_DAY_CHARS.map((ch, i) => (
-                <div key={i} className="w-3 h-3 text-xs text-gray-400 flex items-center justify-center">
+                <div key={i} className="w-3 h-3 text-xs text-text-tertiary flex items-center justify-center">
                   {i % 2 !== 0 ? ch : ''}
                 </div>
               ))}
@@ -149,10 +149,10 @@ export const Heatmap: React.FC<HeatmapProps> = ({ sessions }) => {
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 pointer-events-none shadow-xl"
+          className="fixed z-50 bg-surface-4 text-white text-xs rounded-lg px-3 py-2 pointer-events-none shadow-xl"
           style={{ top: tooltip.y - 45, left: tooltip.x - 50 }}
         >
-          <span className="text-gray-300">{formatDate(tooltip.date)}: </span>
+          <span className="text-text-tertiary">{formatDate(tooltip.date)}: </span>
           <span className="font-semibold">
             {tooltip.minutes === 0 ? 'مطالعه نداشتی' : formatMinutes(tooltip.minutes)}
           </span>

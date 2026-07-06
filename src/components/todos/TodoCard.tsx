@@ -12,14 +12,14 @@ interface TodoCardProps {
 }
 
 const statusConfig = {
-    pending: { label: 'در انتظار', color: 'text-gray-500', bg: 'bg-gray-100' },
+    pending: { label: 'در انتظار', color: 'text-text-secondary', bg: 'bg-surface-3' },
     in_progress: { label: 'در حال انجام', color: 'text-blue-600', bg: 'bg-blue-50' },
     completed: { label: 'تکمیل شده', color: 'text-green-600', bg: 'bg-green-50' },
     cancelled: { label: 'لغو شده', color: 'text-red-600', bg: 'bg-red-50' },
 }
 
 const priorityConfig = {
-    low: { label: 'کم', color: 'text-gray-500' },
+    low: { label: 'کم', color: 'text-text-secondary' },
     medium: { label: 'متوسط', color: 'text-yellow-600' },
     high: { label: 'بالا', color: 'text-red-600' },
 }
@@ -60,7 +60,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
                 <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-sm font-medium ${isCompleted || isCancelled ? 'line-through text-gray-400' : 'text-text-primary'}`}>
+                            <span className={`text-sm font-medium ${isCompleted || isCancelled ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
                                 {todo.title}
                             </span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>
@@ -93,7 +93,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onEdit, onDelete, onSt
                                 </span>
                             )}
                             {todo.actual_time && (
-                                <span className="flex items-center gap-1 text-indigo-600">
+                                <span className="flex items-center gap-1 text-accent">
                                     <CheckCircle className="w-3 h-3" />
                                     واقعی: {formatMinutes(todo.actual_time)}
                                 </span>

@@ -46,12 +46,12 @@ export const LoginPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
       >
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">خوش آمدید 👋</h2>
-        <p className="text-sm text-gray-500 mb-8">برای ادامه وارد حساب خود شوید</p>
+        <h2 className="text-2xl font-bold text-text-primary mb-1">خوش آمدید 👋</h2>
+        <p className="text-sm text-text-secondary mb-8">برای ادامه وارد حساب خود شوید</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
-            <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
+            <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" aria-hidden="true" />
             <label htmlFor="login-email" className="sr-only">ایمیل</label>
             <input
               id="login-email"
@@ -63,12 +63,12 @@ export const LoginPage: React.FC = () => {
               autoComplete="email"
               autoFocus
               aria-invalid={!!error}
-              className="w-full pr-12 pl-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </div>
 
           <div className="relative">
-            <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
+            <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" aria-hidden="true" />
             <label htmlFor="login-password" className="sr-only">رمز عبور</label>
             <input
               id="login-password"
@@ -80,7 +80,7 @@ export const LoginPage: React.FC = () => {
               minLength={6}
               autoComplete="current-password"
               aria-invalid={!!error}
-              className="w-full pr-12 pl-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </div>
 
@@ -99,7 +99,7 @@ export const LoginPage: React.FC = () => {
             type="submit"
             disabled={loading}
             aria-busy={loading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+            className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
           >
             {loading ? (
               <motion.div
@@ -116,9 +116,9 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-text-secondary">
           حساب ندارید؟{' '}
-          <Link to="/register" className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors">
+          <Link to="/register" className="text-accent font-medium hover:text-accent-hover transition-colors">
             همین حالا بسازید
           </Link>
         </p>

@@ -25,14 +25,14 @@ export const TabList: React.FC<{ children: React.ReactNode; activeIndex?: number
         const tabs = React.Children.map(children, (child, i) =>
             React.cloneElement(child as any, { isActive: i === activeIndex, onClick: () => setActiveIndex?.(i) })
         );
-        return <div className="flex gap-2 border-b border-gray-200 pb-2 mb-4">{tabs}</div>;
+        return <div className="flex gap-2 border-b border-border pb-2 mb-4">{tabs}</div>;
     };
 
 export const Tab: React.FC<{ children: React.ReactNode; isActive?: boolean; onClick?: () => void }> =
     ({ children, isActive, onClick }) => (
         <button
             onClick={onClick}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-accent-muted text-accent-hover shadow-sm' : 'text-text-secondary hover:bg-surface-2 hover:text-text-secondary'
                 }`}
         >
             {children}

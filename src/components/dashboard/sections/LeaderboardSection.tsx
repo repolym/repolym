@@ -163,18 +163,18 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
     return (
         <div className="space-y-6 mt-6 max-w-5xl mx-auto pb-12" dir="rtl">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-5 rounded-2xl border border-indigo-500/20 backdrop-blur-md">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-5 rounded-2xl border border-accent/20 backdrop-blur-md">
                 <div className="text-right">
-                    <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
+                    <h2 className="text-xl font-black text-text-primary flex items-center gap-2">
                         <Trophy className="w-6 h-6 text-amber-500 animate-bounce" />
                         تالار افتخارات و رقابت آنلاین دانش‌پژوهان
                     </h2>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="text-text-secondary text-xs mt-1">
                         عملکرد خودت رو بسنج و با برترین‌های پلتفرم به صورت لحظه‌ای رقابت کن!
                     </p>
                 </div>
                 {myRankInfo.rank && (
-                    <div className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 self-start md:self-auto">
+                    <div className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 self-start md:self-auto">
                         <TrendingUp className="w-4 h-4" />
                         رتبه شما در این بخش: {toPersianDigits(myRankInfo.rank)}#
                     </div>
@@ -182,18 +182,18 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-1 p-3 rounded-2xl border border-border-subtle shadow-sm">
+                <div className="flex bg-surface-3 p-1 rounded-xl gap-1">
                     <button
                         onClick={() => setScope('my_olympiad')}
-                        className={`py-2 px-4 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${scope === 'my_olympiad' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`py-2 px-4 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${scope === 'my_olympiad' ? 'bg-surface-1 text-accent shadow-sm' : 'text-text-secondary hover:text-text-secondary'}`}
                     >
                         <Users className="w-4 h-4" />
                         المپیاد من
                     </button>
                     <button
                         onClick={() => setScope('global')}
-                        className={`py-2 px-4 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${scope === 'global' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`py-2 px-4 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${scope === 'global' ? 'bg-surface-1 text-accent shadow-sm' : 'text-text-secondary hover:text-text-secondary'}`}
                     >
                         <Globe className="w-4 h-4" />
                         کل المپیادها
@@ -204,7 +204,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                     <select
                         value={windowType}
                         onChange={(e) => setWindowType(e.target.value as any)}
-                        className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 outline-none cursor-pointer"
+                        className="bg-surface-2 border border-border rounded-lg px-3 py-1.5 text-xs font-bold text-text-secondary outline-none cursor-pointer"
                     >
                         <option value="today">امروز</option>
                         <option value="week">هفته اخیر</option>
@@ -214,21 +214,21 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
 
                     <button
                         onClick={fetchLeaderboard}
-                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                        className="p-2 text-text-tertiary hover:text-accent hover:bg-accent-muted rounded-xl transition-colors"
                         title="بروزرسانی داده‌ها"
                     >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
                     </button>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-gray-100 p-1 rounded-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-surface-3 p-1 rounded-xl">
                 {(Object.keys(tabConfigs) as TabId[]).map((tabId) => (
                     <button
                         key={tabId}
                         onClick={() => setActiveTab(tabId)}
-                        className={`py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${activeTab === tabId ? 'bg-white text-indigo-600 shadow-md transform scale-[1.02]' : 'text-gray-500 hover:text-gray-800'}`}
+                        className={`py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${activeTab === tabId ? 'bg-surface-1 text-accent shadow-md transform scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}
                     >
                         {tabConfigs[tabId].icon}
                         {tabConfigs[tabId].label}
@@ -243,35 +243,35 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
 
             {loading ? (
                 <div className="animate-pulse space-y-3">
-                    <div className="h-40 bg-gray-100 rounded-2xl" />
-                    {[1, 2, 3].map(n => <div key={n} className="h-16 bg-gray-100/70 rounded-2xl" />)}
+                    <div className="h-40 bg-surface-3 rounded-2xl" />
+                    {[1, 2, 3].map(n => <div key={n} className="h-16 bg-surface-3/70 rounded-2xl" />)}
                 </div>
             ) : entries.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 shadow-sm font-medium">
+                <div className="text-center py-12 text-text-tertiary text-sm bg-surface-1 rounded-2xl border border-border-subtle shadow-sm font-medium">
                     هنوز هیچ داده‌ای برای نمایش رتبه‌بندی در این بازه ثبت نشده است. اولین نفر باشید!🚀
                 </div>
             ) : (
                 <>
                     {/* Podium */}
-                    <div className="bg-gradient-to-b from-white to-gray-50/50 rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="bg-gradient-to-b from-white to-gray-50/50 rounded-2xl p-6 border border-border-subtle shadow-sm">
                         <div className="flex items-end justify-center gap-3 md:gap-10 pt-10 pb-2 max-w-xl mx-auto">
                             {podiumUsers[1] && (
                                 <div className="flex flex-col items-center flex-1 transition-all duration-300 hover:scale-105">
                                     <div className="relative">
-                                        <div className="w-14 h-14 bg-gradient-to-tr from-gray-300 to-gray-100 rounded-full flex items-center justify-center text-xl font-bold border-2 border-gray-300 shadow-md">
+                                        <div className="w-14 h-14 bg-gradient-to-tr from-gray-300 to-gray-100 rounded-full flex items-center justify-center text-xl font-bold border-2 border-border-strong shadow-md">
                                             👤
                                         </div>
-                                        <span className="absolute -top-2 -right-1 bg-gray-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">۲</span>
+                                        <span className="absolute -top-2 -right-1 bg-surface-4 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">۲</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
-                                        <p className="text-xs font-black text-gray-800 truncate">{podiumUsers[1].name}</p>
+                                        <p className="text-xs font-black text-text-primary truncate">{podiumUsers[1].name}</p>
                                         <p className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md mt-0.5 inline-block max-w-full truncate">
                                             {getCustomTitle(1)}
                                         </p>
                                     </div>
-                                    <div className="w-full bg-gradient-to-t from-gray-200 to-gray-100 h-24 rounded-t-xl mt-3 flex flex-col items-center justify-center border-t border-gray-300">
-                                        <span className="text-sm font-black text-gray-700">{getFormattedValue(podiumUsers[1])}</span>
-                                        <span className="text-[9px] text-gray-400 font-bold">{tabConfigs[activeTab].unit}</span>
+                                    <div className="w-full bg-gradient-to-t from-gray-200 to-gray-100 h-24 rounded-t-xl mt-3 flex flex-col items-center justify-center border-t border-border-strong">
+                                        <span className="text-sm font-black text-text-secondary">{getFormattedValue(podiumUsers[1])}</span>
+                                        <span className="text-[9px] text-text-tertiary font-bold">{tabConfigs[activeTab].unit}</span>
                                     </div>
                                 </div>
                             )}
@@ -286,7 +286,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                                         <span className="absolute -top-1 -right-1 bg-amber-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ring-2 ring-white">۱</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
-                                        <p className="text-sm font-black text-gray-900 truncate">{podiumUsers[0].name}</p>
+                                        <p className="text-sm font-black text-text-primary truncate">{podiumUsers[0].name}</p>
                                         <p className="text-[9px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-full mt-0.5 inline-block max-w-full truncate">
                                             {getCustomTitle(0)}
                                         </p>
@@ -307,14 +307,14 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                                         <span className="absolute -top-2 -right-1 bg-orange-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">۳</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
-                                        <p className="text-xs font-black text-gray-800 truncate">{podiumUsers[2].name}</p>
+                                        <p className="text-xs font-black text-text-primary truncate">{podiumUsers[2].name}</p>
                                         <p className="text-[9px] font-bold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded-md mt-0.5 inline-block max-w-full truncate">
                                             {getCustomTitle(2)}
                                         </p>
                                     </div>
                                     <div className="w-full bg-gradient-to-t from-orange-100 to-orange-50 h-20 rounded-t-xl mt-3 flex flex-col items-center justify-center border-t border-orange-200">
-                                        <span className="text-sm font-black text-gray-700">{getFormattedValue(podiumUsers[2])}</span>
-                                        <span className="text-[9px] text-gray-400 font-bold">{tabConfigs[activeTab].unit}</span>
+                                        <span className="text-sm font-black text-text-secondary">{getFormattedValue(podiumUsers[2])}</span>
+                                        <span className="text-[9px] text-text-tertiary font-bold">{tabConfigs[activeTab].unit}</span>
                                     </div>
                                 </div>
                             )}
@@ -322,8 +322,8 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                     </div>
 
                     {/* Remaining list */}
-                    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-                        <div className="p-4 bg-gray-50 border-b border-gray-100 grid grid-cols-12 text-xs font-black text-gray-500 text-center">
+                    <div className="bg-surface-1 rounded-2xl border border-border-subtle overflow-hidden shadow-sm">
+                        <div className="p-4 bg-surface-2 border-b border-border-subtle grid grid-cols-12 text-xs font-black text-text-secondary text-center">
                             <div className="col-span-2">رتبه</div>
                             <div className="col-span-6 text-right pr-4">نام کارکرد و نشان افتخار</div>
                             <div className="col-span-4 text-left pl-6">مقدار ({periodLabels[windowType]})</div>
@@ -335,27 +335,27 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                                 return (
                                     <div
                                         key={entry.user_id}
-                                        className={`p-4 grid grid-cols-12 items-center text-center text-sm transition-colors ${isMe ? 'bg-indigo-50/60 font-black border-y border-indigo-100' : 'hover:bg-gray-50/40'}`}
+                                        className={`p-4 grid grid-cols-12 items-center text-center text-sm transition-colors ${isMe ? 'bg-accent-muted/60 font-black border-y border-accent-subtle' : 'hover:bg-surface-2/40'}`}
                                     >
                                         <div className="col-span-2 flex justify-center">
-                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isMe ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-600'}`}>
+                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isMe ? 'bg-accent text-white shadow' : 'bg-surface-3 text-text-secondary'}`}>
                                                 {toPersianDigits(entry.rank)}
                                             </span>
                                         </div>
 
                                         <div className="col-span-6 text-right pr-4 truncate">
-                                            <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                                            <span className="text-sm font-bold text-text-primary flex items-center gap-1.5">
                                                 {entry.name}
-                                                {isMe && <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-md font-black">شما</span>}
+                                                {isMe && <span className="text-[9px] bg-accent text-white px-1.5 py-0.5 rounded-md font-black">شما</span>}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                                            <p className="text-[10px] text-text-tertiary font-medium mt-0.5">
                                                 {getCustomTitle(entry.rank - 1)}
                                             </p>
                                         </div>
 
-                                        <div className="col-span-4 text-left pl-6 font-black text-indigo-700 flex items-center justify-end gap-1">
+                                        <div className="col-span-4 text-left pl-6 font-black text-accent-hover flex items-center justify-end gap-1">
                                             <span>{getFormattedValue(entry)}</span>
-                                            <span className="text-[10px] text-gray-400 font-normal">{tabConfigs[activeTab].unit}</span>
+                                            <span className="text-[10px] text-text-tertiary font-normal">{tabConfigs[activeTab].unit}</span>
                                         </div>
                                     </div>
                                 )
@@ -373,8 +373,8 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                             🚀
                         </div>
                         <div className="text-right">
-                            <h4 className="text-xs font-black text-gray-100">جایگاه اختصاصی شما</h4>
-                            <p className="text-[10px] text-gray-400 mt-0.5">
+                            <h4 className="text-xs font-black text-text-inverse">جایگاه اختصاصی شما</h4>
+                            <p className="text-[10px] text-text-tertiary mt-0.5">
                                 در تب <span className="text-amber-400 font-bold">{tabConfigs[activeTab].label}</span> / بازه <span className="text-amber-400 font-bold">{periodLabels[windowType]}</span>
                             </p>
                         </div>
@@ -382,13 +382,13 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
 
                     <div className="flex items-center gap-6">
                         <div className="text-center">
-                            <span className="block text-[9px] text-gray-400 font-bold">رتبه شما</span>
+                            <span className="block text-[9px] text-text-tertiary font-bold">رتبه شما</span>
                             <span className="text-sm font-black text-amber-400">#{toPersianDigits(myRankInfo.rank)}</span>
                         </div>
-                        <div className="text-center border-r border-gray-700 pr-5">
-                            <span className="block text-[9px] text-gray-400 font-bold">میزان کارکرد</span>
+                        <div className="text-center border-r border-border-strong pr-5">
+                            <span className="block text-[9px] text-text-tertiary font-bold">میزان کارکرد</span>
                             <span className="text-sm font-black text-white">
-                                {getFormattedValue(myRankInfo.data)} <span className="text-[9px] text-gray-400 font-normal">{tabConfigs[activeTab].unit}</span>
+                                {getFormattedValue(myRankInfo.data)} <span className="text-[9px] text-text-tertiary font-normal">{tabConfigs[activeTab].unit}</span>
                             </span>
                         </div>
                     </div>

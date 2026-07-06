@@ -28,12 +28,12 @@ export const TodaySummary: React.FC<Props> = ({ sessions, loading }) => {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100 shadow-sm">
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-accent-subtle shadow-sm">
                 <div className="flex items-center gap-3">
-                    <Clock className="w-6 h-6 text-indigo-600" />
+                    <Clock className="w-6 h-6 text-accent" />
                     <div>
-                        <p className="text-xs text-indigo-600 font-medium">زمان مطالعه امروز</p>
-                        <p className="text-2xl font-bold text-indigo-900">
+                        <p className="text-xs text-accent font-medium">زمان مطالعه امروز</p>
+                        <p className="text-2xl font-bold text-accent-hover">
                             {formatMinutes(stats.totalMinutes)}
                         </p>
                     </div>

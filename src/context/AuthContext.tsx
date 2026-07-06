@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx (COMPLETE)
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
@@ -39,9 +38,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const initialized = useRef(false)
   const loadingTimeoutRef = useRef<number | null>(null)
 
-  // ---------- Helper: apply onboarding ----------
+  // --- Helper functions ---
   const applyOnboarding = async (userId: string, onboarding: OnboardingData) => {
     if (onboarding.subjects.length > 0) {
       const rows = onboarding.subjects.map((s) => ({ user_id: userId, name: s.name, color: s.color }))
@@ -69,7 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (updateError) throw new Error('خطا در تکمیل ثبت‌نام: ' + updateError.message)
   }
 
-  // ---------- Helper: fetch user profile with retry ----------
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     console.log('🔍 Fetching profile for user:', userId)
     for (let i = 0; i < 5; i++) {
@@ -110,13 +109,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null
   }
 
-  // ---------- INITIALIZATION (with timeout, no 'initialized' ref) ----------
+  // --- INITIALIZATION (with timeout) ---
   useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+
     let isMounted = true
 
     // Safety timeout: force loading to stop after 4 seconds
     loadingTimeoutRef.current = window.setTimeout(() => {
-      if (isMounted) {
+      if (isMounted && isLoading) {
         console.warn('⚠️ Auth loading timeout – forcing isLoading=false')
         setIsLoading(false)
         setError('بارگذاری اطلاعات کاربر زمان‌بر بود. لطفاً دوباره تلاش کنید.')
@@ -178,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // ---------- Sign In ----------
+  // --- Auth methods (signIn, signUp, etc.) ---
   const signIn = async (email: string, password: string) => {
     setError(null)
     setIsLoading(true)
@@ -199,7 +201,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ---------- Sign Up ----------
   const signUp = async (
     email: string,
     name: string,
@@ -256,7 +257,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ---------- Complete Onboarding ----------
   const completeOnboarding = async (onboarding: OnboardingData) => {
     if (!session?.user) throw new Error('Not authenticated')
     setIsLoading(true)
@@ -272,7 +272,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ---------- Complete Baseline Survey ----------
   const completeBaselineSurvey = async (answers: BaselineSurveyAnswers) => {
     if (!session?.user) throw new Error('Not authenticated')
     setIsLoading(true)
@@ -302,7 +301,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ---------- Update Profile ----------
   const updateProfile = async (updates: Partial<{ name: string }>) => {
     if (!session?.user) throw new Error('Not authenticated')
     const { error } = await supabase
@@ -315,17 +313,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(updated)
   }
 
-  // ---------- Sign Out ----------
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)
   }
 
-  // ---------- Clear Error ----------
   const clearError = () => setError(null)
 
-  // ---------- Context Provider ----------
   return (
     <AuthContext.Provider
       value={{
