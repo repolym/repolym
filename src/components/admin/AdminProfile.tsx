@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
+import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { User, Mail, Shield, Calendar, LogOut, Key, Save } from 'lucide-react'
 import { formatDate } from '../../utils/date-utils'
 import { supabase } from '../../config/supabase'
@@ -79,9 +80,12 @@ export const AdminProfile: React.FC = () => {
 
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 space-y-6">
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-white text-2xl font-bold">
-                        {user?.name?.charAt(0) || 'A'}
-                    </div>
+                    <Avatar
+                        name={user?.name}
+                        avatarUrl={getAvatarUrl(user?.preferences)}
+                        fallback={<span>{user?.name?.charAt(0) || 'A'}</span>}
+                        className="w-16 h-16 rounded-full bg-accent text-white text-2xl font-bold"
+                    />
                     <div>
                         <p className="text-lg font-semibold text-text-primary">{user?.name}</p>
                         <p className="text-sm text-text-secondary flex items-center gap-1">

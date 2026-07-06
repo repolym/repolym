@@ -13,6 +13,7 @@ import { ConfirmModal } from '../common/Modal'
 import { SubjectForm, SubjectFormData } from '../common/SubjectForm'
 import { OlympiadPicker } from '../common/OlympiadPicker'
 import { AvatarCropModal } from './AvatarCropModal'
+import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { getOlympiad } from '../../config/olympiads'
 import { OLYMPIAD_ICON_MAP } from '../../config/olympiad-icons'
 import { formatError } from '../../utils/error-handler'
@@ -241,7 +242,7 @@ export const ProfilePage: React.FC = () => {
         }
     }
 
-    const avatarUrl = user?.preferences?.avatar_url as string | undefined
+    const avatarUrl = getAvatarUrl(user?.preferences)
 
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6" dir="rtl">
@@ -270,13 +271,11 @@ export const ProfilePage: React.FC = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 p-3 bg-surface-2 rounded-xl">
                             <div className="relative">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-                                    {avatarUrl ? (
-                                        <img src={avatarUrl} alt="آواتار" className="w-full h-full object-cover" />
-                                    ) : (
-                                        user?.name?.charAt(0) || '?'
-                                    )}
-                                </div>
+                                <Avatar
+                                    name={user?.name}
+                                    avatarUrl={avatarUrl}
+                                    className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-2xl font-bold"
+                                />
                                 <button
                                     onClick={handleAvatarClick}
                                     disabled={uploadingAvatar}

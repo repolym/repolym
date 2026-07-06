@@ -5,6 +5,7 @@ import { adminService } from '../../services/adminService'
 import { formatDate, formatMinutes } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Skeleton } from '../common/Loading'
+import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react'
 
 export const UserDetail: React.FC = () => {
@@ -79,9 +80,12 @@ export const UserDetail: React.FC = () => {
 
             {/* User Info */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-white text-2xl font-bold">
-                    {user.name?.charAt(0) || '?'}
-                </div>
+                <Avatar
+                    name={user.name}
+                    avatarUrl={getAvatarUrl(user.preferences)}
+                    fallback={<span>{user.name?.charAt(0) || '?'}</span>}
+                    className="w-16 h-16 rounded-full bg-accent text-white text-2xl font-bold"
+                />
                 <div>
                     <h2 className="text-xl font-bold text-text-primary">{user.name}</h2>
                     <p className="text-sm text-text-secondary flex items-center gap-1"><Mail className="w-4 h-4" /> {user.email}</p>

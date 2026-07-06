@@ -6,6 +6,7 @@ export interface LeaderboardEntry {
     rank: number
     user_id: string
     name: string
+    avatar_url?: string | null
     total_minutes_30: number
     active_days_30: number
     best_streak: number

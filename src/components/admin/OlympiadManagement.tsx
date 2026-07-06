@@ -6,6 +6,7 @@ import { formatMinutes } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Button } from '../common/Button'
 import { Skeleton } from '../common/Loading'
+import { Avatar } from '../common/Avatar'
 import { Trophy, RefreshCw } from 'lucide-react'
 
 export const OlympiadManagement: React.FC = () => {
@@ -114,7 +115,17 @@ export const OlympiadManagement: React.FC = () => {
                             {entries.map((entry) => (
                                 <tr key={entry.user_id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
                                     <td className="py-3 px-4 font-mono whitespace-nowrap">{toPersianDigits(entry.rank)}</td>
-                                    <td className="py-3 px-4 font-medium whitespace-nowrap">{entry.name}</td>
+                                    <td className="py-3 px-4 font-medium whitespace-nowrap">
+                                        <div className="flex items-center gap-2.5">
+                                            <Avatar
+                                                name={entry.name}
+                                                avatarUrl={entry.avatar_url}
+                                                initialsCount={2}
+                                                className="w-8 h-8 rounded-lg bg-accent text-white text-xs font-bold flex-shrink-0"
+                                            />
+                                            <span>{entry.name}</span>
+                                        </div>
+                                    </td>
                                     <td className="py-3 px-4 font-mono text-accent whitespace-nowrap">{entry.composite_score}</td>
                                     <td className="py-3 px-4 font-mono whitespace-nowrap">{formatMinutes(entry.total_minutes_30)}</td>
                                     <td className="py-3 px-4 whitespace-nowrap">{toPersianDigits(entry.active_days_30)}</td>

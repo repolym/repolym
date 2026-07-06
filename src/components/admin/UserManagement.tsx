@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { Button } from '../common/Button'
 import { Input } from '../common/Input'
 import { ConfirmModal } from '../common/Modal'
+import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { formatDate } from '../../utils/date-utils'
 import { Search, UserX, UserCheck, Trash2, Eye, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -248,7 +249,17 @@ export const UserManagement: React.FC = () => {
                             ) : (
                                 users.map((user) => (
                                     <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-2/60 transition-colors">
-                                        <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">{user.name}</td>
+                                        <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">
+                                            <div className="flex items-center gap-2.5">
+                                                <Avatar
+                                                    name={user.name}
+                                                    avatarUrl={getAvatarUrl(user.preferences)}
+                                                    initialsCount={2}
+                                                    className="w-8 h-8 rounded-lg bg-accent text-white text-xs font-bold flex-shrink-0"
+                                                />
+                                                <span>{user.name}</span>
+                                            </div>
+                                        </td>
                                         <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{user.email}</td>
                                         <td className="py-3 px-4 whitespace-nowrap">
                                             {user.is_admin ? (

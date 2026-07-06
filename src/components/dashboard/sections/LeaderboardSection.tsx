@@ -15,6 +15,7 @@ import {
     AlertCircle
 } from 'lucide-react'
 import { toPersianDigits } from '../../../utils/jalali'
+import { Avatar } from '../../common/Avatar'
 
 interface LeaderboardSectionProps {
     userId: string | null
@@ -25,6 +26,7 @@ interface LeaderboardEntry {
     rank: number
     user_id: string
     name: string
+    avatar_url?: string | null
     total_minutes_30: number
     active_days_30: number
     best_streak: number
@@ -258,9 +260,12 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                             {podiumUsers[1] && (
                                 <div className="flex flex-col items-center flex-1 transition-all duration-300 hover:scale-105">
                                     <div className="relative">
-                                        <div className="w-14 h-14 bg-gradient-to-tr from-gray-300 to-gray-100 rounded-full flex items-center justify-center text-xl font-bold border-2 border-border-strong shadow-md">
-                                            👤
-                                        </div>
+                                        <Avatar
+                                            name={podiumUsers[1].name}
+                                            avatarUrl={podiumUsers[1].avatar_url}
+                                            fallback={<span className="text-xl">👤</span>}
+                                            className="w-14 h-14 bg-gradient-to-tr from-gray-300 to-gray-100 rounded-full font-bold border-2 border-border-strong shadow-md"
+                                        />
                                         <span className="absolute -top-2 -right-1 bg-surface-4 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">۲</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
@@ -280,9 +285,12 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                                 <div className="flex flex-col items-center flex-1 z-10 transition-all duration-300 hover:scale-105">
                                     <div className="relative -mt-6">
                                         <Crown className="w-5 h-5 text-amber-500 absolute -top-4 left-1/2 transform -translate-x-1/2 animate-bounce" />
-                                        <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-yellow-200 rounded-full flex items-center justify-center text-2xl border-4 border-amber-400 shadow-xl ring-4 ring-amber-500/10">
-                                            👑
-                                        </div>
+                                        <Avatar
+                                            name={podiumUsers[0].name}
+                                            avatarUrl={podiumUsers[0].avatar_url}
+                                            fallback={<span className="text-2xl">👑</span>}
+                                            className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-yellow-200 rounded-full border-4 border-amber-400 shadow-xl ring-4 ring-amber-500/10"
+                                        />
                                         <span className="absolute -top-1 -right-1 bg-amber-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ring-2 ring-white">۱</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
@@ -301,9 +309,12 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                             {podiumUsers[2] && (
                                 <div className="flex flex-col items-center flex-1 transition-all duration-300 hover:scale-105">
                                     <div className="relative">
-                                        <div className="w-14 h-14 bg-gradient-to-tr from-orange-300 to-orange-100 rounded-full flex items-center justify-center text-xl font-bold border-2 border-orange-200 shadow-md">
-                                            👤
-                                        </div>
+                                        <Avatar
+                                            name={podiumUsers[2].name}
+                                            avatarUrl={podiumUsers[2].avatar_url}
+                                            fallback={<span className="text-xl">👤</span>}
+                                            className="w-14 h-14 bg-gradient-to-tr from-orange-300 to-orange-100 rounded-full font-bold border-2 border-orange-200 shadow-md"
+                                        />
                                         <span className="absolute -top-2 -right-1 bg-orange-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">۳</span>
                                     </div>
                                     <div className="text-center mt-2 w-full">
@@ -344,8 +355,14 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                                         </div>
 
                                         <div className="col-span-6 text-right pr-4 truncate">
-                                            <span className="text-sm font-bold text-text-primary flex items-center gap-1.5">
-                                                {entry.name}
+                                            <span className="text-sm font-bold text-text-primary flex items-center gap-2">
+                                                <Avatar
+                                                    name={entry.name}
+                                                    avatarUrl={entry.avatar_url}
+                                                    initialsCount={2}
+                                                    className="w-7 h-7 rounded-full bg-accent text-white text-[10px] font-bold flex-shrink-0"
+                                                />
+                                                <span className="truncate">{entry.name}</span>
                                                 {isMe && <span className="text-[9px] bg-accent text-white px-1.5 py-0.5 rounded-md font-black">شما</span>}
                                             </span>
                                             <p className="text-[10px] text-text-tertiary font-medium mt-0.5">
