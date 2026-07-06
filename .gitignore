@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env.example
 .env.local
+.env.local
+supabase/functions/ai-assistant/.env
