@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { Avatar, getAvatarUrl } from './common/Avatar'
 
 import {
   Clock,
@@ -64,10 +65,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { user } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  const initials = user?.name
-    ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
-    : '؟'
 
   const navGroups = user?.is_admin ? adminNavGroups : studentNavGroups
 
@@ -136,9 +133,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           className="mx-3 mb-4 p-3 rounded-2xl bg-surface-2 border border-border-subtle hover:bg-surface-3 transition-colors block group"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-white text-sm font-bold">
-              {initials}
-            </div>
+            <Avatar
+              name={user?.name}
+              avatarUrl={getAvatarUrl(user?.preferences)}
+              initialsCount={2}
+              className="w-9 h-9 rounded-xl bg-accent text-white text-sm font-bold flex-shrink-0"
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate group-hover:text-accent-hover transition-colors">
                 {user?.name}
