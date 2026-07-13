@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, LogIn } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -9,17 +9,21 @@ import { formatError } from '../../utils/error-handler'
 export const LoginPage: React.FC = () => {
   const { signIn, user, isLoading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // اگر AuthGuard کاربر را از یک صفحهٔ محافظت‌شده به اینجا فرستاده باشد،
+  // بعد از ورود موفق باید همان‌جا برگردد، نه همیشه داشبورد
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // اگر کاربر از قبل وارد شده، صفحه ورود را نشان نده — مستقیم به داشبورد برو
+  // اگر کاربر از قبل وارد شده، صفحه ورود را نشان نده — مستقیم برو
   useEffect(() => {
     if (!isLoading && user) {
-      navigate('/dashboard', { replace: true })
+      navigate(from, { replace: true })
     }
-  }, [isLoading, user, navigate])
+  }, [isLoading, user, navigate, from])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +35,7 @@ export const LoginPage: React.FC = () => {
     setError(null)
     try {
       await signIn(email.trim(), password)
-      navigate('/dashboard', { replace: true })
+      navigate(from, { replace: true })
     } catch (err) {
       const msg = formatError(err)
       if (msg.includes('Invalid login')) setError('ایمیل یا رمز عبور اشتباه است')

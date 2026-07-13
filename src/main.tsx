@@ -5,32 +5,14 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { cleanupAuthParams } from './utils/auth-cleanup'
+import { stripAuthParamsBeforeMount } from './utils/auth-cleanup'
 
-cleanupAuthParams()
-
-const handleHashChange = () => {
-  const hash = window.location.hash
-  if (
-    hash.includes('access_token') ||
-    hash.includes('refresh_token') ||
-    hash.includes('code=')
-  ) {
-    cleanupAuthParams()
-  }
-}
-
-window.addEventListener('hashchange', handleHashChange)
-window.addEventListener('popstate', () => {
-  const hash = window.location.hash
-  if (
-    hash.includes('access_token') ||
-    hash.includes('refresh_token') ||
-    hash.includes('code=')
-  ) {
-    cleanupAuthParams()
-  }
-})
+// Runs once, before the router mounts — safe to rewrite window.location
+// directly here since nothing is listening for route changes yet. Any
+// cleanup needed AFTER mount goes through AuthContext + React Router's
+// navigate() instead, so the URL bar and the router's internal state can
+// never fall out of sync.
+stripAuthParamsBeforeMount()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

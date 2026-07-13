@@ -12,29 +12,38 @@ export class GroqProvider {
 
     async chat(
         messages: Array<{ role: string; content: string }>,
-        options?: { maxTokens?: number; temperature?: number }
+        options?: { maxTokens?: number; temperature?: number; jsonMode?: boolean }
     ) {
         const start = Date.now();
         try {
-            // افزودن کلمه‌ی "json" به system prompt یا آخرین پیام کاربر
-            const modifiedMessages = messages.map((m, index) => {
-                if (m.role === 'system') {
-                    return { ...m, content: m.content + ' Please respond in JSON format.' };
-                }
-                return m;
-            });
+            // اگر حالت JSON فعال است، به system prompt عبارت JSON اضافه کن
+            let modifiedMessages = messages;
+            if (options?.jsonMode) {
+                modifiedMessages = messages.map(m => {
+                    if (m.role === 'system') {
+                        return { ...m, content: m.content + ' Please respond in JSON format.' };
+                    }
+                    return m;
+                });
+            }
+
+            const requestOptions: any = {
+                model: config.groq.model,
+                messages: modifiedMessages.map(m => ({
+                    role: m.role as 'system' | 'user' | 'assistant',
+                    content: m.content,
+                })),
+                max_tokens: options?.maxTokens ?? config.ai.maxOutputTokens,
+                temperature: options?.temperature ?? config.ai.temperature,
+            };
+
+            // فقط در حالت JSON فرمت پاسخ را تنظیم کن
+            if (options?.jsonMode) {
+                requestOptions.response_format = { type: "json_object" };
+            }
 
             const response = await withTimeout(
-                this.client.chat.completions.create({
-                    model: config.groq.model,
-                    messages: modifiedMessages.map(m => ({
-                        role: m.role as 'system' | 'user' | 'assistant',
-                        content: m.content,
-                    })),
-                    response_format: { type: "json_object" },
-                    max_tokens: options?.maxTokens ?? config.ai.maxOutputTokens,
-                    temperature: options?.temperature ?? config.ai.temperature,
-                }),
+                this.client.chat.completions.create(requestOptions),
                 config.ai.timeoutMs
             );
 

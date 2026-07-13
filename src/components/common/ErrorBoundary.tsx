@@ -39,7 +39,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   handleGoHome = () => {
     this.setState({ hasError: false, error: null })
-    window.location.href = '/'
+    // Full reload rather than client-side navigation: after a crash the
+    // React tree (and whatever broke it) shouldn't be trusted to route
+    // itself. import.meta.env.BASE_URL is used instead of a hardcoded '/'
+    // because the app is deployed under a sub-path (e.g. /repolym/), and
+    // '/' alone would 404 there. RootHandler decides where a fresh load
+    // should land based on the current auth state.
+    window.location.href = `${import.meta.env.BASE_URL}#/`
   }
 
   render() {

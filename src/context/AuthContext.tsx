@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
 import type { User, BaselineSurveyAnswers } from '../types/database'
 import { formatError } from '../utils/error-handler'
-import { cleanupAuthParams } from '../utils/auth-cleanup'
+import { hasAuthRedirectParams } from '../utils/auth-cleanup'
 import type { OlympiadSubject } from '../config/olympiads'
 
 interface OnboardingData {
@@ -37,9 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const initialized = useRef(false)
-  const loadingTimeoutRef = useRef<number | null>(null)
+  const navigate = useNavigate()
 
   // --- Helper functions ---
   const applyOnboarding = async (userId: string, onboarding: OnboardingData) => {
@@ -70,7 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
-    console.log('🔍 Fetching profile for user:', userId)
     for (let i = 0; i < 5; i++) {
       try {
         const { data, error } = await supabase
@@ -97,88 +95,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return data as User
             }
           }
-          console.log('✅ Profile fetched successfully')
           return data as User
         }
       } catch (err) {
-        console.warn('⚠️ Profile fetch attempt', i + 1, 'failed:', err)
+        console.warn('Profile fetch attempt', i + 1, 'failed:', err)
       }
-      await new Promise(r => setTimeout(r, 600))
+      await new Promise((r) => setTimeout(r, 600))
     }
-    console.warn('❌ Failed to fetch profile after 5 attempts')
+    console.warn('Failed to fetch profile after 5 attempts')
     return null
   }
 
-  // --- INITIALIZATION (with timeout) ---
+  // --- INITIALIZATION ---
+  // `onAuthStateChange` is the single source of truth: Supabase fires an
+  // `INITIAL_SESSION` event as soon as we subscribe (even when there is no
+  // session), so we don't need a second, separate `getSession()` call
+  // racing against it. Just as importantly, this effect is allowed to run
+  // its full mount → cleanup → mount cycle with no "have we already run"
+  // ref guard — that guard used to survive React 18 StrictMode's dev-only
+  // double-invoke while the `isMounted` flag it protected did not, which
+  // left `isLoading` stuck forever. Letting the effect re-run normally,
+  // with each run owning its own `isMounted`/subscription/cleanup, is what
+  // makes it correct under StrictMode as well as in production.
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-
     let isMounted = true
+    let latestRequestId = 0
 
-    // Safety timeout: force loading to stop after 4 seconds
-    loadingTimeoutRef.current = window.setTimeout(() => {
-      if (isMounted && isLoading) {
-        console.warn('⚠️ Auth loading timeout – forcing isLoading=false')
-        setIsLoading(false)
-        setError('بارگذاری اطلاعات کاربر زمان‌بر بود. لطفاً دوباره تلاش کنید.')
+    const timeoutId = window.setTimeout(() => {
+      if (isMounted) {
+        setIsLoading((prev) => {
+          if (prev) setError('بارگذاری اطلاعات کاربر زمان‌بر بود. لطفاً دوباره تلاش کنید.')
+          return false
+        })
       }
-    }, 4000)
+    }, 8000)
 
-    const initialize = async () => {
-      try {
-        console.log('🔍 Initializing auth...')
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('🔍 Session:', session ? 'exists' : 'null')
-        if (!isMounted) return
-        setSession(session)
-        if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id)
-          if (isMounted) setUser(profile)
-        }
-      } catch (err) {
-        console.error('❌ Auth initialization error:', err)
-        if (isMounted) setError('خطا در بارگذاری اطلاعات کاربر')
-      } finally {
-        if (isMounted) {
-          console.log('🔍 Auth initialization complete, setting isLoading=false')
-          setIsLoading(false)
-          if (loadingTimeoutRef.current) {
-            clearTimeout(loadingTimeoutRef.current)
-            loadingTimeoutRef.current = null
-          }
-        }
-        cleanupAuthParams()
+    const handleAuthChange = async (event: AuthChangeEvent, newSession: Session | null) => {
+      if (!isMounted) return
+      setSession(newSession)
+
+      if (!newSession?.user) {
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+
+      // A refreshed token doesn't mean the profile changed. Skipping the
+      // refetch here means a transient network hiccup during a background
+      // token refresh can no longer silently clear `user` and bounce an
+      // already-signed-in person back to the login page.
+      if (event === 'TOKEN_REFRESHED') {
+        setIsLoading(false)
+        return
+      }
+
+      const requestId = ++latestRequestId
+      const profile = await fetchUserProfile(newSession.user.id)
+      if (!isMounted || requestId !== latestRequestId) return // a newer auth event has already superseded this one
+      setUser(profile)
+      setIsLoading(false)
+
+      // If we landed here from a magic link / OAuth / recovery redirect,
+      // the tokens are still sitting in the URL. Clean them up through the
+      // router (not a raw history mutation) so the address bar and React
+      // Router's internal location never disagree.
+      if (hasAuthRedirectParams()) {
+        navigate('/dashboard', { replace: true })
       }
     }
 
-    initialize()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔍 Auth state changed:', event)
-      if (!isMounted) return
-      setSession(session)
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id)
-        if (isMounted) setUser(profile)
-      } else {
-        setUser(null)
-      }
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        if (isMounted) setIsLoading(false)
-      }
-      cleanupAuthParams()
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange)
 
     return () => {
       isMounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current)
-        loadingTimeoutRef.current = null
-      }
     }
-  }, [])
+  }, [navigate])
 
   // --- Auth methods (signIn, signUp, etc.) ---
   const signIn = async (email: string, password: string) => {
