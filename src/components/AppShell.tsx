@@ -1,4 +1,4 @@
-// src/components/AppShell.tsx (updated to include new admin pages and fix logo)
+// src/components/AppShell.tsx (updated for admin menu)
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -20,6 +20,7 @@ import {
   Shield,
   FileText,
   Trophy,
+  Sparkles, // <-- اضافه شد
 } from 'lucide-react'
 
 // گروه‌بندی آیتم‌های ناوبری دانش‌آموز
@@ -47,11 +48,12 @@ const studentNavGroups = [
   },
 ]
 
+// گروه‌بندی آیتم‌های ناوبری ادمین
 const adminNavGroups = [
   {
     label: 'مدیریت',
     items: [
-      { to: '/admin', label: 'داشبورد', icon: Home },
+      { to: '/admin', label: 'هوش مصنوعی', icon: Sparkles }, // <-- تغییر نام و آیکون
       { to: '/admin/users', label: 'کاربران', icon: Users },
       { to: '/admin/admins', label: 'ادمین‌ها', icon: Shield },
       { to: '/admin/logs', label: 'لاگ فعالیت‌ها', icon: FileText },
