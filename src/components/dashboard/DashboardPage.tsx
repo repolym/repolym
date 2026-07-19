@@ -1,3 +1,4 @@
+// src/components/dashboard/DashboardPage.tsx
 import React, { useState, Suspense, lazy, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
@@ -44,6 +45,50 @@ export const DashboardPage: React.FC = () => {
     const { dateRange } = useDashboard()
     const [activeTab, setActiveTab] = useState<TabId>('overview')
 
+    const isAdmin = user?.is_admin ?? false
+
+    // اگر ادمین است، فقط دستیار هوش مصنوعی را نشان بده
+    if (isAdmin) {
+        return (
+            <div className="h-full bg-surface-2 text-text-primary font-sans p-4 md:p-8 flex flex-col gap-6 overflow-y-auto" dir="rtl">
+                <header className="flex items-center justify-between border-b border-border pb-6 shrink-0">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="h-3 w-3 bg-accent rounded-full" />
+                            <span className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
+                                <CalendarDays className="w-3 h-3" />
+                                {formatDate(today())}
+                            </span>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
+                            {getGreeting().text}، <span className="text-accent">ادمین</span>
+                        </h1>
+                    </div>
+                    <div className="text-text-tertiary">
+                        {(() => {
+                            const g = getGreeting()
+                            const Icon = g.period === 'morning' ? Sunrise : g.period === 'noon' ? Sun : g.period === 'afternoon' ? Sunset : Moon
+                            return <Icon className="w-8 h-8" />
+                        })()}
+                    </div>
+                </header>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 min-h-0"
+                >
+                    <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                        <ErrorBoundary>
+                            <AiAssistantSection />
+                        </ErrorBoundary>
+                    </Suspense>
+                </motion.div>
+            </div>
+        )
+    }
+
+    // ---------- کد قبلی برای دانش‌آموزان (بدون تغییر) ----------
     const sessions = useStudySessions({
         userId: user?.id ?? null,
         dateFrom: dateRange.from,
@@ -66,14 +111,10 @@ export const DashboardPage: React.FC = () => {
     const greeting = getGreeting()
     const GreetingIcon = useMemo(() => {
         switch (greeting.period) {
-            case 'morning':
-                return Sunrise
-            case 'noon':
-                return Sun
-            case 'afternoon':
-                return Sunset
-            default:
-                return Moon
+            case 'morning': return Sunrise
+            case 'noon': return Sun
+            case 'afternoon': return Sunset
+            default: return Moon
         }
     }, [greeting.period])
 
