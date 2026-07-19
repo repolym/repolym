@@ -1,5 +1,5 @@
 // src/components/admin/AdminManagement.tsx
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useAdminUsers } from '../../hooks/useAdminUsers'
 import { useToast } from '../../context/ToastContext'
 import { Button } from '../common/Button'
@@ -10,14 +10,19 @@ import { adminService } from '../../services/adminService'
 
 export const AdminManagement: React.FC = () => {
     const { showToast } = useToast()
-    const { users, loading, error, refetch } = useAdminUsers({ isAdmin: true })
+    // Memoize filter params so we don't pass a new object literal on every
+    // render (which previously caused an infinite fetch/re-render loop in
+    // useAdminUsers).
+    const adminParams = useMemo(() => ({ isAdmin: true }), [])
+    const nonAdminParams = useMemo(() => ({ isAdmin: false }), [])
+    const { users, loading, error, refetch } = useAdminUsers(adminParams)
     const [modalOpen, setModalOpen] = useState(false)
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
     const [modalAction, setModalAction] = useState<'promote' | 'demote' | null>(null)
     const [processing, setProcessing] = useState(false)
 
     // Get non-admin users for promotion
-    const { users: nonAdmins } = useAdminUsers({ isAdmin: false })
+    const { users: nonAdmins } = useAdminUsers(nonAdminParams)
 
     const handleAction = async (userId: string, action: 'promote' | 'demote') => {
         setProcessing(true)

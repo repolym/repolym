@@ -3,6 +3,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { supabase } from '../../../config/supabase';
 import { useChatSessions, ChatMessage, ChatSession } from '../../../hooks/useChatSessions';
+import { AiMessageContent } from './AiMessageContent';
+import { sanitizeAiResponse } from '../../../utils/ai-response-parser';
 import {
     Sparkles,
     Send,
@@ -74,6 +76,13 @@ export const AiAssistantSection: React.FC = () => {
     };
 
     // Call the AI function
+    // NOTE: خروجی سرور (result.data?.message / result.data?.summary / ...)
+    // ممکن است حاوی JSON خام یا فنس ```json``` باشد (ر.ک. routes/analyze.ts،
+    // routes/recommend.ts که در صورت شکست JSON.parse متن خام را برمی‌گردانند).
+    // به همین دلیل قبل از ذخیره در content، از sanitizeAiResponse عبور
+    // می‌کنیم تا هرگز JSON خام وارد state/DB نشود؛ رندر نهایی هم توسط
+    // AiMessageContent با یک لایه دفاعی دوم پاک‌سازی و به‌صورت Markdown نمایش
+    // داده می‌شود.
     const callAiFunction = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
         const isDev = import.meta.env.MODE === 'development';
@@ -98,21 +107,25 @@ export const AiAssistantSection: React.FC = () => {
                 throw new Error(errorMsg);
             }
 
-            if (action === 'chat') return result.data?.message || 'پاسخی دریافت نشد';
+            if (action === 'chat') {
+                return sanitizeAiResponse(result.data?.message) || 'پاسخی دریافت نشد';
+            }
             if (action === 'analyze') {
                 const d = result.data;
-                let summary = d.summary || '';
-                if (d.strengths?.length) summary += '\n\nنقاط قوت:\n' + d.strengths.map((s: string) => `• ${s}`).join('\n');
-                if (d.weaknesses?.length) summary += '\n\nنقاط ضعف:\n' + d.weaknesses.map((w: string) => `• ${w}`).join('\n');
-                if (d.recommendations?.length) summary += '\n\nپیشنهادات:\n' + d.recommendations.map((r: string) => `• ${r}`).join('\n');
+                let summary = sanitizeAiResponse(d.summary) || '';
+                if (d.strengths?.length) summary += '\n\n**نقاط قوت:**\n' + d.strengths.map((s: string) => `- ${s}`).join('\n');
+                if (d.weaknesses?.length) summary += '\n\n**نقاط ضعف:**\n' + d.weaknesses.map((w: string) => `- ${w}`).join('\n');
+                if (d.recommendations?.length) summary += '\n\n**پیشنهادات:**\n' + d.recommendations.map((r: string) => `- ${r}`).join('\n');
                 return summary || 'تحلیل کامل شد، اما داده‌ای برای نمایش وجود ندارد.';
             }
             if (action === 'recommend') {
                 const recs = result.data?.recommendations || [];
-                return recs.length ? 'پیشنهادات هوشمند:\n' + recs.map((r: string) => `• ${r}`).join('\n') : 'پیشنهادی برای نمایش وجود ندارد.';
+                return recs.length
+                    ? '**پیشنهادات هوشمند:**\n' + recs.map((r: string) => `- ${r}`).join('\n')
+                    : 'پیشنهادی برای نمایش وجود ندارد.';
             }
             if (action === 'summarize') {
-                return result.data?.summary || 'خلاصه‌سازی انجام نشد.';
+                return sanitizeAiResponse(result.data?.summary) || 'خلاصه‌سازی انجام نشد.';
             }
             return 'عملیات ناشناخته';
         } catch (err: any) {
@@ -230,34 +243,35 @@ export const AiAssistantSection: React.FC = () => {
             const latest = sessions[0];
             loadSession(latest);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
 
     return (
-        <div className="bg-surface-1 rounded-2xl border border-border p-6 flex flex-col h-[600px] text-right font-sans" dir="rtl">
+        <div className="bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[70vh] max-h-[600px] min-h-[420px] text-right font-sans" dir="rtl">
             {/* Header with session management */}
-            <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2">
+                <div className="flex items-center gap-3 min-w-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 rounded-xl hover:bg-surface-2 transition-colors"
+                        className="p-2 rounded-xl hover:bg-surface-2 transition-colors flex-shrink-0"
                         title="تاریخچه گفتگوها"
                     >
                         {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
-                    <div className="p-2 bg-purple-500/10 rounded-xl">
+                    <div className="p-2 bg-purple-500/10 rounded-xl flex-shrink-0">
                         <Sparkles className="w-6 h-6 text-purple-500" />
                     </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-text-primary">دستیار هوشمند آموزشی</h2>
-                        <p className="text-sm text-text-secondary">سوالات درسی خود را بپرسید</p>
+                    <div className="min-w-0">
+                        <h2 className="text-base sm:text-lg font-bold text-text-primary truncate">دستیار هوشمند آموزشی</h2>
+                        <p className="text-xs sm:text-sm text-text-secondary truncate">سوالات درسی خود را بپرسید</p>
                     </div>
                 </div>
                 <button
                     onClick={startNewChat}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
                 >
                     <Plus className="w-4 h-4" />
-                    گفتگوی جدید
+                    <span className="hidden sm:inline">گفتگوی جدید</span>
                 </button>
             </div>
 
@@ -298,7 +312,7 @@ export const AiAssistantSection: React.FC = () => {
                                     </span>
                                     <button
                                         onClick={(e) => handleDeleteSession(s.id, e)}
-                                        className="p-1 rounded-lg text-text-tertiary hover:text-red-500 transition-colors"
+                                        className="p-1 rounded-lg text-text-tertiary hover:text-red-500 transition-colors flex-shrink-0"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -311,15 +325,15 @@ export const AiAssistantSection: React.FC = () => {
                 {/* Main chat area */}
                 <div className="flex-1 flex flex-col min-h-0">
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
                         {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-2 p-6 text-center">
+                            <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-2 p-4 sm:p-6 text-center">
                                 <MessageSquare className="w-12 h-12 text-text-secondary/40" />
                                 <p className="font-medium">پیامی ارسال کنید تا گفتگو با هوش مصنوعی آغاز شود.</p>
                                 <p className="text-xs max-w-sm">
                                     می‌توانید درباره زمان‌بندی‌ها، اهداف درسی، و یا ضعف‌های کارنامه خود راهنمایی دریافت کنید.
                                 </p>
-                                <div className="flex flex-wrap gap-2 mt-4">
+                                <div className="flex flex-wrap justify-center gap-2 mt-4">
                                     {quickActions.map((qa, idx) => (
                                         <button
                                             key={idx}
@@ -340,12 +354,12 @@ export const AiAssistantSection: React.FC = () => {
                                     className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
                                 >
                                     <div
-                                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                        className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                             ? 'bg-accent-muted text-accent-hover rounded-tr-none'
                                             : 'bg-surface-1 border border-border text-text-primary rounded-tl-none'
                                             }`}
                                     >
-                                        <p className="whitespace-pre-line">{msg.content}</p>
+                                        <AiMessageContent content={msg.content} isUser={msg.role === 'user'} />
                                     </div>
                                 </div>
                             ))
@@ -369,12 +383,12 @@ export const AiAssistantSection: React.FC = () => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="سوال خود را اینجا بنویسید..."
                             disabled={loading}
-                            className="flex-1 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50 text-right"
+                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50 text-right"
                         />
                         <button
                             type="submit"
                             disabled={loading || !input.trim()}
-                            className="p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-40 flex items-center justify-center"
+                            className="p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-40 flex items-center justify-center flex-shrink-0"
                         >
                             <Send className="w-4 h-4 rotate-180" />
                         </button>

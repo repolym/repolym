@@ -1,5 +1,5 @@
 // src/hooks/useAdminUsers.ts
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { adminService } from '../services/adminService'
 import type { User } from '../types/database'
 
@@ -22,11 +22,21 @@ export const useAdminUsers = (params: UseAdminUsersParams = {}) => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
+    // Params are often passed as an inline object literal by callers (a new
+    // reference on every render). Depending on the object reference directly
+    // in useCallback/useEffect would recreate fetchUsers and retrigger the
+    // effect on every render, causing an infinite fetch loop. Instead we
+    // derive a stable, content-based key and only recreate fetchUsers when
+    // the *contents* of params actually change.
+    const paramsKey = JSON.stringify(params)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const stableParams = useMemo(() => params, [paramsKey])
+
     const fetchUsers = useCallback(async () => {
         setLoading(true)
         setError(null)
         try {
-            const result = await adminService.getUsers(params)
+            const result = await adminService.getUsers(stableParams)
             setUsers(result.users)
             setTotal(result.total)
         } catch (err) {
@@ -34,7 +44,7 @@ export const useAdminUsers = (params: UseAdminUsersParams = {}) => {
         } finally {
             setLoading(false)
         }
-    }, [params])
+    }, [stableParams])
 
     useEffect(() => {
         fetchUsers()

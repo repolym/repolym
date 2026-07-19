@@ -246,9 +246,15 @@ export const adminService = {
                 .from('users')
                 .select('id', { count: 'exact', head: true })
                 .gte('created_at', monthAgoStr),
+            // Supabase's JS client has no COUNT(DISTINCT col) — fetch the
+            // olympiad_id column and dedupe client-side (same approach used
+            // in OlympiadManagement.tsx). The previous head-count query
+            // counted *students who have an olympiad set*, not the number
+            // of distinct olympiads, which showed the wrong number under
+            // "تعداد المپیادها".
             supabase
                 .from('users')
-                .select('olympiad_id', { count: 'exact', head: true })
+                .select('olympiad_id')
                 .not('olympiad_id', 'is', null),
             supabase
                 .from('users')
@@ -267,6 +273,12 @@ export const adminService = {
         recentUsersRes.error, recentLogsRes.error].find(e => e)
         if (firstError) throw new AdminServiceError(formatError(firstError))
 
+        const distinctOlympiads = new Set(
+            (olympiadsRes.data || [])
+                .map((row: { olympiad_id: string | null }) => row.olympiad_id)
+                .filter(Boolean)
+        )
+
         return {
             totalUsers: usersRes.count ?? 0,
             totalSessions: sessionsRes.count ?? 0,
@@ -275,7 +287,7 @@ export const adminService = {
             newUsersToday: newTodayRes.count ?? 0,
             newUsersWeek: newWeekRes.count ?? 0,
             newUsersMonth: newMonthRes.count ?? 0,
-            totalOlympiads: olympiadsRes.count ?? 0,
+            totalOlympiads: distinctOlympiads.size,
             recentUsers: (recentUsersRes.data as User[]) || [],
             recentActivity: (recentLogsRes.data as ActivityLog[]) || [],
         }

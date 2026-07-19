@@ -9,6 +9,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
 import { adminService } from '../../services/adminService'
+import { getOlympiad } from '../../config/olympiads'
 import { useToast } from '../../context/ToastContext'
 import { Users, BookOpen, ClipboardList, Activity, UserPlus, Clock, ChevronLeft, TrendingUp, Calendar, Award } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -66,6 +67,7 @@ const OverviewTab: React.FC = () => {
   const { showToast } = useToast()
 
   useEffect(() => {
+    let isMounted = true
     const fetchData = async () => {
       try {
         const [statsData, regTrend, actTrend, olympiadPart, subTrend, topUsers] = await Promise.all([
@@ -76,19 +78,32 @@ const OverviewTab: React.FC = () => {
           adminService.getSubmissionTrend(30),
           adminService.getTopActiveUsers(10),
         ])
+        if (!isMounted) return
+        // Map raw olympiad_id values (e.g. "math", "ai") to their
+        // human-readable Persian labels using the shared olympiads config,
+        // instead of showing the raw id in the pie chart.
+        const readableOlympiadPart = olympiadPart.map((item) => ({
+          ...item,
+          olympiad: getOlympiad(item.olympiad)?.shortLabel || item.olympiad,
+        }))
         setStats(statsData)
         setRegistrationData(regTrend)
         setActivityData(actTrend)
-        setOlympiadData(olympiadPart)
+        setOlympiadData(readableOlympiadPart)
         setSubmissionData(subTrend)
         setTopUsers(topUsers)
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'خطا در دریافت آمار', 'error')
+        if (isMounted) {
+          showToast(err instanceof Error ? err.message : 'خطا در دریافت آمار', 'error')
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
     fetchData()
+    return () => {
+      isMounted = false
+    }
   }, [showToast])
 
   if (loading) {
