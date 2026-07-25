@@ -3,20 +3,19 @@ import { fetchUserStudyData } from '../services/userDataService.ts';
 import { validateAnalyzeRequest } from '../utils/validators.ts';
 import { logger } from '../utils/logger.ts';
 
-/**
- * برخی مدل‌ها پاسخ JSON را داخل فنس ```json ... ``` برمی‌گردانند حتی وقتی
- * درخواست شده خروجی خام JSON باشد. قبل از JSON.parse این فنس را حذف
- * می‌کنیم تا سمت کلاینت هرگز مجبور به دیدن متن خام (شامل ```json) نشود.
- */
 function stripCodeFence(raw: string): string {
     const trimmed = raw.trim();
     const match = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed);
     return match ? match[1].trim() : trimmed;
 }
 
-export async function handleAnalyze(data: unknown) {
+export async function handleAnalyze(data: unknown, authenticatedUserId: string) {
     try {
         const { userId, period } = validateAnalyzeRequest(data);
+        if (userId !== authenticatedUserId) {
+            return { success: false, error: 'Unauthorized: cannot access another user\'s data' };
+        }
+
         const userData = await fetchUserStudyData(userId);
 
         const prompt = `
@@ -59,13 +58,10 @@ Keep it concise and focused.
         try {
             parsed = JSON.parse(cleaned);
         } catch (e) {
-            logger.warn('Failed to parse analysis JSON, returning raw text as summary only');
-            // حتی در بدترین حالت هم متن خام JSON/فنس‌دار به کلاینت برنمی‌گردد؛
-            // فقط متن پاک‌شده از فنس کد به‌عنوان خلاصه برمی‌گردد و کلاینت هم
-            // لایه دفاعی دوم (sanitizeAiResponse) را روی آن اجرا می‌کند.
+            logger.warn('Failed to parse analysis JSON, returning empty structure');
             return {
                 success: true,
-                data: { summary: cleaned, strengths: [], weaknesses: [], recommendations: [] },
+                data: { summary: 'تحلیل انجام نشد.', strengths: [], weaknesses: [], recommendations: [] },
                 provider: result.provider,
             };
         }

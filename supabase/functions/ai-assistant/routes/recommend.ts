@@ -3,16 +3,19 @@ import { fetchUserStudyData } from '../services/userDataService.ts';
 import { validateRecommendRequest } from '../utils/validators.ts';
 import { logger } from '../utils/logger.ts';
 
-/** ر.ک. توضیح مشابه در routes/analyze.ts */
 function stripCodeFence(raw: string): string {
     const trimmed = raw.trim();
     const match = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed);
     return match ? match[1].trim() : trimmed;
 }
 
-export async function handleRecommend(data: unknown) {
+export async function handleRecommend(data: unknown, authenticatedUserId: string) {
     try {
         const { userId, goal } = validateRecommendRequest(data);
+        if (userId !== authenticatedUserId) {
+            return { success: false, error: 'Unauthorized: cannot access another user\'s data' };
+        }
+
         const userData = await fetchUserStudyData(userId);
         const goalText = goal || 'improve overall study performance';
 
@@ -51,10 +54,12 @@ Keep it concise.
         try {
             parsed = JSON.parse(cleaned);
         } catch (e) {
-            logger.warn('Failed to parse recommendations JSON, wrapping raw text as a single recommendation');
-            // متن خام (پس از حذف فنس) به‌عنوان یک آیتم لیست برمی‌گردد، نه به
-            // شکل یک بلوک JSON؛ کلاینت هم لایه دفاعی دوم را روی آن اجرا می‌کند.
-            return { success: true, data: { recommendations: [cleaned] }, provider: result.provider };
+            logger.warn('Failed to parse recommendations JSON, returning empty list');
+            return {
+                success: true,
+                data: { recommendations: [], rationale: null },
+                provider: result.provider,
+            };
         }
 
         return {

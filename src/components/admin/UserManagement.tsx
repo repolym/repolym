@@ -1,39 +1,49 @@
-// src/components/admin/UserManagement.tsx
-import React, { useState, useEffect, useMemo } from 'react'
-import { useAdminUsers } from '../../hooks/useAdminUsers'
-import { useToast } from '../../context/ToastContext'
-import { Button } from '../common/Button'
-import { Input } from '../common/Input'
-import { ConfirmModal } from '../common/Modal'
-import { Avatar, getAvatarUrl } from '../common/Avatar'
-import { formatDate } from '../../utils/date-utils'
-import { Search, UserX, UserCheck, Trash2, Eye, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { supabase } from '../../config/supabase'
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAdminUsers } from '../../hooks/useAdminUsers';
+import { useToast } from '../../context/ToastContext';
+import { Button } from '../common/Button';
+import { Input } from '../common/Input';
+import { ConfirmModal } from '../common/Modal';
+import { Avatar, getAvatarUrl } from '../common/Avatar';
+import { formatDate } from '../../utils/date-utils';
+import { Search, UserX, UserCheck, Trash2, Eye, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../../config/supabase';
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+}
 
 export const UserManagement: React.FC = () => {
-    const { showToast } = useToast()
+    const { showToast } = useToast();
 
     // State for filters
-    const [search, setSearch] = useState('')
-    const [statusFilter, setStatusFilter] = useState<'active' | 'suspended' | 'all'>('all')
-    const [olympiadFilter, setOlympiadFilter] = useState<string>('all')
-    const [olympiadOptions, setOlympiadOptions] = useState<string[]>([])
-    const [dateFrom, setDateFrom] = useState('')
-    const [dateTo, setDateTo] = useState('')
-    const [page, setPage] = useState(1)
-    const limit = 20
-    const [sortBy, setSortBy] = useState('created_at')
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 300);
+    const [statusFilter, setStatusFilter] = useState<'active' | 'suspended' | 'all'>('all');
+    const [olympiadFilter, setOlympiadFilter] = useState<string>('all');
+    const [olympiadOptions, setOlympiadOptions] = useState<string[]>([]);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [page, setPage] = useState(1);
+    const limit = 20;
+    const [sortBy, setSortBy] = useState('created_at');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Modal state
-    const [selectedUser, setSelectedUser] = useState<string | null>(null)
-    const [confirmAction, setConfirmAction] = useState<'suspend' | 'activate' | 'delete' | null>(null)
-    const [modalOpen, setModalOpen] = useState(false)
+    const [selectedUser, setSelectedUser] = useState<string | null>(null);
+    const [confirmAction, setConfirmAction] = useState<'suspend' | 'activate' | 'delete' | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
 
-    // Memoize filter params to prevent unnecessary refetches
+    // Memoize filter params (using debouncedSearch)
     const params = useMemo(() => ({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         status: statusFilter,
         olympiadId: olympiadFilter === 'all' ? null : olympiadFilter,
         dateFrom: dateFrom || undefined,
@@ -42,11 +52,10 @@ export const UserManagement: React.FC = () => {
         limit,
         sortBy,
         sortOrder,
-    }), [search, statusFilter, olympiadFilter, dateFrom, dateTo, page, limit, sortBy, sortOrder])
+    }), [debouncedSearch, statusFilter, olympiadFilter, dateFrom, dateTo, page, limit, sortBy, sortOrder]);
 
-    const { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser } = useAdminUsers(params)
-
-    const totalPages = Math.ceil(total / limit)
+    const { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser } = useAdminUsers(params);
+    const totalPages = Math.ceil(total / limit);
 
     // Fetch olympiad options once
     useEffect(() => {
@@ -55,54 +64,53 @@ export const UserManagement: React.FC = () => {
                 .from('users')
                 .select('olympiad_id')
                 .not('olympiad_id', 'is', null)
-                .limit(1000)
+                .limit(1000);
             if (!error && data) {
-                const unique = [...new Set(data.map(u => u.olympiad_id))].filter(Boolean) as string[]
-                setOlympiadOptions(unique)
+                const unique = [...new Set(data.map(u => u.olympiad_id))].filter(Boolean) as string[];
+                setOlympiadOptions(unique);
             }
-        }
-        fetchOlympiads()
-    }, [])
+        };
+        fetchOlympiads();
+    }, []);
 
-    // Handlers
     const handleAction = async (userId: string, action: typeof confirmAction) => {
         try {
             if (action === 'suspend') {
-                await suspendUser(userId)
-                showToast('کاربر تعلیق شد', 'success')
+                await suspendUser(userId);
+                showToast('کاربر تعلیق شد', 'success');
             } else if (action === 'activate') {
-                await activateUser(userId)
-                showToast('کاربر فعال شد', 'success')
+                await activateUser(userId);
+                showToast('کاربر فعال شد', 'success');
             } else if (action === 'delete') {
-                await deleteUser(userId)
-                showToast('کاربر حذف شد', 'success')
+                await deleteUser(userId);
+                showToast('کاربر حذف شد', 'success');
             }
         } catch (err) {
-            showToast(err instanceof Error ? err.message : 'خطا', 'error')
+            showToast(err instanceof Error ? err.message : 'خطا', 'error');
         } finally {
-            setModalOpen(false)
-            setSelectedUser(null)
-            setConfirmAction(null)
+            setModalOpen(false);
+            setSelectedUser(null);
+            setConfirmAction(null);
         }
-    }
+    };
 
     const openConfirm = (userId: string, action: typeof confirmAction) => {
-        setSelectedUser(userId)
-        setConfirmAction(action)
-        setModalOpen(true)
-    }
+        setSelectedUser(userId);
+        setConfirmAction(action);
+        setModalOpen(true);
+    };
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
-            setPage(newPage)
+            setPage(newPage);
         }
-    }
+    };
 
     // Reset to page 1 when filters change
     const handleFilterChange = (callback: () => void) => {
-        setPage(1)
-        callback()
-    }
+        setPage(1);
+        callback();
+    };
 
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto" dir="rtl">
@@ -363,7 +371,7 @@ export const UserManagement: React.FC = () => {
                 onClose={() => setModalOpen(false)}
                 onConfirm={() => {
                     if (selectedUser && confirmAction) {
-                        handleAction(selectedUser, confirmAction)
+                        handleAction(selectedUser, confirmAction);
                     }
                 }}
                 title={
@@ -383,5 +391,5 @@ export const UserManagement: React.FC = () => {
                 }
             />
         </div>
-    )
-}
+    );
+};

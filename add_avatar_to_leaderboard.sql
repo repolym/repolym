@@ -1,23 +1,15 @@
 -- ========================================================
 -- Migration: add avatar_url to get_olympiad_leaderboard()
 -- ========================================================
--- Run this in the Supabase SQL editor. It replaces the function body
--- to also select each user's preferences->>'avatar_url' and thread it
--- through to the JSON 'entries' the frontend renders (leaderboard
--- podium/list, admin olympiad leaderboard).
---
--- IMPORTANT: match the parameter list below to whatever your current
--- live function actually has. This repo's schema file shows a
--- 4-parameter version (no p_metric), but the frontend calls it with a
--- 5th "p_metric" argument — if your deployed function already has
--- p_metric, add it back to the signature and DECLARE section here
--- before running.
+-- This migration adds avatar_url to the leaderboard entries
+-- and fixes the function signature to include p_metric.
 
 CREATE OR REPLACE FUNCTION public.get_olympiad_leaderboard(
     p_olympiad_id TEXT,
     p_today DATE,
     p_limit INTEGER DEFAULT 50,
-    p_window_type TEXT DEFAULT 'month'
+    p_window_type TEXT DEFAULT 'month',
+    p_metric TEXT DEFAULT 'smart'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -158,5 +150,5 @@ END;
 $$;
 
 GRANT EXECUTE
-ON FUNCTION public.get_olympiad_leaderboard(text, date, integer, text)
+ON FUNCTION public.get_olympiad_leaderboard(text, date, integer, text, text)
 TO authenticated;
