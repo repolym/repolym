@@ -35,13 +35,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
     <>
       <div className="card-hover px-4 py-3 flex flex-col gap-1">
         <div className="flex items-center gap-3">
-          {/* نشانگر رنگ درس */}
+          {/* Subject color indicator */}
           <div
             className="w-1.5 h-8 rounded-full flex-shrink-0"
             style={{ backgroundColor: subject?.color || '#3a3a3f' }}
           />
 
-          {/* اطلاعات اصلی */}
+          {/* Main info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-text-primary font-mono">
@@ -59,19 +59,15 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
             {activitiesPreview && (
               <p className="text-xs text-text-tertiary truncate mt-0.5">{activitiesPreview}</p>
             )}
-            {session.phone_hours != null && session.phone_hours > 0 && (
-              <p className="text-xs text-text-tertiary mt-0.5">
-                گوشی: {formatMinutes(Math.round(session.phone_hours * 60))}
-              </p>
-            )}
+            {/* ❌ phone_hours display removed – use daily check‑in instead */}
           </div>
 
-          {/* تاریخ */}
+          {/* Date */}
           <p className="text-xs text-text-tertiary flex-shrink-0 hidden sm:block">
             {formatDate(session.date)}
           </p>
 
-          {/* دکمه‌ها */}
+          {/* Action buttons */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => onEdit(session)}
@@ -96,7 +92,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
           </div>
         </div>
 
-        {/* فیلدهای جدید (اختیاری) */}
+        {/* Extra optional fields (resource, question_count, tags, etc.) */}
         {(session.resource || session.question_count || session.tags) && (
           <div className="mt-1 pt-1 border-t border-border-subtle text-xs text-text-secondary grid grid-cols-2 gap-x-2 gap-y-0.5">
             {session.resource && (
