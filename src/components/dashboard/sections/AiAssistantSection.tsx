@@ -19,6 +19,8 @@ import {
     Award,
     Zap,
     SlidersHorizontal,
+    Maximize2,
+    Minimize2,
 } from 'lucide-react';
 
 type Action = 'chat' | 'analyze' | 'recommend' | 'summarize';
@@ -38,10 +40,27 @@ export const AiAssistantSection: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [complexity, setComplexity] = useState<ComplexityLevel>('medium');
     const [showComplexitySelector, setShowComplexitySelector] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const functionUrl = `${supabaseUrl}/functions/v1/ai-assistant`;
+
+    const toggleFullScreen = () => {
+        setIsFullScreen(!isFullScreen);
+    };
+
+    // Close full screen on Escape key
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isFullScreen) {
+                setIsFullScreen(false);
+            }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [isFullScreen]);
 
     const loadSession = (session: ChatSession) => {
         setCurrentSessionId(session.id);
@@ -372,14 +391,10 @@ export const AiAssistantSection: React.FC = () => {
     // Build final messages list including streaming content if any
     const displayMessages = [...messages];
     if (loading && streamingContent) {
-        // If we're streaming, show the last message as a partial response
-        // Check if the last message is already an assistant message with partial content
         const lastMsg = displayMessages[displayMessages.length - 1];
         if (lastMsg?.role === 'assistant' && !lastMsg.content.includes('...')) {
-            // Add a new message for streaming
             displayMessages.push({ role: 'assistant', content: streamingContent });
         } else if (lastMsg?.role === 'assistant') {
-            // Update the last message content
             displayMessages[displayMessages.length - 1] = {
                 ...lastMsg,
                 content: streamingContent || lastMsg.content
@@ -387,14 +402,17 @@ export const AiAssistantSection: React.FC = () => {
         } else {
             displayMessages.push({ role: 'assistant', content: streamingContent });
         }
-    } else if (loading && !streamingContent) {
-        // Show loading indicator separately
     }
 
+    // Full screen styles
+    const containerClass = isFullScreen
+        ? 'fixed inset-0 z-50 bg-surface-1 rounded-none border-0 p-4 sm:p-6 flex flex-col h-screen max-h-none min-h-screen'
+        : 'bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[75vh] max-h-[700px] min-h-[450px]';
+
     return (
-        <div className="bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[70vh] max-h-[600px] min-h-[420px] text-right font-sans" dir="rtl">
+        <div ref={containerRef} className={containerClass} dir="rtl">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2">
+            <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -411,6 +429,15 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Full Screen Toggle */}
+                    <button
+                        onClick={toggleFullScreen}
+                        className="p-2 rounded-xl hover:bg-surface-2 transition-colors text-text-secondary hover:text-text-primary"
+                        title={isFullScreen ? 'خروج از تمام صفحه' : 'تمام صفحه'}
+                    >
+                        {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                    </button>
+
                     <div className="relative">
                         <button
                             onClick={() => setShowComplexitySelector(!showComplexitySelector)}
@@ -454,6 +481,7 @@ export const AiAssistantSection: React.FC = () => {
             </div>
 
             <div className="flex flex-1 min-h-0 relative">
+                {/* Sidebar */}
                 {sidebarOpen && (
                     <div className="absolute inset-0 z-10 bg-surface-1 rounded-2xl border border-border p-3 flex flex-col gap-2 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
@@ -499,7 +527,9 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 )}
 
+                {/* Chat Area */}
                 <div className="flex-1 flex flex-col min-h-0">
+                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
                         {displayMessages.length === 0 && !loading ? (
                             <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
@@ -560,7 +590,8 @@ export const AiAssistantSection: React.FC = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                    {/* Input */}
+                    <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
                         <input
                             type="text"
                             value={input}
@@ -579,6 +610,17 @@ export const AiAssistantSection: React.FC = () => {
                     </form>
                 </div>
             </div>
+
+            {/* Close button for full screen (visible only in full screen) */}
+            {isFullScreen && (
+                <button
+                    onClick={toggleFullScreen}
+                    className="absolute top-4 left-4 p-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-text-secondary hover:text-text-primary transition-colors z-50"
+                    title="خروج از تمام صفحه"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            )}
         </div>
     );
 };
