@@ -71,9 +71,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // ---------- App ----------
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <HashRouter>
+    <HashRouter>
+      <ThemeProvider>
+        <AuthProvider>
           <ToastProvider>
             <ErrorBoundary>
               <AnimatePresence mode="wait">
@@ -134,9 +134,9 @@ const App: React.FC = () => {
             </ErrorBoundary>
             <ToastContainer />
           </ToastProvider>
-        </HashRouter>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HashRouter>
   )
 }
 
