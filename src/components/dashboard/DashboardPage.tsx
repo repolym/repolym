@@ -60,7 +60,14 @@ export const DashboardPage: React.FC = () => {
 
     const isAdmin = user?.is_admin ?? false;
 
-    // اگر ادمین است، فقط دستیار هوش مصنوعی را نشان بده
+    // Special banner for specific users
+    const SPECIAL_USER_IDS = [
+        'b12fe1f7-1281-4e5d-9796-e64a8f702741',
+        '0c6165c0-c689-4d12-b906-06e1b504a734',
+        'cf1e2195-ca00-46ff-b071-c7eb91a2ce3b'
+    ];
+    const isSpecialUser = user?.id ? SPECIAL_USER_IDS.includes(user.id) : false;
+
     if (isAdmin) {
         return (
             <div className="h-full bg-surface-2 text-text-primary font-sans p-4 md:p-8 flex flex-col gap-6 overflow-y-auto" dir="rtl">
@@ -133,6 +140,14 @@ export const DashboardPage: React.FC = () => {
 
     return (
         <div className="h-full bg-surface-2 text-text-primary font-sans p-4 md:p-8 flex flex-col gap-6 overflow-y-auto" dir="rtl">
+            {/* Special Banner for specific users */}
+            {isSpecialUser && (
+                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white p-4 rounded-2xl shadow-lg text-center border border-white/20">
+                    <p className="text-lg font-bold tracking-wide">#blacklivesdoesntmatter</p>
+                    <p className="text-xs opacity-80 mt-1">این پیام فقط برای شما نمایش داده می‌شود</p>
+                </div>
+            )}
+
             {/* Header */}
             <header className="flex items-center justify-between border-b border-border pb-6 shrink-0">
                 <div>

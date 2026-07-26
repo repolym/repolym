@@ -76,7 +76,6 @@ const tabConfigs = {
     }
 }
 
-
 export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, olympiadId }) => {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState(true)
@@ -136,7 +135,12 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
     const remainingUsers = useMemo(() => entries.slice(3), [entries])
 
     const getFormattedValue = (entry: LeaderboardEntry) => {
-        if (activeTab === 'study') return `${toPersianDigits(Math.round(entry.total_minutes_30 / 60))}`
+        if (activeTab === 'study') {
+            // نمایش ساعت با یک رقم اعشار (بدون گرد کردن به عدد صحیح)
+            const hours = entry.total_minutes_30 / 60
+            const formatted = hours.toFixed(1) // یک رقم اعشار
+            return toPersianDigits(formatted)
+        }
         if (activeTab === 'consistency') return `${toPersianDigits(Math.round(entry.active_days_30 * 0.6 + entry.best_streak * 0.4))}`
         if (activeTab === 'sleep') return `${toPersianDigits(Number(entry.avg_sleep_hours).toFixed(1))}`
         if (activeTab === 'phone') return `${toPersianDigits(Math.round(entry.avg_phone_minutes))}`
