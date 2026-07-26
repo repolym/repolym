@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { supabase } from '../../../config/supabase';
@@ -21,6 +21,9 @@ import {
     SlidersHorizontal,
     Maximize2,
     Minimize2,
+    Search,
+    Copy,
+    Check,
 } from 'lucide-react';
 
 type Action = 'chat' | 'analyze' | 'recommend' | 'summarize';
@@ -41,6 +44,8 @@ export const AiAssistantSection: React.FC = () => {
     const [complexity, setComplexity] = useState<ComplexityLevel>('medium');
     const [showComplexitySelector, setShowComplexitySelector] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [copiedAll, setCopiedAll] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +70,7 @@ export const AiAssistantSection: React.FC = () => {
         setCurrentSessionId(session.id);
         setMessages(session.messages || []);
         setSidebarOpen(false);
+        setSearchTerm('');
     };
 
     const startNewChat = async () => {
@@ -73,6 +79,7 @@ export const AiAssistantSection: React.FC = () => {
             setCurrentSessionId(newSession.id);
             setMessages([]);
             setSidebarOpen(false);
+            setSearchTerm('');
         }
     };
 
@@ -85,6 +92,7 @@ export const AiAssistantSection: React.FC = () => {
             if (currentSessionId === id) {
                 setCurrentSessionId(null);
                 setMessages([]);
+                setSearchTerm('');
             }
         } else {
             showToast('خطا در حذف گفتگو', 'error');
@@ -379,20 +387,45 @@ export const AiAssistantSection: React.FC = () => {
         advanced: 'تحلیل عمیق با مدل پیشرفته',
     };
 
-    const displayMessages = [...messages];
-    if (loading && streamingContent) {
-        const lastMsg = displayMessages[displayMessages.length - 1];
-        if (lastMsg?.role === 'assistant' && !lastMsg.content.includes('...')) {
-            displayMessages.push({ role: 'assistant', content: streamingContent });
-        } else if (lastMsg?.role === 'assistant') {
-            displayMessages[displayMessages.length - 1] = {
-                ...lastMsg,
-                content: streamingContent || lastMsg.content
-            };
-        } else {
-            displayMessages.push({ role: 'assistant', content: streamingContent });
+    // Build full message list including streaming content
+    const allMessages = useMemo(() => {
+        const base = [...messages];
+        if (loading && streamingContent) {
+            const lastMsg = base[base.length - 1];
+            if (lastMsg?.role === 'assistant') {
+                // Update last message content with streaming
+                const updated = [...base];
+                updated[updated.length - 1] = { ...lastMsg, content: streamingContent };
+                return updated;
+            } else {
+                return [...base, { role: 'assistant' as const, content: streamingContent }];
+            }
         }
-    }
+        return base;
+    }, [messages, loading, streamingContent]);
+
+    // Filter messages based on search term
+    const filteredMessages = useMemo(() => {
+        if (!searchTerm.trim()) return allMessages;
+        const term = searchTerm.trim().toLowerCase();
+        return allMessages.filter(msg =>
+            msg.content.toLowerCase().includes(term)
+        );
+    }, [allMessages, searchTerm]);
+
+    const handleCopyAll = async () => {
+        const text = filteredMessages
+            .map(m => `${m.role === 'user' ? '👤 کاربر' : '🤖 Repolym'}:\n${m.content}`)
+            .join('\n\n---\n\n');
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedAll(true);
+            setTimeout(() => setCopiedAll(false), 2000);
+            showToast('مکالمه کپی شد!', 'success');
+        } catch {
+            showToast('خطا در کپی کردن', 'error');
+        }
+    };
 
     const containerClass = isFullScreen
         ? 'fixed inset-0 z-50 bg-surface-1 rounded-none border-0 p-4 sm:p-6 flex flex-col h-screen max-h-none min-h-screen'
@@ -400,7 +433,8 @@ export const AiAssistantSection: React.FC = () => {
 
     return (
         <div ref={containerRef} className={containerClass} dir="rtl">
-            <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2 shrink-0">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border mb-3 flex-wrap gap-2 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -467,7 +501,35 @@ export const AiAssistantSection: React.FC = () => {
                 </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="flex items-center gap-2 mb-3 shrink-0">
+                <div className="relative flex-1">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="جستجو در مکالمات..."
+                        className="w-full bg-surface-2 border border-border rounded-xl px-9 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    />
+                </div>
+                <button
+                    onClick={handleCopyAll}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border transition-colors text-sm text-text-secondary hover:text-text-primary"
+                    title="کپی کل مکالمه"
+                >
+                    {copiedAll ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    <span className="hidden sm:inline text-xs">کپی همه</span>
+                </button>
+                {searchTerm && (
+                    <span className="text-xs text-text-tertiary whitespace-nowrap">
+                        {filteredMessages.length} از {allMessages.length}
+                    </span>
+                )}
+            </div>
+
             <div className="flex flex-1 min-h-0 relative">
+                {/* Sidebar */}
                 {sidebarOpen && (
                     <div className="absolute inset-0 z-10 bg-surface-1 rounded-2xl border border-border p-3 flex flex-col gap-2 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
@@ -513,9 +575,11 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 )}
 
+                {/* Chat Area */}
                 <div className="flex-1 flex flex-col min-h-0">
+                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
-                        {displayMessages.length === 0 && !loading ? (
+                        {filteredMessages.length === 0 && !loading ? (
                             <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
                                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
                                     <Sparkles className="w-8 h-8 text-indigo-600" />
@@ -544,24 +608,45 @@ export const AiAssistantSection: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            displayMessages.map((msg, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
-                                >
+                            filteredMessages.map((msg, index) => {
+                                const isUser = msg.role === 'user';
+                                return (
                                     <div
-                                        className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                                            ? 'bg-accent-muted text-accent-hover rounded-tr-none border border-accent-subtle/30'
-                                            : 'bg-surface-1 border border-border text-text-primary rounded-tl-none'
-                                            }`}
+                                        key={index}
+                                        className={`flex ${isUser ? 'justify-start' : 'justify-end'} group relative`}
                                     >
-                                        <AiMessageContent content={msg.content} isUser={msg.role === 'user'} />
-                                        {index === displayMessages.length - 1 && loading && streamingContent && (
-                                            <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-1" />
-                                        )}
+                                        <div
+                                            className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed shadow-sm ${isUser
+                                                ? 'bg-accent-muted text-accent-hover rounded-tr-none border border-accent-subtle/30'
+                                                : 'bg-surface-1 border border-border text-text-primary rounded-tl-none'
+                                                }`}
+                                        >
+                                            <AiMessageContent
+                                                content={msg.content}
+                                                isUser={isUser}
+                                            />
+                                            {index === filteredMessages.length - 1 && loading && streamingContent && !isUser && (
+                                                <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-1" />
+                                            )}
+                                        </div>
+                                        {/* Copy button for each message */}
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await navigator.clipboard.writeText(msg.content);
+                                                    showToast('پیام کپی شد!', 'success');
+                                                } catch {
+                                                    showToast('خطا در کپی کردن', 'error');
+                                                }
+                                            }}
+                                            className="absolute -left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary"
+                                            title="کپی پیام"
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                         {loading && !streamingContent && (
                             <div className="flex justify-end">
@@ -574,6 +659,7 @@ export const AiAssistantSection: React.FC = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
+                    {/* Input */}
                     <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
                         <input
                             type="text"

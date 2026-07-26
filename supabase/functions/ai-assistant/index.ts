@@ -14,33 +14,13 @@ const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')! // Must be set in secrets
 );
 
-const ALLOWED_ORIGINS = [
-    'https://repolym.github.io',
-    'http://localhost:5173',
-    'https://localhost:5173',
-];
-
-// تابع کمکی برای ایجاد هدرهای CORS
-function corsHeaders(origin: string) {
-    // اگر origin مجاز باشد، همان origin را برمی‌گردانیم، در غیر این صورت '*' (اما بهتر است null باشد)
-    if (ALLOWED_ORIGINS.includes(origin)) {
-        return {
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Max-Age': '86400',
-        };
-    }
-    // اگر origin مجاز نبود، فقط برای درخواست‌های OPTIONS ممکن است نیاز باشد، اما در اینجا null بازگشت داده می‌شود
-    // در پاسخ‌های واقعی، از این تابع با origin استفاده می‌شود و اگر مجاز نباشد، باید پاسخ 403 بدهیم.
-    // اینجا فقط برای تکمیل تابع است.
-    return {
-        'Access-Control-Allow-Origin': '*', // این برای مواردی است که origin مجاز نباشد، اما بهتر است آن را محدود کنیم.
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400',
-    };
-}
+// CORS headers - برای تست موقت از * استفاده می‌کنیم
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+};
 
 // Helper to send SSE chunks
 function sendSSE(controller: ReadableStreamDefaultController, data: any) {
@@ -98,30 +78,17 @@ export async function handleStreamChat(data: any, userId: string) {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
+            ...CORS_HEADERS,
         },
     });
 }
 
 Deno.serve(async (req: Request) => {
-    const origin = req.headers.get('origin') || '';
-    const isAllowed = ALLOWED_ORIGINS.includes(origin);
-
     // Preflight request
     if (req.method === 'OPTIONS') {
-        if (isAllowed) {
-            return new Response(null, {
-                status: 204,
-                headers: {
-                    'Access-Control-Allow-Origin': origin,
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                    'Access-Control-Max-Age': '86400',
-                }
-            });
-        }
-        return new Response('Origin not allowed', {
-            status: 403,
-            headers: { 'Content-Type': 'text/plain' }
+        return new Response(null, {
+            status: 204,
+            headers: CORS_HEADERS,
         });
     }
 
@@ -131,7 +98,7 @@ Deno.serve(async (req: Request) => {
             status: 405,
             headers: {
                 'Content-Type': 'application/json',
-                ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                ...CORS_HEADERS,
             },
         });
     }
@@ -144,7 +111,7 @@ Deno.serve(async (req: Request) => {
                 status: 401,
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                    ...CORS_HEADERS,
                 }
             });
         }
@@ -156,7 +123,7 @@ Deno.serve(async (req: Request) => {
                 status: 401,
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                    ...CORS_HEADERS,
                 }
             });
         }
@@ -186,7 +153,7 @@ Deno.serve(async (req: Request) => {
                     status: 400,
                     headers: {
                         'Content-Type': 'application/json',
-                        ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                        ...CORS_HEADERS,
                     }
                 });
         }
@@ -195,7 +162,7 @@ Deno.serve(async (req: Request) => {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
-                ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                ...CORS_HEADERS,
             },
         });
 
@@ -205,7 +172,7 @@ Deno.serve(async (req: Request) => {
             status: 500,
             headers: {
                 'Content-Type': 'application/json',
-                ...(isAllowed ? { 'Access-Control-Allow-Origin': origin } : {})
+                ...CORS_HEADERS,
             },
         });
     }

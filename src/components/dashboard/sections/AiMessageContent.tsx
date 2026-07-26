@@ -4,7 +4,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { AlertTriangle, Copy, Check } from 'lucide-react'
+import { AlertTriangle, Copy } from 'lucide-react'
 import { sanitizeAiResponse } from '../../../utils/ai-response-parser'
 import { useTheme } from '../../../context/ThemeContext'
 
@@ -27,6 +27,8 @@ const mathStyles = `
     unicode-bidi: embed;
     text-align: left !important;
     margin: 0.5em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
   .ai-markdown .katex-display > .katex {
     display: inline-block;
@@ -43,7 +45,6 @@ const mathStyles = `
     direction: ltr !important;
     unicode-bidi: embed;
   }
-  /* تنظیمات تم تاریک برای کد و محتوای Markdown */
   .dark .ai-markdown {
     color: #e5e7eb !important;
   }
@@ -89,22 +90,18 @@ const mathStyles = `
  * - Markdown کامل
  * - تم تاریک/روشن
  */
-export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isUser = false }) => {
+export const AiMessageContent: React.FC<AiMessageContentProps> = ({
+    content,
+    isUser = false,
+}) => {
     const { theme } = useTheme()
     const safeText = useMemo(() => sanitizeAiResponse(content), [content])
-    const [copied, setCopied] = React.useState<string | null>(null)
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     const codeStyle = isDark ? vscDarkPlus : vs
 
-    const handleCopy = (code: string, id: string) => {
-        navigator.clipboard.writeText(code)
-        setCopied(id)
-        setTimeout(() => setCopied(null), 2000)
-    }
-
     if (isUser) {
-        return <p className="whitespace-pre-line break-words text-text-primary">{content}</p>
+        return <p className="whitespace-pre-line break-words text-text-primary">{safeText}</p>
     }
 
     if (!safeText.trim()) {
@@ -118,12 +115,20 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
 
     return (
         <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full text-text-primary">
-            {/* استایل‌های جهت‌دهی ریاضی و تم تاریک */}
             <style>{mathStyles}</style>
 
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
+                rehypePlugins={[[rehypeKatex, {
+                    throwOnError: false,
+                    trust: false,
+                    macros: {
+                        "\\R": "\\mathbb{R}",
+                        "\\N": "\\mathbb{N}",
+                        "\\Z": "\\mathbb{Z}",
+                        "\\Q": "\\mathbb{Q}",
+                    }
+                }]]}
                 components={{
                     p: ({ children }) => (
                         <p className="mb-3 last:mb-0 whitespace-pre-line leading-relaxed text-text-primary">
@@ -182,7 +187,6 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
                         const match = /language-(\w+)/.exec(className || '')
                         const language = match ? match[1] : 'text'
                         const code = String(children).replace(/\n$/, '')
-                        const codeId = Math.random().toString(36).slice(2, 8)
 
                         return (
                             <div className="relative my-3 rounded-xl overflow-hidden border border-border-subtle dark:border-gray-700">
@@ -191,20 +195,13 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
                                         {language}
                                     </span>
                                     <button
-                                        onClick={() => handleCopy(code, codeId)}
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(code)
+                                        }}
                                         className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-surface-3 dark:hover:bg-gray-700 transition-colors text-text-tertiary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200"
                                     >
-                                        {copied === codeId ? (
-                                            <>
-                                                <Check className="w-3.5 h-3.5 text-green-500" />
-                                                <span className="text-[10px]">کپی شد</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-3.5 h-3.5" />
-                                                <span className="text-[10px]">کپی</span>
-                                            </>
-                                        )}
+                                        <Copy className="w-3.5 h-3.5" />
+                                        <span className="text-[10px]">کپی</span>
                                     </button>
                                 </div>
                                 <SyntaxHighlighter
