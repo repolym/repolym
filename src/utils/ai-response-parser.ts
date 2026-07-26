@@ -110,7 +110,9 @@ export const sanitizeAiResponse = (raw: string | null | undefined): string => {
 
     const unfenced = stripCodeFence(raw)
 
+    // اگر شبیه JSON نبود، مستقیماً برگردان (اما مطمئن شو که فرمول‌های ریاضی با $ حفظ شوند)
     if (!looksLikeJson(unfenced)) {
+        // نگه‌داری delimiterهای ریاضی
         return unfenced
     }
 

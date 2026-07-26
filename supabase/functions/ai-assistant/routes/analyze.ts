@@ -17,8 +17,6 @@ export async function handleAnalyze(data: unknown, authenticatedUserId: string) 
         }
 
         const userData = await fetchUserStudyData(userId);
-
-        // Use advanced model for analysis by default, or complexity-based
         const model = complexity === 'simple' ? 'deepseek-chat' : 'deepseek-r1';
 
         const prompt = `
@@ -51,6 +49,7 @@ Provide a **structured** analysis with these 5 sections:
 - Base every recommendation on their actual data — never make generic suggestions.
 - Use their subject names and specific numbers to show you know their profile.
 - The motivational message must feel personal, not like a template.
+- **IMPORTANT for mathematical content:** Use LaTeX notation for all mathematical formulas. For inline math use \\(...\\) or $...$ . For display math use \\[...\\] or $$...$$ . This is essential for proper rendering.
 
 Respond with ONLY a raw JSON object with keys: summary, strengths (array), weaknesses (array), recommendations (array), motivation (string).
         `;

@@ -2,7 +2,6 @@ import React, { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import rehypeRaw from 'rehype-raw'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { AlertTriangle, Copy, Check } from 'lucide-react'
@@ -147,7 +146,6 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[
-                    rehypeRaw,
                     [rehypeKatex, {
                         throwOnError: false,
                         trust: false,

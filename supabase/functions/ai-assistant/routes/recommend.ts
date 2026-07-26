@@ -18,8 +18,6 @@ export async function handleRecommend(data: unknown, authenticatedUserId: string
 
         const userData = await fetchUserStudyData(userId);
         const goalText = goal || 'improve overall study performance';
-
-        // Use advanced model for recommendations by default
         const model = complexity === 'simple' ? 'deepseek-chat' : 'deepseek-r1';
 
         const prompt = `
@@ -45,6 +43,7 @@ Student Data:
 3. If they have weak areas, prioritize those. If they have strong areas, suggest how to leverage them.
 4. Make recommendations SMART (Specific, Measurable, Achievable, Relevant, Time-bound) where possible.
 5. End with an overall strategic insight about their learning pattern.
+6. **IMPORTANT for mathematical content:** Use LaTeX notation for all mathematical formulas. For inline math use \\(...\\) or $...$ . For display math use \\[...\\] or $$...$$ . This is essential for proper rendering.
 
 Respond with ONLY a raw JSON object with:
 {
