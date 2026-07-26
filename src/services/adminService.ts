@@ -1,4 +1,3 @@
-// src/services/adminService.ts
 import { supabase } from '../config/supabase'
 import type { User, ActivityLog, StudySession } from '../types/database'
 import { formatError } from '../utils/error-handler'
@@ -141,6 +140,8 @@ export const adminService = {
             .update({ status: 'suspended', updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
+        // Log the action
+        await this.logActivity(userId, 'suspend_user', { target: userId })
     },
 
     async activateUser(userId: string): Promise<void> {
@@ -149,6 +150,7 @@ export const adminService = {
             .update({ status: 'active', updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
+        await this.logActivity(userId, 'activate_user', { target: userId })
     },
 
     async deleteUser(userId: string): Promise<void> {
@@ -157,6 +159,7 @@ export const adminService = {
             .update({ deleted_at: new Date().toISOString(), status: 'suspended' })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
+        await this.logActivity(userId, 'delete_user', { target: userId })
     },
 
     async makeAdmin(userId: string): Promise<void> {
@@ -165,14 +168,26 @@ export const adminService = {
             .update({ is_admin: true, updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
+        await this.logActivity(userId, 'promote_admin', { target: userId })
     },
 
     async removeAdmin(userId: string): Promise<void> {
+        // Check if this is the last admin before demoting
+        const { count, error: countError } = await supabase
+            .from('users')
+            .select('id', { count: 'exact', head: true })
+            .eq('is_admin', true)
+        if (countError) throw new AdminServiceError(formatError(countError))
+        if (count === 1) {
+            throw new Error('نمی‌توان آخرین ادمین سیستم را حذف کرد')
+        }
+
         const { error } = await supabase
             .from('users')
             .update({ is_admin: false, updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
+        await this.logActivity(userId, 'demote_admin', { target: userId })
     },
 
     // ---------- Activity Logs ----------
@@ -187,9 +202,17 @@ export const adminService = {
     },
 
     async logActivity(userId: string, action: string, details?: Record<string, unknown>): Promise<void> {
+        // Sanitize details to remove sensitive data
+        const safeDetails = details ? { ...details } : {}
+        const sensitiveKeys = ['password', 'token', 'secret', 'api_key', 'authorization', 'auth']
+        for (const key of sensitiveKeys) {
+            if (key in safeDetails) {
+                safeDetails[key] = '[REDACTED]'
+            }
+        }
         const { error } = await supabase
             .from('activity_logs')
-            .insert([{ user_id: userId, action, details }])
+            .insert([{ user_id: userId, action, details: safeDetails }])
         if (error) throw new AdminServiceError(formatError(error))
     },
 
@@ -246,12 +269,6 @@ export const adminService = {
                 .from('users')
                 .select('id', { count: 'exact', head: true })
                 .gte('created_at', monthAgoStr),
-            // Supabase's JS client has no COUNT(DISTINCT col) — fetch the
-            // olympiad_id column and dedupe client-side (same approach used
-            // in OlympiadManagement.tsx). The previous head-count query
-            // counted *students who have an olympiad set*, not the number
-            // of distinct olympiads, which showed the wrong number under
-            // "تعداد المپیادها".
             supabase
                 .from('users')
                 .select('olympiad_id')
@@ -385,7 +402,7 @@ export const adminService = {
         const { data, error } = await supabase
             .from('study_sessions')
             .select('user_id, duration_minutes, users(name)')
-            .limit(10000) // get enough
+            .limit(10000)
         if (error) throw new AdminServiceError(formatError(error))
 
         const map = new Map<string, { name: string; total_minutes: number; sessions_count: number }>()

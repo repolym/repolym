@@ -1,7 +1,4 @@
-// ============================================================
-// FILE: src/components/profile/ProfilePage.tsx (COMPLETE)
-// ============================================================
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -18,6 +15,7 @@ import { getOlympiad } from '../../config/olympiads'
 import { OLYMPIAD_ICON_MAP } from '../../config/olympiad-icons'
 import { formatError } from '../../utils/error-handler'
 import { supabase } from '../../config/supabase'
+import { useTheme } from '../../context/ThemeContext'
 import {
     User,
     Mail,
@@ -40,45 +38,10 @@ import {
     Loader2,
 } from 'lucide-react'
 
-// ---------- Constants ----------
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 
-// 'sepia' is the new theme — a warm, paper-like palette (see index.css).
 type ThemeMode = 'light' | 'dark' | 'sepia' | 'system'
-const THEME_STORAGE_KEY = 'repolym_theme_preference'
-const THEME_CLASSES = ['dark', 'theme-sepia'] as const
 
-const getStoredTheme = (): ThemeMode => {
-    try {
-        const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode
-        if (stored && ['light', 'dark', 'sepia', 'system'].includes(stored)) return stored
-    } catch { }
-    return 'system'
-}
-
-const setStoredTheme = (theme: ThemeMode) => {
-    try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme)
-    } catch { }
-}
-
-const applyTheme = (theme: ThemeMode) => {
-    const resolved =
-        theme === 'system'
-            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-            : theme
-
-    const root = document.documentElement
-    // Clear any previously-applied theme class first so switching between
-    // dark / sepia / light never leaves a stale class behind.
-    THEME_CLASSES.forEach((cls) => root.classList.remove(cls))
-
-    if (resolved === 'dark') root.classList.add('dark')
-    else if (resolved === 'sepia') root.classList.add('theme-sepia')
-    // 'light' needs no class — it's the :root default.
-}
-
-// ---------- Avatar Helpers ----------
 const readFileAsDataURL = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -88,30 +51,13 @@ const readFileAsDataURL = (file: File): Promise<string> => {
     })
 }
 
-// ---------- Profile Page ----------
 export const ProfilePage: React.FC = () => {
     const { user, updateProfile, signOut } = useAuth()
     const { showToast } = useToast()
     const navigate = useNavigate()
     const { data: subjects, loading: subjectsLoading, createSubject, updateSubject, deleteSubject, refetch: refetchSubjects } = useSubjects(user?.id ?? null)
 
-    const [theme, setTheme] = useState<ThemeMode>(getStoredTheme)
-    useEffect(() => {
-        applyTheme(theme)
-        setStoredTheme(theme)
-    }, [theme])
-
-    // Keep "system" theme in sync if the OS preference changes while the
-    // profile tab is open.
-    useEffect(() => {
-        if (theme !== 'system') return
-        const mq = window.matchMedia('(prefers-color-scheme: dark)')
-        const handler = () => applyTheme('system')
-        mq.addEventListener('change', handler)
-        return () => mq.removeEventListener('change', handler)
-    }, [theme])
-
-    const handleThemeChange = (newTheme: ThemeMode) => setTheme(newTheme)
+    const { theme, setTheme } = useTheme()
 
     const [name, setName] = useState(user?.name || '')
     const [editingName, setEditingName] = useState(false)
@@ -175,8 +121,6 @@ export const ProfilePage: React.FC = () => {
 
     const handleAvatarClick = () => fileInputRef.current?.click()
 
-    // Selecting a file only validates it and opens the crop modal — the
-    // actual resize/compress/upload happens once the user confirms the crop.
     const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -192,7 +136,6 @@ export const ProfilePage: React.FC = () => {
         } catch (err) {
             showToast(formatError(err), 'error')
         } finally {
-            // Reset so selecting the same file again still fires onChange.
             if (fileInputRef.current) fileInputRef.current.value = ''
         }
     }
@@ -208,9 +151,6 @@ export const ProfilePage: React.FC = () => {
         setUploadingAvatar(true)
         try {
             const fileName = `avatar_${Date.now()}.jpg`
-            // Path convention `${userId}/...` matches the storage RLS policy
-            // (see supabase/migrations — avatars bucket), which restricts
-            // writes to the folder matching auth.uid().
             const filePath = `${user.id}/${fileName}`
             const blob = await fetch(croppedDataUrl).then(r => r.blob())
 
@@ -224,12 +164,8 @@ export const ProfilePage: React.FC = () => {
             }
 
             const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-            // Cache-bust so the new photo shows immediately even though the
-            // filename pattern can repeat across uploads.
             const versionedUrl = `${publicUrl}?v=${Date.now()}`
 
-            // Goes through the same updateProfile() path as the name field,
-            // which refreshes the user in context — no full page reload needed.
             await updateProfile({ preferences: { ...(user.preferences || {}), avatar_url: versionedUrl } })
 
             showToast('آواتار با موفقیت به‌روزرسانی شد', 'success')
@@ -370,7 +306,7 @@ export const ProfilePage: React.FC = () => {
                             return (
                                 <button
                                     key={mode}
-                                    onClick={() => handleThemeChange(mode as ThemeMode)}
+                                    onClick={() => setTheme(mode as ThemeMode)}
                                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${isActive
                                         ? 'border-accent bg-accent-muted text-accent'
                                         : 'border-border text-text-secondary hover:border-border-strong hover:text-text-primary'

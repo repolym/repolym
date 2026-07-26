@@ -28,8 +28,7 @@ export interface StudySession {
   subject_id: string | null;
   date: string;
   duration_minutes: number;
-  activities: string | null;       // جایگزین notes
-  phone_hours: number | null;      // جدید
+  activities: string | null;
   created_at: string;
   updated_at: string;
   resource?: string | null;
@@ -43,8 +42,6 @@ export interface StudySession {
   plan?: Plan | null;
   subjects?: Subject;
 }
-
-
 
 export interface Goal {
   id: string
@@ -92,7 +89,6 @@ export interface Streak {
   updated_at: string
 }
 
-// NEW: Baseline survey answers
 export interface BaselineSurveyAnswers {
   q1_experience: 'very_easy' | 'easy' | 'normal' | 'hard' | 'very_hard'
   q2_feeling: 'organized' | 'clear_progress' | 'just_because' | 'not_helpful'
@@ -102,13 +98,11 @@ export interface BaselineSurveyAnswers {
   q6_open_reflection: string | null
 }
 
-// Form types
 export interface SessionFormData {
   subject_id: string | null;
   date: string;
   duration_minutes: number;
-  activities: string;            // به جای notes
-  phone_hours?: number | null;   // جدید
+  activities: string;
   resource?: string | null;
   question_count?: number | null;
   question_difficulty?: string | null;
@@ -145,7 +139,6 @@ export interface SubjectFormData {
   color: string
 }
 
-// Query state
 export interface QueryState<T> {
   data: T[]
   loading: boolean
@@ -160,7 +153,6 @@ export interface SingleQueryState<T> {
   refetch: () => Promise<void>
 }
 
-// Dashboard
 export interface HeatmapDay {
   date: string
   minutes: number

@@ -10,7 +10,6 @@ import { Search, UserX, UserCheck, Trash2, Eye, RefreshCw, ChevronLeft, ChevronR
 import { Link } from 'react-router-dom';
 import { supabase } from '../../config/supabase';
 
-// Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     useEffect(() => {
@@ -23,7 +22,6 @@ function useDebounce<T>(value: T, delay: number): T {
 export const UserManagement: React.FC = () => {
     const { showToast } = useToast();
 
-    // State for filters
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 300);
     const [statusFilter, setStatusFilter] = useState<'active' | 'suspended' | 'all'>('all');
@@ -36,12 +34,10 @@ export const UserManagement: React.FC = () => {
     const [sortBy, setSortBy] = useState('created_at');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-    // Modal state
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [confirmAction, setConfirmAction] = useState<'suspend' | 'activate' | 'delete' | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
-    // Memoize filter params (using debouncedSearch)
     const params = useMemo(() => ({
         search: debouncedSearch || undefined,
         status: statusFilter,
@@ -57,7 +53,6 @@ export const UserManagement: React.FC = () => {
     const { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser } = useAdminUsers(params);
     const totalPages = Math.ceil(total / limit);
 
-    // Fetch olympiad options once
     useEffect(() => {
         const fetchOlympiads = async () => {
             const { data, error } = await supabase
@@ -106,7 +101,6 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    // Reset to page 1 when filters change
     const handleFilterChange = (callback: () => void) => {
         setPage(1);
         callback();
@@ -114,7 +108,6 @@ export const UserManagement: React.FC = () => {
 
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto" dir="rtl">
-            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-text-primary">مدیریت کاربران</h1>
@@ -126,10 +119,8 @@ export const UserManagement: React.FC = () => {
                 </Button>
             </div>
 
-            {/* Filters - Redesigned with larger fields */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Search */}
                     <div className="relative">
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                             <Search className="w-5 h-5 text-text-tertiary" />
@@ -143,7 +134,6 @@ export const UserManagement: React.FC = () => {
                         />
                     </div>
 
-                    {/* Status Filter */}
                     <select
                         value={statusFilter}
                         onChange={(e) => handleFilterChange(() => setStatusFilter(e.target.value as any))}
@@ -154,7 +144,6 @@ export const UserManagement: React.FC = () => {
                         <option value="suspended">تعلیق شده</option>
                     </select>
 
-                    {/* Olympiad Filter */}
                     <select
                         value={olympiadFilter}
                         onChange={(e) => handleFilterChange(() => setOlympiadFilter(e.target.value))}
@@ -166,7 +155,6 @@ export const UserManagement: React.FC = () => {
                         ))}
                     </select>
 
-                    {/* Date Range */}
                     <div className="flex gap-2">
                         <Input
                             type="date"
@@ -185,7 +173,6 @@ export const UserManagement: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sorting & Pagination Info */}
                 <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-border-subtle pt-4">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-text-secondary">مرتب‌سازی:</span>
@@ -214,14 +201,12 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Error State */}
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 mb-4">
                     {error}
                 </div>
             )}
 
-            {/* Table */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -338,7 +323,6 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-6">
                     <span className="text-sm text-text-secondary">
@@ -365,7 +349,6 @@ export const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Confirm Modal */}
             <ConfirmModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}

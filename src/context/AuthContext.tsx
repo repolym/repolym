@@ -203,13 +203,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cleanBase = base.endsWith('/') ? base : `${base}/`;
       const redirectUrl = `${window.location.origin}${cleanBase}`;
 
+      const options: any = {
+        data: { name },
+        emailRedirectTo: redirectUrl,
+      };
+
+      // Pass olympiad_id to user metadata if provided, so the trigger can set it
+      if (onboarding?.olympiadId) {
+        options.data.olympiad_id = onboarding.olympiadId;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { name },
-          emailRedirectTo: redirectUrl,
-        },
+        options,
       });
 
       if (error) throw new Error(formatError(error));

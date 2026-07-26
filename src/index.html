@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repolym</title>
+    <link rel="icon" type="image/png" href="/repolym/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <script>
+        // Immediately apply stored theme to avoid flash
+        (function () {
+            var stored = localStorage.getItem('repolym-theme');
+            var theme = stored && ['light', 'dark', 'sepia', 'system'].includes(stored) ? stored : 'system';
+            var resolved = theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+            var root = document.documentElement;
+            if (resolved === 'dark') root.classList.add('dark');
+            else if (resolved === 'sepia') root.classList.add('theme-sepia');
+        })();
+    </script>
+</head>
+
+<body class="bg-[#FAFAFA] text-[#111827]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

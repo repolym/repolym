@@ -1,4 +1,3 @@
-// src/components/admin/AdminDashboard.tsx
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../config/supabase'
 import { formatMinutes, formatDate } from '../../utils/date-utils'
@@ -28,6 +27,20 @@ interface SessionDetail {
   phone_hours: string
 }
 
+interface UserWithName {
+  id: string
+  name: string
+  email: string
+  created_at: string
+}
+
+interface ActivityLogWithUser {
+  id: string
+  action: string
+  created_at: string
+  users?: { name: string; email: string } | null
+}
+
 // ---------- Helpers ----------
 const parseNotes = (notes: string | null) => {
   if (!notes) return { activities: '', wake: '', sleep: '', phone: '' }
@@ -55,8 +68,8 @@ const OverviewTab: React.FC = () => {
     newUsersWeek: number
     newUsersMonth: number
     totalOlympiads: number
-    recentUsers: any[]
-    recentActivity: any[]
+    recentUsers: UserWithName[]
+    recentActivity: ActivityLogWithUser[]
   } | null>(null)
   const [registrationData, setRegistrationData] = useState<{ date: string; count: number }[]>([])
   const [activityData, setActivityData] = useState<{ date: string; activeUsers: number }[]>([])
@@ -79,9 +92,6 @@ const OverviewTab: React.FC = () => {
           adminService.getTopActiveUsers(10),
         ])
         if (!isMounted) return
-        // Map raw olympiad_id values (e.g. "math", "ai") to their
-        // human-readable Persian labels using the shared olympiads config,
-        // instead of showing the raw id in the pie chart.
         const readableOlympiadPart = olympiadPart.map((item) => ({
           ...item,
           olympiad: getOlympiad(item.olympiad)?.shortLabel || item.olympiad,
@@ -125,7 +135,6 @@ const OverviewTab: React.FC = () => {
 
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#22c55e', '#14b8a6', '#3b82f6', '#f97316', '#06b6d4']
 
-  // Custom tooltip for charts
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -149,7 +158,6 @@ const OverviewTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
@@ -166,7 +174,6 @@ const OverviewTab: React.FC = () => {
         ))}
       </div>
 
-      {/* Charts - Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
           <h3 className="text-sm font-semibold text-text-secondary mb-4">ثبت‌نام کاربران (۳۰ روز اخیر)</h3>
@@ -206,7 +213,6 @@ const OverviewTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts - Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
           <h3 className="text-sm font-semibold text-text-secondary mb-4">توزیع المپیادها</h3>
@@ -249,7 +255,6 @@ const OverviewTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Active Users */}
       <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
         <h3 className="text-sm font-semibold text-text-secondary mb-4">پرکاربردترین کاربران</h3>
         <div className="overflow-x-auto">
@@ -277,7 +282,6 @@ const OverviewTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Recent Users & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
           <div className="flex items-center justify-between mb-4">
@@ -339,7 +343,7 @@ const OverviewTab: React.FC = () => {
   )
 }
 
-// ---------- Sessions Tab ----------
+// ---------- SessionsTab ----------
 const SessionsTab: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<{ id: string; name: string }[]>([])
@@ -347,6 +351,8 @@ const SessionsTab: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<string>('all')
   const [jalaliStart, setJalaliStart] = useState('')
   const [jalaliEnd, setJalaliEnd] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 50
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -367,16 +373,16 @@ const SessionsTab: React.FC = () => {
         let query = supabase
           .from('study_sessions')
           .select(`
-                        id,
-                        user_id,
-                        date,
-                        duration_minutes,
-                        notes,
-                        users ( name, email ),
-                        subjects ( name )
-                    `)
+            id,
+            user_id,
+            date,
+            duration_minutes,
+            notes,
+            users ( name, email ),
+            subjects ( name )
+          `)
           .order('date', { ascending: false })
-          .limit(1000)
+          .range((page - 1) * pageSize, page * pageSize - 1)
 
         if (selectedUser !== 'all') {
           query = query.eq('user_id', selectedUser)
@@ -414,17 +420,19 @@ const SessionsTab: React.FC = () => {
       }
     }
     fetchSessions()
-  }, [selectedUser, jalaliStart, jalaliEnd])
+  }, [selectedUser, jalaliStart, jalaliEnd, page])
+
+  const handleNextPage = () => setPage(p => p + 1)
+  const handlePrevPage = () => setPage(p => Math.max(1, p - 1))
 
   return (
     <div>
-      {/* Filters */}
       <div className="bg-surface-1 rounded-2xl p-4 mb-4 shadow-card border border-border-subtle flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs text-text-secondary mb-1">کاربر</label>
           <select
             value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
+            onChange={(e) => { setSelectedUser(e.target.value); setPage(1) }}
             className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">همه کاربران</option>
@@ -439,7 +447,7 @@ const SessionsTab: React.FC = () => {
             type="text"
             placeholder="مثال: ۱۴۰۴/۰۳/۲۵"
             value={jalaliStart}
-            onChange={(e) => setJalaliStart(e.target.value)}
+            onChange={(e) => { setJalaliStart(e.target.value); setPage(1) }}
             className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -449,63 +457,83 @@ const SessionsTab: React.FC = () => {
             type="text"
             placeholder="مثال: ۱۴۰۴/۰۴/۰۱"
             value={jalaliEnd}
-            onChange={(e) => setJalaliEnd(e.target.value)}
+            onChange={(e) => { setJalaliEnd(e.target.value); setPage(1) }}
             className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         <button
-          onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd('') }}
+          onClick={() => { setSelectedUser('all'); setJalaliStart(''); setJalaliEnd(''); setPage(1) }}
           className="text-xs text-text-secondary hover:text-accent bg-surface-3 hover:bg-accent-muted px-3 py-2 rounded-xl transition"
         >
           پاک‌کردن فیلترها
         </button>
       </div>
 
-      {/* Table */}
       <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-x-auto min-w-full">
         {loading ? (
           <div className="py-10 text-center text-text-tertiary">در حال بارگذاری...</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary bg-surface-2/50 whitespace-nowrap">
-                <th className="text-right py-3 px-4 font-medium">کاربر</th>
-                <th className="text-right py-3 px-4 font-medium">تاریخ</th>
-                <th className="text-right py-3 px-4 font-medium">مدت</th>
-                <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
-                <th className="text-right py-3 px-4 font-medium">بیداری</th>
-                <th className="text-right py-3 px-4 font-medium">خواب</th>
-                <th className="text-right py-3 px-4 font-medium">گوشی (ساعت)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.length === 0 ? (
-                <tr><td colSpan={7} className="py-10 text-center text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
-              ) : (
-                sessions.map((s) => (
-                  <tr key={s.id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-medium text-text-primary">{s.user_name}</span>
-                      <div className="text-xs text-text-tertiary">{s.user_email}</div>
-                    </td>
-                    <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
-                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
-                    <td className="py-3 px-4 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
-                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.wake_time || '—'}</td>
-                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.sleep_time || '—'}</td>
-                    <td className="py-3 px-4 text-xs whitespace-nowrap">{s.phone_hours || '—'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-text-secondary bg-surface-2/50 whitespace-nowrap">
+                  <th className="text-right py-3 px-4 font-medium">کاربر</th>
+                  <th className="text-right py-3 px-4 font-medium">تاریخ</th>
+                  <th className="text-right py-3 px-4 font-medium">مدت</th>
+                  <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
+                  <th className="text-right py-3 px-4 font-medium">بیداری</th>
+                  <th className="text-right py-3 px-4 font-medium">خواب</th>
+                  <th className="text-right py-3 px-4 font-medium">گوشی (ساعت)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.length === 0 ? (
+                  <tr><td colSpan={7} className="py-10 text-center text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
+                ) : (
+                  sessions.map((s) => (
+                    <tr key={s.id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="font-medium text-text-primary">{s.user_name}</span>
+                        <div className="text-xs text-text-tertiary">{s.user_email}</div>
+                      </td>
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">{toJalaliLong(s.date)}</td>
+                      <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
+                      <td className="py-3 px-4 text-xs max-w-[200px] whitespace-pre-wrap break-words">{s.activities || '—'}</td>
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">{s.wake_time || '—'}</td>
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">{s.sleep_time || '—'}</td>
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">{s.phone_hours || '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border-subtle">
+              <span className="text-sm text-text-secondary">صفحه {page}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={page === 1}
+                  className="px-3 py-1 rounded-lg border border-border hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  قبلی
+                </button>
+                <button
+                  onClick={handleNextPage}
+                  disabled={sessions.length < pageSize}
+                  className="px-3 py-1 rounded-lg border border-border hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  بعدی
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
   )
 }
 
-// ---------- Analytics Tab (focus on study hours per user) ----------
+// ---------- AnalyticsTab ----------
 const AnalyticsTab: React.FC = () => {
   const [users, setUsers] = useState<{ id: string; name: string }[]>([])
   const [selectedUser, setSelectedUser] = useState<string>('all')
@@ -549,7 +577,6 @@ const AnalyticsTab: React.FC = () => {
         const { data, error } = await query
         if (error) throw error
 
-        // Aggregate by date
         const map = new Map<string, number>()
         data?.forEach(s => {
           map.set(s.date, (map.get(s.date) || 0) + s.duration_minutes)
@@ -570,7 +597,6 @@ const AnalyticsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
       <div className="bg-surface-1 rounded-2xl p-4 shadow-card border border-border-subtle flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs text-text-secondary mb-1">کاربر</label>
@@ -605,7 +631,6 @@ const AnalyticsTab: React.FC = () => {
         <div className="text-center py-8 text-text-tertiary">در حال بارگذاری...</div>
       ) : (
         <>
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
               <p className="text-sm text-text-secondary">کل مطالعه</p>
@@ -621,7 +646,6 @@ const AnalyticsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Chart */}
           <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-5">
             <h3 className="text-sm font-semibold text-text-secondary mb-4">روند مطالعه روزانه</h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -657,7 +681,6 @@ const AdminDashboard: React.FC = () => {
     <div className="p-4 md:p-6 max-w-full mx-auto" dir="rtl">
       <h1 className="text-2xl font-bold text-text-primary mb-6">پنل مدیریت</h1>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <button
           onClick={() => setActiveTab('overview')}
@@ -688,7 +711,6 @@ const AdminDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Content */}
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'sessions' && <SessionsTab />}
       {activeTab === 'analytics' && <AnalyticsTab />}

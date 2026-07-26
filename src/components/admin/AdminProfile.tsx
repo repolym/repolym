@@ -1,4 +1,3 @@
-// src/components/admin/AdminProfile.tsx
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -18,7 +17,9 @@ export const AdminProfile: React.FC = () => {
     const [name, setName] = useState(user?.name || '')
     const [editingName, setEditingName] = useState(false)
     const [savingName, setSavingName] = useState(false)
-    const [password, setPassword] = useState('')
+
+    // Password change fields
+    const [currentPassword, setCurrentPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [changingPassword, setChangingPassword] = useState(false)
@@ -46,6 +47,13 @@ export const AdminProfile: React.FC = () => {
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validate current password is provided
+        if (!currentPassword.trim()) {
+            showToast('برای تغییر رمز عبور، رمز فعلی را وارد کنید', 'error')
+            return
+        }
+
         if (newPassword !== confirmPassword) {
             showToast('رمز عبور جدید و تأیید آن مطابقت ندارند', 'error')
             return
@@ -54,12 +62,27 @@ export const AdminProfile: React.FC = () => {
             showToast('رمز عبور باید حداقل ۸ کاراکتر باشد', 'error')
             return
         }
+
         setChangingPassword(true)
         try {
-            const { error } = await supabase.auth.updateUser({ password: newPassword })
-            if (error) throw error
+            // First, verify the current password by attempting to sign in
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user!.email,
+                password: currentPassword,
+            })
+            if (signInError) {
+                showToast('رمز فعلی اشتباه است', 'error')
+                return
+            }
+
+            // Then update the password
+            const { error: updateError } = await supabase.auth.updateUser({
+                password: newPassword,
+            })
+            if (updateError) throw updateError
+
             showToast('رمز عبور با موفقیت تغییر کرد', 'success')
-            setPassword('')
+            setCurrentPassword('')
             setNewPassword('')
             setConfirmPassword('')
         } catch (err) {
@@ -166,8 +189,8 @@ export const AdminProfile: React.FC = () => {
                             <Input
                                 type="password"
                                 placeholder="رمز فعلی"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
                                 required
                             />
                             <Input

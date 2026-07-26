@@ -35,13 +35,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
     <>
       <div className="card-hover px-4 py-3 flex flex-col gap-1">
         <div className="flex items-center gap-3">
-          {/* Subject color indicator */}
+          {/* نشانگر رنگ درس */}
           <div
             className="w-1.5 h-8 rounded-full flex-shrink-0"
             style={{ backgroundColor: subject?.color || '#3a3a3f' }}
           />
 
-          {/* Main info */}
+          {/* اطلاعات اصلی */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-text-primary font-mono">
@@ -59,15 +59,14 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
             {activitiesPreview && (
               <p className="text-xs text-text-tertiary truncate mt-0.5">{activitiesPreview}</p>
             )}
-            {/* ❌ phone_hours display removed – use daily check‑in instead */}
           </div>
 
-          {/* Date */}
+          {/* تاریخ */}
           <p className="text-xs text-text-tertiary flex-shrink-0 hidden sm:block">
             {formatDate(session.date)}
           </p>
 
-          {/* Action buttons */}
+          {/* دکمه‌ها */}
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => onEdit(session)}
@@ -92,7 +91,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
           </div>
         </div>
 
-        {/* Extra optional fields (resource, question_count, tags, etc.) */}
+        {/* فیلدهای جدید (اختیاری) */}
         {(session.resource || session.question_count || session.tags) && (
           <div className="mt-1 pt-1 border-t border-border-subtle text-xs text-text-secondary grid grid-cols-2 gap-x-2 gap-y-0.5">
             {session.resource && (

@@ -1,28 +1,59 @@
-// src/components/admin/AdminManagement.tsx
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useAdminUsers } from '../../hooks/useAdminUsers'
 import { useToast } from '../../context/ToastContext'
 import { Button } from '../common/Button'
 import { ConfirmModal } from '../common/Modal'
 import { formatDate } from '../../utils/date-utils'
-import { RefreshCw, UserPlus, UserMinus } from 'lucide-react'
+import { RefreshCw, UserPlus, UserMinus, Search } from 'lucide-react'
 import { adminService } from '../../services/adminService'
+import { Input } from '../common/Input'
+
+// Debounce helper
+function useDebounce<T>(value: T, delay: number): T {
+    const [debounced, setDebounced] = useState<T>(value)
+    useEffect(() => {
+        const timer = setTimeout(() => setDebounced(value), delay)
+        return () => clearTimeout(timer)
+    }, [value, delay])
+    return debounced
+}
 
 export const AdminManagement: React.FC = () => {
     const { showToast } = useToast()
-    // Memoize filter params so we don't pass a new object literal on every
-    // render (which previously caused an infinite fetch/re-render loop in
-    // useAdminUsers).
-    const adminParams = useMemo(() => ({ isAdmin: true }), [])
-    const nonAdminParams = useMemo(() => ({ isAdmin: false }), [])
-    const { users, loading, error, refetch } = useAdminUsers(adminParams)
+    const [searchQuery, setSearchQuery] = useState('')
+    const debouncedSearch = useDebounce(searchQuery, 300)
+    const [page, setPage] = useState(1)
+    const limit = 10
+
+    // Fetch admins
+    const adminParams = useMemo(() => ({
+        isAdmin: true,
+        search: debouncedSearch || undefined,
+        page,
+        limit,
+        sortBy: 'created_at',
+        sortOrder: 'desc' as const,
+    }), [debouncedSearch, page])
+
+    // Fetch non-admins for promotion
+    const nonAdminParams = useMemo(() => ({
+        isAdmin: false,
+        search: debouncedSearch || undefined,
+        page: 1,
+        limit: 20,
+        sortBy: 'created_at',
+        sortOrder: 'desc' as const,
+    }), [debouncedSearch])
+
+    const { users: admins, total: totalAdmins, loading, error, refetch } = useAdminUsers(adminParams)
+    const { users: nonAdmins, loading: loadingNonAdmins, refetch: refetchNonAdmins } = useAdminUsers(nonAdminParams)
+
     const [modalOpen, setModalOpen] = useState(false)
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
     const [modalAction, setModalAction] = useState<'promote' | 'demote' | null>(null)
     const [processing, setProcessing] = useState(false)
 
-    // Get non-admin users for promotion
-    const { users: nonAdmins } = useAdminUsers(nonAdminParams)
+    const totalPages = Math.ceil(totalAdmins / limit)
 
     const handleAction = async (userId: string, action: 'promote' | 'demote') => {
         setProcessing(true)
@@ -31,10 +62,20 @@ export const AdminManagement: React.FC = () => {
                 await adminService.makeAdmin(userId)
                 showToast('کاربر به ادمین ارتقا یافت', 'success')
             } else {
+                // Check if this is the last admin
+                if (admins.length <= 1) {
+                    showToast('نمی‌توان آخرین ادمین سیستم را حذف کرد', 'error')
+                    setModalOpen(false)
+                    setSelectedUserId(null)
+                    setModalAction(null)
+                    setProcessing(false)
+                    return
+                }
                 await adminService.removeAdmin(userId)
                 showToast('دسترسی ادمین لغو شد', 'success')
             }
             await refetch()
+            await refetchNonAdmins()
         } catch (err) {
             showToast(err instanceof Error ? err.message : 'خطا', 'error')
         } finally {
@@ -51,14 +92,39 @@ export const AdminManagement: React.FC = () => {
         setModalOpen(true)
     }
 
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage)
+        }
+    }
+
     return (
         <div className="p-5 md:p-8 max-w-6xl mx-auto" dir="rtl">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-text-primary">مدیریت ادمین‌ها</h1>
-                <Button variant="secondary" onClick={() => refetch()} loading={loading}>
+                <div>
+                    <h1 className="text-2xl font-bold text-text-primary">مدیریت ادمین‌ها</h1>
+                    <p className="text-sm text-text-secondary mt-1">
+                        {totalAdmins} ادمین · {nonAdmins.length} کاربر قابل ارتقا
+                    </p>
+                </div>
+                <Button variant="secondary" onClick={() => { refetch(); refetchNonAdmins(); }} loading={loading}>
                     <RefreshCw className="w-4 h-4" />
                     بروزرسانی
                 </Button>
+            </div>
+
+            {/* Search */}
+            <div className="mb-4">
+                <div className="relative max-w-sm">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                    <Input
+                        type="text"
+                        placeholder="جستجو در نام یا ایمیل..."
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                        className="pr-10"
+                    />
+                </div>
             </div>
 
             {error && (
@@ -68,21 +134,27 @@ export const AdminManagement: React.FC = () => {
             )}
 
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 mb-6">
-                <h2 className="text-lg font-semibold text-text-primary mb-4">ارتقا به ادمین</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {nonAdmins.slice(0, 10).map((u) => (
-                        <div key={u.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
-                            <span className="text-sm font-medium text-text-secondary truncate ml-2" title={u.name}>{u.name}</span>
-                            <Button variant="primary" size="sm" onClick={() => openConfirm(u.id, 'promote')} className="shrink-0">
-                                <UserPlus className="w-4 h-4" />
-                                ارتقا
-                            </Button>
-                        </div>
-                    ))}
-                    {nonAdmins.length === 0 && (
-                        <p className="text-text-tertiary text-sm">همه کاربران ادمین هستند.</p>
-                    )}
-                </div>
+                <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-accent" />
+                    ارتقا به ادمین
+                </h2>
+                {loadingNonAdmins ? (
+                    <div className="text-center py-4 text-text-tertiary">در حال بارگذاری...</div>
+                ) : nonAdmins.length === 0 ? (
+                    <p className="text-text-tertiary text-sm">همه کاربران ادمین هستند یا کاربری یافت نشد.</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {nonAdmins.slice(0, 10).map((u) => (
+                            <div key={u.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
+                                <span className="text-sm font-medium text-text-secondary truncate ml-2" title={u.name}>{u.name}</span>
+                                <Button variant="primary" size="sm" onClick={() => openConfirm(u.id, 'promote')} className="shrink-0">
+                                    <UserPlus className="w-4 h-4" />
+                                    ارتقا
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-x-auto min-w-full">
@@ -96,12 +168,12 @@ export const AdminManagement: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {loading && users.length === 0 ? (
+                        {loading && admins.length === 0 ? (
                             <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">در حال بارگذاری...</td></tr>
-                        ) : users.length === 0 ? (
+                        ) : admins.length === 0 ? (
                             <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">هیچ ادمینی یافت نشد</td></tr>
                         ) : (
-                            users.map((admin) => (
+                            admins.map((admin) => (
                                 <tr key={admin.id} className="border-b border-border-subtle hover:bg-surface-2 transition-colors">
                                     <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">{admin.name}</td>
                                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{admin.email}</td>
@@ -109,8 +181,12 @@ export const AdminManagement: React.FC = () => {
                                     <td className="py-3 px-4 whitespace-nowrap">
                                         <button
                                             onClick={() => openConfirm(admin.id, 'demote')}
-                                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
-                                            title="لغو دسترسی ادمین"
+                                            className={`p-1.5 rounded-lg transition ${admins.length <= 1
+                                                ? 'text-text-tertiary cursor-not-allowed opacity-50'
+                                                : 'text-amber-600 hover:bg-amber-50 hover:text-amber-800'
+                                                }`}
+                                            title={admins.length <= 1 ? 'آخرین ادمین قابل حذف نیست' : 'لغو دسترسی ادمین'}
+                                            disabled={admins.length <= 1}
                                         >
                                             <UserMinus className="w-4 h-4" />
                                         </button>
@@ -120,6 +196,31 @@ export const AdminManagement: React.FC = () => {
                         )}
                     </tbody>
                 </table>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-border-subtle">
+                        <span className="text-sm text-text-secondary">
+                            صفحه {page} از {totalPages}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handlePageChange(page - 1)}
+                                disabled={page === 1}
+                                className="px-3 py-1 rounded-lg border border-border hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            >
+                                قبلی
+                            </button>
+                            <button
+                                onClick={() => handlePageChange(page + 1)}
+                                disabled={page === totalPages}
+                                className="px-3 py-1 rounded-lg border border-border hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            >
+                                بعدی
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <ConfirmModal

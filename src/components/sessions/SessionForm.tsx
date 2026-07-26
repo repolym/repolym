@@ -14,7 +14,6 @@ interface SessionFormProps {
   editing?: StudySession | null;
 }
 
-// تابع استخراج مدت زمان از متن فعالیت‌ها
 const parseActivitiesDuration = (text: string): number => {
   let totalHours = 0;
   const halfRegex = /(\d+(?:\.\d+)?)\s*ساعت\s*و\s*نیم/g;
@@ -43,7 +42,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 }) => {
   const [jalaliDate, setJalaliDate] = useState<string>(todayJalali());
   const [activities, setActivities] = useState('');
-  const [phoneHours, setPhoneHours] = useState('');
   const [resource, setResource] = useState('');
   const [questionCount, setQuestionCount] = useState('');
   const [questionDifficulty, setQuestionDifficulty] = useState('');
@@ -61,7 +59,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
     if (editing) {
       setJalaliDate(toJalali(editing.date));
       setActivities(editing.activities || '');
-      setPhoneHours(editing.phone_hours?.toString() || '');
       setResource(editing.resource || '');
       setQuestionCount(editing.question_count?.toString() || '');
       setQuestionDifficulty(editing.question_difficulty || '');
@@ -72,7 +69,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
     } else {
       setJalaliDate(todayJalali());
       setActivities('');
-      setPhoneHours('');
       setResource('');
       setQuestionCount('');
       setQuestionDifficulty('');
@@ -125,15 +121,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       newErrors.activities = 'مجموع ساعات مطالعه نمی‌تواند بیش از ۲۴ ساعت در روز باشد';
     }
 
-    // اعتبارسنجی phone_hours (اختیاری)
-    let phoneHoursNum: number | null = null;
-    if (phoneHours.trim()) {
-      phoneHoursNum = Number(phoneHours);
-      if (isNaN(phoneHoursNum) || phoneHoursNum < 0 || phoneHoursNum > 24) {
-        newErrors.phoneHours = 'ساعت گوشی باید بین ۰ تا ۲۴ باشد';
-      }
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -151,7 +138,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         date: gregorianDate,
         duration_minutes: duration || 0,
         activities: activities.trim(),
-        phone_hours: phoneHoursNum,
         resource: resource.trim() || null,
         question_count: questionCount ? Number(questionCount) : null,
         question_difficulty: questionDifficulty.trim() || null,
@@ -259,19 +245,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           </div>
           {errors.activities && <p className="text-xs text-danger mt-1">{errors.activities}</p>}
         </div>
-
-        {/* ساعت استفاده از گوشی (اختیاری) */}
-        <Input
-          label="ساعت استفاده از گوشی (غیردرسی، اختیاری)"
-          type="number"
-          step="0.5"
-          min="0"
-          max="24"
-          value={phoneHours}
-          onChange={(e) => setPhoneHours(e.target.value)}
-          placeholder="مثلاً ۲"
-          error={errors.phoneHours}
-        />
 
         {/* جزئیات بیشتر (اختیاری) */}
         <details className="mt-4 border-t border-border pt-4">

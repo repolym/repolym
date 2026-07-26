@@ -1,8 +1,8 @@
-// src/components/AppShell.tsx
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Avatar, getAvatarUrl } from './common/Avatar'
+import { useTheme } from '../context/ThemeContext'
 
 import {
   Clock,
@@ -22,7 +22,6 @@ import {
   Trophy,
 } from 'lucide-react'
 
-// گروه‌بندی آیتم‌های ناوبری دانش‌آموز
 const studentNavGroups = [
   {
     label: 'مدیریت جلسات',
@@ -47,7 +46,6 @@ const studentNavGroups = [
   },
 ]
 
-// گروه‌بندی آیتم‌های ناوبری ادمین
 const adminNavGroups = [
   {
     label: 'مدیریت',
@@ -66,8 +64,15 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { user } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { theme } = useTheme()
 
   const navGroups = user?.is_admin ? adminNavGroups : studentNavGroups
+
+  // Determine if logo should be inverted (dark mode)
+  const resolvedTheme = theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
+  const invertLogo = resolvedTheme === 'dark';
 
   return (
     <div className="flex h-screen bg-surface-2 overflow-hidden" dir="rtl">
@@ -88,7 +93,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="flex items-center px-5 py-6 border-b border-border-subtle">
-          <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-12 w-auto object-contain" />
+          <img
+            src={import.meta.env.BASE_URL + 'logo.png'}
+            alt="لوگو"
+            className={`h-12 w-auto object-contain transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
+          />
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -154,7 +163,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-border-subtle">
           <div className="flex items-center gap-2">
-            <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-8 w-auto" />
+            <img
+              src={import.meta.env.BASE_URL + 'logo.png'}
+              alt="لوگو"
+              className={`h-8 w-auto transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
+            />
             <span className="text-sm font-bold text-text-secondary hidden sm:inline">علامه حلی 10</span>
           </div>
 

@@ -46,11 +46,9 @@ export const PlanningPage: React.FC = () => {
     const [editing, setEditing] = useState<Plan | null>(null)
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
 
-    // Fetch plans
+    // Fetch plans — no date filters so all plans (past and future) are fetched
     const { data: plans, loading, error, refetch, createPlan, updatePlan, deletePlan } = usePlans({
         userId: user?.id ?? null,
-        dateFrom: daysAgo(90),
-        dateTo: today(),
     })
 
     // Fetch sessions for linking

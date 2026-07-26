@@ -17,6 +17,7 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
                 return;
             }
             try {
+                // Use RLS-protected query
                 const { data, error } = await supabase
                     .from('users')
                     .select('is_admin')

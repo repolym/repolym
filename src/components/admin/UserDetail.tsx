@@ -1,4 +1,3 @@
-// src/components/admin/UserDetail.tsx
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { adminService } from '../../services/adminService'
@@ -8,12 +7,45 @@ import { Skeleton } from '../common/Loading'
 import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react'
 
+// Local types that match the data we get
+interface UserDetailType {
+    id: string
+    name: string
+    email: string
+    olympiad_id: string | null
+    created_at: string
+    preferences: Record<string, unknown> | null
+    status: string
+}
+
+interface UserStatsType {
+    totalSessions: number
+    totalMinutes: number
+    totalTests: number
+    avgTestScore: number
+    currentStreak: number
+    longestStreak: number
+}
+
+interface SessionDetailType {
+    id: string
+    date: string
+    duration_minutes: number
+    subjects: { name: string; color: string } | null
+}
+
+interface ActivityLogType {
+    id: string
+    action: string
+    created_at: string
+}
+
 export const UserDetail: React.FC = () => {
     const { userId } = useParams<{ userId: string }>()
-    const [user, setUser] = useState<any>(null)
-    const [stats, setStats] = useState<any>(null)
-    const [sessions, setSessions] = useState<any[]>([])
-    const [logs, setLogs] = useState<any[]>([])
+    const [user, setUser] = useState<UserDetailType | null>(null)
+    const [stats, setStats] = useState<UserStatsType | null>(null)
+    const [sessions, setSessions] = useState<SessionDetailType[]>([])
+    const [logs, setLogs] = useState<ActivityLogType[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -28,9 +60,30 @@ export const UserDetail: React.FC = () => {
                     adminService.getUserSessions(userId, 20, 0),
                     adminService.getUserActivityLogs(userId, 20),
                 ])
-                setUser(userData)
+                // Map userData to our expected type (ensure status is string)
+                if (userData) {
+                    const mappedUser: UserDetailType = {
+                        id: userData.id,
+                        name: userData.name,
+                        email: userData.email,
+                        olympiad_id: userData.olympiad_id,
+                        created_at: userData.created_at,
+                        preferences: userData.preferences,
+                        status: userData.status || 'active',
+                    }
+                    setUser(mappedUser)
+                } else {
+                    setUser(null)
+                }
                 setStats(statsData)
-                setSessions(sessionsData)
+                // Map sessions data to expected shape
+                const mappedSessions: SessionDetailType[] = sessionsData.map((s: any) => ({
+                    id: s.id,
+                    date: s.date,
+                    duration_minutes: s.duration_minutes,
+                    subjects: s.subjects ? { name: s.subjects.name, color: s.subjects.color } : null,
+                }))
+                setSessions(mappedSessions)
                 setLogs(logsData)
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات')
@@ -78,7 +131,6 @@ export const UserDetail: React.FC = () => {
                 </Link>
             </div>
 
-            {/* User Info */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex items-center gap-6">
                 <Avatar
                     name={user.name}
@@ -103,7 +155,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                     <p className="text-sm text-text-secondary">جلسات مطالعه</p>
@@ -123,7 +174,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Session History */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-accent" />
@@ -146,7 +196,6 @@ export const UserDetail: React.FC = () => {
                 )}
             </div>
 
-            {/* Activity Logs */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent" />

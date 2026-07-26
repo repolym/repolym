@@ -25,14 +25,12 @@ export const TodosPage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
 
-    // Fetch data
+    // Fetch data — no date filters, so all todos are fetched
     const { data: todos, loading, error, refetch, createTodo, updateTodo, deleteTodo } = useTodos({
         userId: user?.id ?? null,
         status: statusFilter,
         subjectId: subjectFilter === 'all' ? null : subjectFilter,
         search: debouncedSearch,
-        dateFrom: daysAgo(30),
-        dateTo: undefined, // ✅ fixed: changed from null to undefined
     })
 
     const { data: subjects } = useSubjects(user?.id ?? null)
@@ -122,7 +120,7 @@ export const TodosPage: React.FC = () => {
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
                     <Input
                         type="text"
-                        placeholder="جستجو در عنوان وظایف..."
+                        placeholder="جستجو در عنوان و توضیحات وظایف..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 pr-10"
