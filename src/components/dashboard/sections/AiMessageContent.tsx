@@ -16,9 +16,39 @@ interface AiMessageContentProps {
     isUser?: boolean
 }
 
+// استایل‌های مخصوص جهت‌دهی فرمول‌های ریاضی
+const mathStyles = `
+  .ai-markdown .katex {
+    direction: ltr !important;
+    unicode-bidi: embed;
+  }
+  .ai-markdown .katex-display {
+    direction: ltr !important;
+    unicode-bidi: embed;
+    text-align: left !important;
+    margin: 0.5em 0;
+  }
+  .ai-markdown .katex-display > .katex {
+    display: inline-block;
+    text-align: left;
+  }
+  /* برای اطمینان از اینکه اعداد و متغیرها در فرمول به‌درستی چپ‌چین شوند */
+  .ai-markdown .katex .mathnormal,
+  .ai-markdown .katex .mord,
+  .ai-markdown .katex .mbin,
+  .ai-markdown .katex .mrel,
+  .ai-markdown .katex .mopen,
+  .ai-markdown .katex .mclose,
+  .ai-markdown .katex .mpunct,
+  .ai-markdown .katex .minner {
+    direction: ltr !important;
+    unicode-bidi: embed;
+  }
+`
+
 /**
  * رندرکنندهٔ مشترک محتوای چت دستیار هوشمند با پشتیبانی از:
- * - فرمول‌های ریاضی (KaTeX)
+ * - فرمول‌های ریاضی (KaTeX) با جهت‌دهی چپ‌به‌راست
  * - کد با هایلایت سینتکس
  * - Markdown کامل
  * - تم تاریک/روشن
@@ -31,7 +61,6 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     const codeStyle = isDark ? vscDarkPlus : vs
 
-    // Extract code for copy functionality
     const handleCopy = (code: string, id: string) => {
         navigator.clipboard.writeText(code)
         setCopied(id)
@@ -53,6 +82,9 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
 
     return (
         <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full">
+            {/* استایل‌های جهت‌دهی ریاضی */}
+            <style>{mathStyles}</style>
+
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
