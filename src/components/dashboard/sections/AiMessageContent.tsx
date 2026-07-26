@@ -16,49 +16,6 @@ interface AiMessageContentProps {
     isUser?: boolean
 }
 
-// تابعی برای تبدیل فرمول‌های بدون $ به فرمت قابل قبول
-// این تابع به‌عنوان یک لایه امنیتی عمل می‌کند
-const normalizeMathNotation = (text: string): string => {
-    if (!text) return text
-
-    // 1. ابتدا فرمول‌هایی که با \(...\) یا \[...\] نوشته شده‌اند را حفظ می‌کنیم
-    // 2. سپس فرمول‌هایی که با $...$ یا $$...$$ نوشته شده‌اند را حفظ می‌کنیم
-    // 3. برای فرمول‌هایی که بدون هیچ delimiter نوشته شده‌اند، تلاش می‌کنیم تشخیص دهیم
-
-    let result = text
-
-    // الگوهای ریاضی رایج که ممکن است بدون $ نوشته شوند:
-    // - توابع با f(x), g(x), ...
-    // - توان‌ها: x^2, x^{n+1}
-    // - کسرها: a/b
-    // - مشتقات: f'(x), dy/dx
-    // - انتگرال‌ها: ∫
-    // - بردارها: \vec{v}
-    // - مجموعه‌ها: \mathbb{R}
-
-    // تشخیص و تبدیل patternهای رایج ریاضی به LaTeX با $
-    // این کار را با دقت بالا انجام می‌دهیم تا متن عادی را خراب نکند
-
-    // ابتدا اطمینان حاصل می‌کنیم که هیچ $ اضافی در متن نیست
-    // اگر متن از قبل $ دارد، آن را تغییر نمی‌دهیم
-
-    // اگر متن حداقل یک $ دارد، فرض می‌کنیم که کاربر/مدل از LaTeX استفاده کرده
-    if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
-        return text
-    }
-
-    // در غیر این صورت، سعی می‌کنیم فرمول‌های آشکار را تشخیص دهیم
-    // مثال: f(x) = x^2 + 2x + 1 → $f(x) = x^2 + 2x + 1$
-    // اما خیلی محافظه‌کارانه عمل می‌کنیم تا متن عادی تغییر نکند
-
-
-    // فقط اگر الگوی ریاضی واضحی تشخیص داده شد، آن را به $ $ تبدیل می‌کنیم
-    // اما برای جلوگیری از تغییرات ناخواسته، این بخش را محدود می‌کنیم
-    // بهتر است کاربر و مدل خودشان از $ استفاده کنند
-
-    return result
-}
-
 const mathStyles = `
   .ai-markdown .katex {
     direction: ltr !important;
@@ -128,11 +85,8 @@ const mathStyles = `
 export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isUser = false }) => {
     const { theme } = useTheme()
 
-    // ابتدا متن را از JSON پاک می‌کنیم (اگر JSON باشد)
-    const rawText = useMemo(() => sanitizeAiResponse(content), [content])
-
-    // سپس فرمول‌های بدون $ را normalize می‌کنیم
-    const safeText = useMemo(() => normalizeMathNotation(rawText), [rawText])
+    // sanitizeAiResponse به‌طور خودکار normalizer را اعمال می‌کند
+    const safeText = useMemo(() => sanitizeAiResponse(content), [content])
 
     const [copiedMessage, setCopiedMessage] = React.useState(false)
 
