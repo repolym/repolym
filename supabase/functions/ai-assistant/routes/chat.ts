@@ -56,7 +56,6 @@ export async function handleChat(data: unknown) {
         const requestedLang = detectRequestedLanguage(messages);
         const systemPrompt = getSmartSystemPrompt(requestedLang || 'persian');
 
-        // Use complexity to select model
         const model = complexity === 'advanced' ? 'deepseek-r1' : 'deepseek-chat';
 
         let finalMessages = messages;

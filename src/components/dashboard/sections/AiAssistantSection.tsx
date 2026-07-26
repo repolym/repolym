@@ -33,6 +33,7 @@ export const AiAssistantSection: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [streamingContent, setStreamingContent] = useState('');
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [complexity, setComplexity] = useState<ComplexityLevel>('medium');
@@ -76,6 +77,85 @@ export const AiAssistantSection: React.FC = () => {
         await updateSession(sessionId, { messages: newMessages });
     };
 
+    // NEW: Streaming call
+    const callAiFunctionStream = async (action: Action, payload: any): Promise<string> => {
+        setLoading(true);
+        setStreamingContent('');
+        const isDev = import.meta.env.MODE === 'development';
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const payloadWithComplexity = { ...payload, complexity, stream: true };
+
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ action, data: payloadWithComplexity }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('No response body');
+            }
+
+            const decoder = new TextDecoder();
+            let fullContent = '';
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.type === 'chunk' && data.content) {
+                                fullContent += data.content;
+                                setStreamingContent(fullContent);
+                            } else if (data.type === 'done') {
+                                // Final content
+                                return fullContent;
+                            } else if (data.type === 'error') {
+                                throw new Error(data.message || 'Unknown error');
+                            }
+                        } catch (e) {
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+
+            // If we reach here, streaming completed without a 'done' event
+            // Try to sanitize the full content
+            return sanitizeAiResponse(fullContent) || 'پاسخی دریافت نشد';
+
+        } catch (err: any) {
+            const errorMsg = isDev
+                ? err.message
+                : 'ارتباط با دستیار هوشمند برقرار نشد. لطفاً دوباره تلاش کنید.';
+            showToast(errorMsg, 'error');
+            return `⚠️ ${errorMsg}`;
+        } finally {
+            setLoading(false);
+            setStreamingContent('');
+        }
+    };
+
+    // Legacy non-streaming call (for analyze/recommend/actions that don't need streaming yet)
     const callAiFunction = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
         const isDev = import.meta.env.MODE === 'development';
@@ -152,6 +232,7 @@ export const AiAssistantSection: React.FC = () => {
             setCurrentSessionId(sessionId);
         }
 
+        // Add user message to UI immediately
         const userMsg: ChatMessage = { role: 'user', content: input };
         const updatedMessages = [...messages, userMsg];
         setMessages(updatedMessages);
@@ -159,15 +240,19 @@ export const AiAssistantSection: React.FC = () => {
 
         await saveMessagesToSession(sessionId, updatedMessages);
 
+        // Use streaming for chat
         const history = updatedMessages.map(m => ({ role: m.role, content: m.content }));
-        const response = await callAiFunction('chat', {
+        const response = await callAiFunctionStream('chat', {
             messages: history,
             userId: user?.id,
         });
 
-        const assistantMsg: ChatMessage = { role: 'assistant', content: response };
+        // After streaming completes, add the full message to the messages list
+        const finalContent = response;
+        const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent };
         const finalMessages = [...updatedMessages, assistantMsg];
         setMessages(finalMessages);
+        setStreamingContent('');
 
         await saveMessagesToSession(sessionId, finalMessages);
 
@@ -263,7 +348,7 @@ export const AiAssistantSection: React.FC = () => {
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, streamingContent]);
 
     useEffect(() => {
         if (sessions.length > 0 && !currentSessionId) {
@@ -284,15 +369,36 @@ export const AiAssistantSection: React.FC = () => {
         advanced: 'تحلیل عمیق با مدل پیشرفته',
     };
 
+    // Build final messages list including streaming content if any
+    const displayMessages = [...messages];
+    if (loading && streamingContent) {
+        // If we're streaming, show the last message as a partial response
+        // Check if the last message is already an assistant message with partial content
+        const lastMsg = displayMessages[displayMessages.length - 1];
+        if (lastMsg?.role === 'assistant' && !lastMsg.content.includes('...')) {
+            // Add a new message for streaming
+            displayMessages.push({ role: 'assistant', content: streamingContent });
+        } else if (lastMsg?.role === 'assistant') {
+            // Update the last message content
+            displayMessages[displayMessages.length - 1] = {
+                ...lastMsg,
+                content: streamingContent || lastMsg.content
+            };
+        } else {
+            displayMessages.push({ role: 'assistant', content: streamingContent });
+        }
+    } else if (loading && !streamingContent) {
+        // Show loading indicator separately
+    }
+
     return (
         <div className="bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[70vh] max-h-[600px] min-h-[420px] text-right font-sans" dir="rtl">
-            {/* Header with session management */}
+            {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         className="p-2 rounded-xl hover:bg-surface-2 transition-colors flex-shrink-0"
-                        title="تاریخچه گفتگوها"
                     >
                         {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
@@ -305,7 +411,6 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Complexity Selector Button */}
                     <div className="relative">
                         <button
                             onClick={() => setShowComplexitySelector(!showComplexitySelector)}
@@ -313,7 +418,6 @@ export const AiAssistantSection: React.FC = () => {
                                 ? 'border-accent bg-accent-muted text-accent-hover'
                                 : 'border-border hover:bg-surface-2 text-text-secondary'
                                 }`}
-                            title="تنظیم سطح پیچیدگی پاسخ‌ها"
                         >
                             <SlidersHorizontal className="w-4 h-4" />
                             <span className="hidden sm:inline">{complexityLabels[complexity]}</span>
@@ -350,7 +454,6 @@ export const AiAssistantSection: React.FC = () => {
             </div>
 
             <div className="flex flex-1 min-h-0 relative">
-                {/* Sidebar - session list */}
                 {sidebarOpen && (
                     <div className="absolute inset-0 z-10 bg-surface-1 rounded-2xl border border-border p-3 flex flex-col gap-2 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
@@ -396,11 +499,9 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 )}
 
-                {/* Main chat area */}
                 <div className="flex-1 flex flex-col min-h-0">
-                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
-                        {messages.length === 0 ? (
+                        {displayMessages.length === 0 && !loading ? (
                             <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
                                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
                                     <Sparkles className="w-8 h-8 text-indigo-600" />
@@ -429,7 +530,7 @@ export const AiAssistantSection: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            messages.map((msg, index) => (
+                            displayMessages.map((msg, index) => (
                                 <div
                                     key={index}
                                     className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
@@ -441,22 +542,24 @@ export const AiAssistantSection: React.FC = () => {
                                             }`}
                                     >
                                         <AiMessageContent content={msg.content} isUser={msg.role === 'user'} />
+                                        {index === displayMessages.length - 1 && loading && streamingContent && (
+                                            <span className="inline-block w-1.5 h-4 bg-indigo-500 animate-pulse ml-1" />
+                                        )}
                                     </div>
                                 </div>
                             ))
                         )}
-                        {loading && (
+                        {loading && !streamingContent && (
                             <div className="flex justify-end">
                                 <div className="bg-white border border-border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 text-sm text-text-secondary shadow-sm">
                                     <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
-                                    <span>در حال پردازش داده‌ها...</span>
+                                    <span>در حال نوشتن پاسخ...</span>
                                 </div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input bar */}
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                             type="text"

@@ -2,7 +2,6 @@ import { logger } from '../utils/logger.ts';
 import { withTimeout } from '../utils/timeout.ts';
 import { config } from '../config.ts';
 
-// Model definitions with their OpenRouter model IDs
 export const MODELS = {
     'deepseek-r1': 'deepseek/deepseek-r1',
     'deepseek-chat': 'deepseek/deepseek-chat',
@@ -13,7 +12,6 @@ export const MODELS = {
 
 export type ModelName = keyof typeof MODELS;
 
-// Mapping from complexity level to model
 const COMPLEXITY_MODEL_MAP: Record<string, ModelName> = {
     'simple': 'deepseek-chat',
     'medium': 'deepseek-chat',
@@ -24,7 +22,6 @@ const COMPLEXITY_MODEL_MAP: Record<string, ModelName> = {
     'summarize': 'deepseek-chat',
 };
 
-// Model priority for fallback (higher index = lower priority)
 const FALLBACK_MODELS: ModelName[] = [
     'deepseek-r1',
     'deepseek-chat',
@@ -33,14 +30,11 @@ const FALLBACK_MODELS: ModelName[] = [
     'qwen-2.5',
 ];
 
-// Time to wait before considering a model "slow" and switching
-const SLOW_THRESHOLD_MS = 4000;
-
 export class OpenRouterProvider {
     private apiKeys: string[];
     private currentKeyIndex: number = 0;
     private requestCounts: Map<string, number> = new Map();
-    private dailyLimit: number = 50; // Default per key
+    private dailyLimit: number = 50;
     private lastResetDate: string = '';
 
     constructor() {
@@ -99,6 +93,170 @@ export class OpenRouterProvider {
         return this.apiKeys.filter(key => this.canMakeRequest(key));
     }
 
+    // NEW: Streaming chat method
+    async chatStream(
+        messages: Array<{ role: string; content: string }>,
+        options?: {
+            maxTokens?: number;
+            temperature?: number;
+            complexity?: string;
+            model?: ModelName;
+            onChunk: (chunk: string) => void;
+        }
+    ): Promise<{ content: string; usage?: any; model: string }> {
+        const start = Date.now();
+        const complexity = options?.complexity || 'medium';
+        const requestedModel = options?.model || this.getModelForComplexity(complexity);
+
+        const modelsToTry = [requestedModel, ...this.getFallbackModels(requestedModel)];
+        const availableKeys = this.getAvailableKeys();
+        if (availableKeys.length === 0) {
+            throw new Error('All API keys have reached their daily limit. Please try again tomorrow.');
+        }
+
+        let lastError: Error | null = null;
+
+        for (const modelName of modelsToTry) {
+            const modelId = this.getModelName(modelName);
+
+            for (const key of availableKeys) {
+                if (!this.canMakeRequest(key)) continue;
+
+                try {
+                    const result = await this.sendStreamRequest(
+                        modelId,
+                        messages,
+                        key,
+                        options,
+                        (chunk) => {
+                            options?.onChunk?.(chunk);
+                        }
+                    );
+
+                    this.incrementRequestCount(key);
+                    logger.debug('OpenRouter stream success', {
+                        latency: Date.now() - start,
+                        model: modelId,
+                    });
+
+                    return {
+                        content: result.content,
+                        usage: result.usage,
+                        model: modelId,
+                    };
+                } catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error));
+                    const errorMsg = lastError.message.toLowerCase();
+
+                    if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+                        this.requestCounts.set(key, this.dailyLimit);
+                        logger.warn(`API key exhausted due to rate limit`, { keyIndex: this.apiKeys.indexOf(key) });
+                        continue;
+                    }
+
+                    logger.warn(`Model ${modelId} failed with key ${this.apiKeys.indexOf(key)}`, { error: lastError.message });
+                }
+            }
+
+            logger.info(`All keys failed for model ${modelId}, trying fallback`);
+        }
+
+        if (lastError) {
+            throw new Error(`All OpenRouter models and API keys failed: ${lastError.message}`);
+        }
+        throw new Error('No available OpenRouter models or API keys');
+    }
+
+    private async sendStreamRequest(
+        modelId: string,
+        messages: Array<{ role: string; content: string }>,
+        apiKey: string,
+        options?: { maxTokens?: number; temperature?: number },
+        onChunk?: (chunk: string) => void
+    ): Promise<{ content: string; usage?: any }> {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://repolym.github.io',
+                'X-Title': 'Repolym AI Assistant',
+            },
+            body: JSON.stringify({
+                model: modelId,
+                messages: messages.map(m => ({
+                    role: m.role as 'system' | 'user' | 'assistant',
+                    content: m.content,
+                })),
+                max_tokens: options?.maxTokens || 1024,
+                temperature: options?.temperature || 0.7,
+                stream: true, // Enable streaming
+            }),
+        });
+
+        if (!response.ok) {
+            let errorText: string;
+            try {
+                const errorData = await response.json();
+                errorText = errorData.error?.message || String(errorData);
+            } catch {
+                errorText = await response.text();
+            }
+            throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('No response body');
+        }
+
+        const decoder = new TextDecoder();
+        let fullContent = '';
+        let usage: any = null;
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const delta = parsed.choices?.[0]?.delta?.content;
+                            if (delta) {
+                                fullContent += delta;
+                                onChunk?.(delta);
+                            }
+                            if (parsed.usage) {
+                                usage = parsed.usage;
+                            }
+                        } catch (e) {
+                            // Ignore parse errors for incomplete JSON
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        return {
+            content: fullContent,
+            usage: usage ? {
+                inputTokens: usage.prompt_tokens || 0,
+                outputTokens: usage.completion_tokens || 0,
+            } : undefined,
+        };
+    }
+
+    // Legacy non-streaming method (kept for backward compatibility)
     async chat(
         messages: Array<{ role: string; content: string }>,
         options?: {
@@ -112,10 +270,7 @@ export class OpenRouterProvider {
         const complexity = options?.complexity || 'medium';
         const requestedModel = options?.model || this.getModelForComplexity(complexity);
 
-        // Determine which models to try
         const modelsToTry = [requestedModel, ...this.getFallbackModels(requestedModel)];
-
-        // Get available API keys
         const availableKeys = this.getAvailableKeys();
         if (availableKeys.length === 0) {
             throw new Error('All API keys have reached their daily limit. Please try again tomorrow.');
@@ -123,26 +278,22 @@ export class OpenRouterProvider {
 
         let lastError: Error | null = null;
 
-        // Try each model with each key
         for (const modelName of modelsToTry) {
             const modelId = this.getModelName(modelName);
 
-            // Try each available key for this model
             for (const key of availableKeys) {
                 if (!this.canMakeRequest(key)) continue;
 
                 try {
                     const result = await withTimeout(
                         this.sendRequest(modelId, messages, key, options),
-                        config.ai.timeoutMs || 8000
+                        config.ai.timeoutMs || 30000
                     );
 
-                    // Success! Record the request
                     this.incrementRequestCount(key);
                     logger.debug('OpenRouter success', {
                         latency: Date.now() - start,
                         model: modelId,
-                        keyIndex: this.apiKeys.indexOf(key),
                     });
 
                     return {
@@ -155,24 +306,19 @@ export class OpenRouterProvider {
                     lastError = error instanceof Error ? error : new Error(String(error));
                     const errorMsg = lastError.message.toLowerCase();
 
-                    // If it's a rate limit or daily limit error for this key, try next key
                     if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
-                        // Mark this key as exhausted for the day
                         this.requestCounts.set(key, this.dailyLimit);
                         logger.warn(`API key exhausted due to rate limit`, { keyIndex: this.apiKeys.indexOf(key) });
                         continue;
                     }
 
-                    // For other errors, try next key, but log it
                     logger.warn(`Model ${modelId} failed with key ${this.apiKeys.indexOf(key)}`, { error: lastError.message });
                 }
             }
 
-            // If we've tried all keys for this model and none worked, log and try next model
             logger.info(`All keys failed for model ${modelId}, trying fallback`);
         }
 
-        // If all models failed, throw the last error
         if (lastError) {
             throw new Error(`All OpenRouter models and API keys failed: ${lastError.message}`);
         }
@@ -230,7 +376,6 @@ export class OpenRouterProvider {
         };
     }
 
-    // Get current usage stats
     getStats() {
         this.resetDailyCountsIfNeeded();
         const stats: Record<string, { used: number; limit: number }> = {};

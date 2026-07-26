@@ -11,7 +11,7 @@ export const config = {
         maxInputTokens: 4000,
         maxOutputTokens: 1024,
         temperature: 0.7,
-        timeoutMs: 8000,
+        timeoutMs: 30000, // افزایش به ۳۰ ثانیه
         maxRetries: 2,
         fallbackEnabled: true,
     },
