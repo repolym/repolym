@@ -9,17 +9,20 @@ import {
     Sparkles,
     Send,
     BrainCircuit,
-    MessageSquare,
     Loader2,
-    Lightbulb,
     Plus,
     Trash2,
     Menu,
     X,
     History,
+    Target,
+    Award,
+    Zap,
+    SlidersHorizontal,
 } from 'lucide-react';
 
 type Action = 'chat' | 'analyze' | 'recommend' | 'summarize';
+type ComplexityLevel = 'simple' | 'medium' | 'advanced';
 
 export const AiAssistantSection: React.FC = () => {
     const { user } = useAuth();
@@ -32,19 +35,19 @@ export const AiAssistantSection: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [complexity, setComplexity] = useState<ComplexityLevel>('medium');
+    const [showComplexitySelector, setShowComplexitySelector] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const functionUrl = `${supabaseUrl}/functions/v1/ai-assistant`;
 
-    // Load session when selected
     const loadSession = (session: ChatSession) => {
         setCurrentSessionId(session.id);
         setMessages(session.messages || []);
         setSidebarOpen(false);
     };
 
-    // Create a new chat session
     const startNewChat = async () => {
         const newSession = await createSession({ title: 'گفتگوی جدید' });
         if (newSession) {
@@ -54,7 +57,6 @@ export const AiAssistantSection: React.FC = () => {
         }
     };
 
-    // Delete a session
     const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!confirm('آیا از حذف این گفتگو اطمینان دارید؟')) return;
@@ -70,19 +72,10 @@ export const AiAssistantSection: React.FC = () => {
         }
     };
 
-    // Auto-save messages to the current session after each exchange
     const saveMessagesToSession = async (sessionId: string, newMessages: ChatMessage[]) => {
         await updateSession(sessionId, { messages: newMessages });
     };
 
-    // Call the AI function
-    // NOTE: خروجی سرور (result.data?.message / result.data?.summary / ...)
-    // ممکن است حاوی JSON خام یا فنس ```json``` باشد (ر.ک. routes/analyze.ts،
-    // routes/recommend.ts که در صورت شکست JSON.parse متن خام را برمی‌گردانند).
-    // به همین دلیل قبل از ذخیره در content، از sanitizeAiResponse عبور
-    // می‌کنیم تا هرگز JSON خام وارد state/DB نشود؛ رندر نهایی هم توسط
-    // AiMessageContent با یک لایه دفاعی دوم پاک‌سازی و به‌صورت Markdown نمایش
-    // داده می‌شود.
     const callAiFunction = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
         const isDev = import.meta.env.MODE === 'development';
@@ -90,13 +83,15 @@ export const AiAssistantSection: React.FC = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
+            const payloadWithComplexity = { ...payload, complexity };
+
             const response = await fetch(functionUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ action, data: payload }),
+                body: JSON.stringify({ action, data: payloadWithComplexity }),
             });
 
             const result = await response.json();
@@ -116,13 +111,16 @@ export const AiAssistantSection: React.FC = () => {
                 if (d.strengths?.length) summary += '\n\n**نقاط قوت:**\n' + d.strengths.map((s: string) => `- ${s}`).join('\n');
                 if (d.weaknesses?.length) summary += '\n\n**نقاط ضعف:**\n' + d.weaknesses.map((w: string) => `- ${w}`).join('\n');
                 if (d.recommendations?.length) summary += '\n\n**پیشنهادات:**\n' + d.recommendations.map((r: string) => `- ${r}`).join('\n');
+                if (d.motivation) summary += '\n\n---\n\n' + d.motivation;
                 return summary || 'تحلیل کامل شد، اما داده‌ای برای نمایش وجود ندارد.';
             }
             if (action === 'recommend') {
-                const recs = result.data?.recommendations || [];
-                return recs.length
-                    ? '**پیشنهادات هوشمند:**\n' + recs.map((r: string) => `- ${r}`).join('\n')
-                    : 'پیشنهادی برای نمایش وجود ندارد.';
+                const data = result.data || {};
+                const recs = data.recommendations || [];
+                let output = '**پیشنهادات هوشمند:**\n' + recs.map((r: string) => `- ${r}`).join('\n');
+                if (data.insight) output += '\n\n**بینش کلی:** ' + data.insight;
+                if (data.next_step) output += '\n\n**گام بعدی شما:** ' + data.next_step;
+                return output || 'پیشنهادی برای نمایش وجود ندارد.';
             }
             if (action === 'summarize') {
                 return sanitizeAiResponse(result.data?.summary) || 'خلاصه‌سازی انجام نشد.';
@@ -139,12 +137,10 @@ export const AiAssistantSection: React.FC = () => {
         }
     };
 
-    // Handle sending a user message
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || loading) return;
 
-        // Ensure we have a session
         let sessionId = currentSessionId;
         if (!sessionId) {
             const newSession = await createSession({ title: input.trim().slice(0, 50) });
@@ -161,10 +157,8 @@ export const AiAssistantSection: React.FC = () => {
         setMessages(updatedMessages);
         setInput('');
 
-        // Save user message immediately
         await saveMessagesToSession(sessionId, updatedMessages);
 
-        // Get AI response
         const history = updatedMessages.map(m => ({ role: m.role, content: m.content }));
         const response = await callAiFunction('chat', {
             messages: history,
@@ -175,22 +169,20 @@ export const AiAssistantSection: React.FC = () => {
         const finalMessages = [...updatedMessages, assistantMsg];
         setMessages(finalMessages);
 
-        // Save assistant response and update session
         await saveMessagesToSession(sessionId, finalMessages);
 
-        // If title is still default and we have user message, update title
         const session = sessions.find(s => s.id === sessionId);
         if (session && (!session.title || session.title === 'گفتگوی جدید') && userMsg.content.length > 10) {
             await updateSession(sessionId, { title: userMsg.content.slice(0, 50) + '...' });
-            refetch(); // refresh list to show updated title
+            refetch();
         }
     };
 
-    // Quick actions (they add a message to the chat)
     const quickActions = [
         {
             label: 'تحلیل عملکرد ماهانه',
             icon: <BrainCircuit className="w-4 h-4" />,
+            description: 'دریافت تحلیل کامل عملکرد و نقاط قوت و ضعف',
             action: async () => {
                 let sessionId = currentSessionId;
                 if (!sessionId) {
@@ -210,12 +202,13 @@ export const AiAssistantSection: React.FC = () => {
             },
         },
         {
-            label: 'دریافت پیشنهادات شخصی‌سازی‌شده',
-            icon: <Lightbulb className="w-4 h-4" />,
+            label: 'برنامه مطالعه شخصی‌سازی‌شده',
+            icon: <Target className="w-4 h-4" />,
+            description: 'دریافت برنامه مطالعه اختصاصی بر اساس داده‌های شما',
             action: async () => {
                 let sessionId = currentSessionId;
                 if (!sessionId) {
-                    const newSession = await createSession({ title: 'پیشنهادات' });
+                    const newSession = await createSession({ title: 'برنامه مطالعه' });
                     if (!newSession) return;
                     sessionId = newSession.id;
                     setCurrentSessionId(sessionId);
@@ -230,21 +223,66 @@ export const AiAssistantSection: React.FC = () => {
                 await saveMessagesToSession(sessionId, newMessages);
             },
         },
+        {
+            label: 'نکته انگیزشی روز',
+            icon: <Zap className="w-4 h-4" />,
+            description: 'یک پیام انگیزشی متناسب با سطح شما',
+            action: async () => {
+                let sessionId = currentSessionId;
+                if (!sessionId) {
+                    const newSession = await createSession({ title: 'انگیزش' });
+                    if (!newSession) return;
+                    sessionId = newSession.id;
+                    setCurrentSessionId(sessionId);
+                }
+                const result = await callAiFunction('analyze', {
+                    userId: user?.id,
+                    period: 'week',
+                });
+                const lines = result.split('\n');
+                const motivationLines = lines.filter(line => line.includes('---') || line.includes('💪') || line.includes('🚀'));
+                const msg: ChatMessage = {
+                    role: 'assistant',
+                    content: motivationLines.length > 0 ? motivationLines.join('\n') : 'به راه خود ادامه دهید. هر روز قدمی به جلو! 💪'
+                };
+                const newMessages = [...messages, msg];
+                setMessages(newMessages);
+                await saveMessagesToSession(sessionId, newMessages);
+            },
+        },
+        {
+            label: 'پرسش درسی',
+            icon: <Award className="w-4 h-4" />,
+            description: 'سوالات درسی خود را بپرسید و پاسخ دقیق دریافت کنید',
+            action: async () => {
+                const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+                if (inputElement) inputElement.focus();
+            },
+        },
     ];
 
-    // Auto-scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Load most recent session on mount
     useEffect(() => {
         if (sessions.length > 0 && !currentSessionId) {
             const latest = sessions[0];
             loadSession(latest);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessions]);
+
+    const complexityLabels: Record<ComplexityLevel, string> = {
+        simple: 'ساده و سریع',
+        medium: 'متوسط',
+        advanced: 'پیشرفته و تحلیلی',
+    };
+
+    const complexityDescriptions: Record<ComplexityLevel, string> = {
+        simple: 'پاسخ‌های مختصر و سریع',
+        medium: 'پاسخ‌های متعادل',
+        advanced: 'تحلیل عمیق با مدل پیشرفته',
+    };
 
     return (
         <div className="bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[70vh] max-h-[600px] min-h-[420px] text-right font-sans" dir="rtl">
@@ -258,21 +296,57 @@ export const AiAssistantSection: React.FC = () => {
                     >
                         {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
-                    <div className="p-2 bg-purple-500/10 rounded-xl flex-shrink-0">
-                        <Sparkles className="w-6 h-6 text-purple-500" />
+                    <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex-shrink-0">
+                        <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div className="min-w-0">
-                        <h2 className="text-base sm:text-lg font-bold text-text-primary truncate">دستیار هوشمند آموزشی</h2>
-                        <p className="text-xs sm:text-sm text-text-secondary truncate">سوالات درسی خود را بپرسید</p>
+                        <h2 className="text-base sm:text-lg font-bold text-text-primary truncate">مربی هوشمند Repolym</h2>
+                        <p className="text-xs sm:text-sm text-text-secondary truncate">دستیار شخصی شما برای موفقیت در المپیاد</p>
                     </div>
                 </div>
-                <button
-                    onClick={startNewChat}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span className="hidden sm:inline">گفتگوی جدید</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Complexity Selector Button */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowComplexitySelector(!showComplexitySelector)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors border ${showComplexitySelector
+                                ? 'border-accent bg-accent-muted text-accent-hover'
+                                : 'border-border hover:bg-surface-2 text-text-secondary'
+                                }`}
+                            title="تنظیم سطح پیچیدگی پاسخ‌ها"
+                        >
+                            <SlidersHorizontal className="w-4 h-4" />
+                            <span className="hidden sm:inline">{complexityLabels[complexity]}</span>
+                        </button>
+                        {showComplexitySelector && (
+                            <div className="absolute left-0 top-full mt-2 w-52 bg-surface-1 border border-border rounded-xl shadow-lg p-2 z-20">
+                                {(['simple', 'medium', 'advanced'] as ComplexityLevel[]).map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={() => {
+                                            setComplexity(level);
+                                            setShowComplexitySelector(false);
+                                        }}
+                                        className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-colors ${complexity === level
+                                            ? 'bg-accent-muted text-accent-hover'
+                                            : 'hover:bg-surface-2 text-text-secondary'
+                                            }`}
+                                    >
+                                        <div className="font-medium">{complexityLabels[level]}</div>
+                                        <div className="text-xs text-text-tertiary">{complexityDescriptions[level]}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={startNewChat}
+                        className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors flex-shrink-0 shadow-md"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">گفتگوی جدید</span>
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-1 min-h-0 relative">
@@ -327,22 +401,29 @@ export const AiAssistantSection: React.FC = () => {
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
                         {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-2 p-4 sm:p-6 text-center">
-                                <MessageSquare className="w-12 h-12 text-text-secondary/40" />
-                                <p className="font-medium">پیامی ارسال کنید تا گفتگو با هوش مصنوعی آغاز شود.</p>
-                                <p className="text-xs max-w-sm">
-                                    می‌توانید درباره زمان‌بندی‌ها، اهداف درسی، و یا ضعف‌های کارنامه خود راهنمایی دریافت کنید.
+                            <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                                    <Sparkles className="w-8 h-8 text-indigo-600" />
+                                </div>
+                                <p className="font-bold text-lg text-text-primary">به مربی هوشمند Repolym خوش آمدید</p>
+                                <p className="text-sm max-w-sm text-text-secondary">
+                                    سوالات درسی، تحلیل عملکرد، برنامه مطالعه و نکات انگیزشی — همه در یک جا
                                 </p>
-                                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 w-full max-w-md">
                                     {quickActions.map((qa, idx) => (
                                         <button
                                             key={idx}
                                             onClick={qa.action}
                                             disabled={loading}
-                                            className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-xl text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                                            className="flex items-center gap-3 bg-white border border-border hover:border-accent hover:shadow-md rounded-xl px-4 py-3 text-right transition-all disabled:opacity-50"
                                         >
-                                            {qa.icon}
-                                            {qa.label}
+                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-indigo-600">
+                                                {qa.icon}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-text-primary">{qa.label}</p>
+                                                <p className="text-2xs text-text-tertiary truncate">{qa.description}</p>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -356,7 +437,7 @@ export const AiAssistantSection: React.FC = () => {
                                     <div
                                         className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                             ? 'bg-accent-muted text-accent-hover rounded-tr-none'
-                                            : 'bg-surface-1 border border-border text-text-primary rounded-tl-none'
+                                            : 'bg-white border border-border text-text-primary rounded-tl-none shadow-sm'
                                             }`}
                                     >
                                         <AiMessageContent content={msg.content} isUser={msg.role === 'user'} />
@@ -366,8 +447,8 @@ export const AiAssistantSection: React.FC = () => {
                         )}
                         {loading && (
                             <div className="flex justify-end">
-                                <div className="bg-surface-1 border border-border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 text-sm text-text-secondary">
-                                    <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
+                                <div className="bg-white border border-border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 text-sm text-text-secondary shadow-sm">
+                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
                                     <span>در حال پردازش داده‌ها...</span>
                                 </div>
                             </div>
@@ -383,12 +464,12 @@ export const AiAssistantSection: React.FC = () => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="سوال خود را اینجا بنویسید..."
                             disabled={loading}
-                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50 text-right"
+                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors disabled:opacity-50 text-right"
                         />
                         <button
                             type="submit"
                             disabled={loading || !input.trim()}
-                            className="p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-40 flex items-center justify-center flex-shrink-0"
+                            className="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl transition-colors disabled:opacity-40 flex items-center justify-center flex-shrink-0 shadow-md"
                         >
                             <Send className="w-4 h-4 rotate-180" />
                         </button>

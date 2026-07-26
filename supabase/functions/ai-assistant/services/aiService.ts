@@ -1,16 +1,15 @@
-import { GeminiProvider } from '../providers/gemini.ts';
-import { GroqProvider } from '../providers/groq.ts';
-import { withRetry } from '../utils/retry.ts';
+import { OpenRouterProvider } from '../providers/openrouter.ts';
 import { logger } from '../utils/logger.ts';
-import { getCached, setCache, generateCacheKey } from './cacheService.ts';
+import { withRetry } from '../utils/retry.ts';
 import { config } from '../config.ts';
+import { getCached, setCache, generateCacheKey } from './cacheService.ts';
 
 function isTemporaryError(error: unknown): boolean {
     const msg = error instanceof Error ? error.message : String(error);
     const lower = msg.toLowerCase();
     return (
-        lower.includes('quota') ||
         lower.includes('rate limit') ||
+        lower.includes('429') ||
         lower.includes('timeout') ||
         lower.includes('network') ||
         lower.includes('connection') ||
@@ -23,63 +22,59 @@ function isTemporaryError(error: unknown): boolean {
 
 export async function chatWithFallback(
     messages: Array<{ role: string; content: string }>,
-    options?: { maxTokens?: number; temperature?: number },
+    options?: {
+        maxTokens?: number;
+        temperature?: number;
+        complexity?: string;
+        model?: string;
+    },
     userId?: string
-): Promise<{ content: string; provider: string; usage?: any }> {
+): Promise<{ content: string; provider: string; usage?: any; model?: string }> {
 
     const dataToHash = { messages, options, userId };
     const cacheKey = await generateCacheKey('chat', dataToHash);
 
-    const cached = await getCached<{ content: string; provider: string; usage?: any }>(cacheKey);
+    const cached = await getCached<{ content: string; provider: string; usage?: any; model?: string }>(cacheKey);
     if (cached) {
         logger.info('Cache hit', { userId });
         return cached;
     }
 
-    const gemini = new GeminiProvider();
-    const groq = new GroqProvider();
-    let geminiError: any = null;
-    let groqError: any = null;
+    const openrouter = new OpenRouterProvider();
 
-    // تلاش با Gemini
-    logger.info('Attempting Gemini provider...');
+    let lastError: any = null;
+
+    // Try with OpenRouter
+    logger.info('Attempting OpenRouter provider...');
     try {
         const result = await withRetry(
-            () => gemini.chat(messages, options),
+            () => openrouter.chat(messages, {
+                maxTokens: options?.maxTokens ?? config.ai.maxOutputTokens,
+                temperature: options?.temperature ?? config.ai.temperature,
+                complexity: options?.complexity,
+                model: options?.model as any,
+            }),
             config.ai.maxRetries,
             500,
             isTemporaryError
         );
-        logger.info('Gemini succeeded');
-        const response = { content: result.content, provider: 'gemini', usage: result.usage };
+        logger.info('OpenRouter succeeded', { model: result.model });
+        const response = {
+            content: result.content,
+            provider: result.provider,
+            usage: result.usage,
+            model: result.model,
+        };
         await setCache(cacheKey, response);
         return response;
     } catch (err) {
-        geminiError = err;
-        logger.error('Gemini failed', { error: String(err) });
+        lastError = err;
+        logger.error('OpenRouter failed', { error: String(err) });
     }
 
-    // تلاش با Groq (fallback)
-    logger.info('Attempting Groq provider (fallback)...');
-    try {
-        const result = await withRetry(
-            () => groq.chat(messages, options),
-            config.ai.maxRetries,
-            500,
-            isTemporaryError
-        );
-        logger.info('Groq succeeded');
-        const response = { content: result.content, provider: 'groq', usage: result.usage };
-        await setCache(cacheKey, response);
-        return response;
-    } catch (err) {
-        groqError = err;
-        logger.error('Groq also failed', { error: String(err) });
-    }
-
-    // هر دو شکست خوردند
-    const errorMessage = `All AI providers failed.\nGemini error: ${String(geminiError)}\nGroq error: ${String(groqError)}`;
+    // All providers failed
+    const errorMessage = `All AI providers failed.\nOpenRouter error: ${String(lastError)}`;
     const error = new Error(errorMessage);
-    (error as any).details = { geminiError, groqError };
+    (error as any).details = { lastError };
     throw error;
 }

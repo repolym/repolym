@@ -20,12 +20,12 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         sort: 'newest' as 'newest' | 'oldest' | 'longest' | 'shortest',
     });
 
-    // دریافت جلسات بر اساس بازه‌ی تاریخ و درس
+    // دریافت جلسات بر اساس بازه‌ی تاریخ و درس - subjectId now passed
     const { data: allSessions, loading, error } = useStudySessions({
         userId,
         dateFrom: filters.dateRange.from,
         dateTo: filters.dateRange.to,
-        subjectId: filters.subjectId, // اضافه شد
+        subjectId: filters.subjectId,
     });
 
     // اعمال فیلترهای دیگر روی داده‌ها

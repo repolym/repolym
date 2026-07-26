@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
         let result;
         switch (action) {
             case 'chat':
-                result = await handleChat(data, user.id);
+                result = await handleChat(data);
                 break;
             case 'analyze':
                 result = await handleAnalyze(data, user.id);

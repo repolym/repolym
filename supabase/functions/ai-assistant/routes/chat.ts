@@ -18,20 +18,46 @@ function detectRequestedLanguage(messages: Array<{ role: string; content: string
     return null;
 }
 
+function getSmartSystemPrompt(language: string): string {
+    const base = `
+You are **Repolym AI Mentor** — a world-class educational coach, study strategist, and motivational guide for Olympiad students.
+
+Your mission is to help students achieve peak performance by providing:
+- Deep, accurate answers to academic questions (math, physics, biology, etc.)
+- Smart study strategies based on their learning patterns
+- Personalized encouragement that keeps them motivated
+- Actionable advice to turn weaknesses into strengths
+
+Your communication style:
+- Professional yet warm — like a top-tier private tutor who genuinely cares
+- Use clear, structured explanations with examples
+- Always highlight the "why" behind concepts, not just the "how"
+- End every response with a short motivational push or a "next step" question
+
+**CRITICAL RULES:**
+1. If the user asks a purely academic question (e.g., "what is a derivative?"), give a concise but thorough explanation with a real-world example.
+2. If the user asks about study strategies, time management, or exam prep, provide science-backed, practical advice tailored to their level.
+3. If the user seems stuck or overwhelmed, reframe their challenge positively and offer a small, doable action.
+4. Never say "I don't know" — instead say "Let me think about that..." and give your best reasoning, then invite clarification.
+5. ALWAYS respond in Persian unless the user explicitly requests another language.`;
+
+    if (language === 'english') {
+        return base + '\n6. Respond in English at all times.';
+    } else if (language === 'german') {
+        return base + '\n6. Respond in German at all times.';
+    } else {
+        return base + '\n6. Respond in Persian. Use formal, respectful Persian with a touch of warmth.';
+    }
+}
+
 export async function handleChat(data: unknown) {
     try {
-        const { messages, userId } = validateChatRequest(data);
+        const { messages, userId, complexity } = validateChatRequest(data);
         const requestedLang = detectRequestedLanguage(messages);
+        const systemPrompt = getSmartSystemPrompt(requestedLang || 'persian');
 
-        let systemPrompt = 'You are an educational AI assistant. ';
-        if (requestedLang === 'english') {
-            systemPrompt += 'Always respond in English. ';
-        } else if (requestedLang === 'german') {
-            systemPrompt += 'Always respond in German. ';
-        } else {
-            systemPrompt += 'Default language is Persian. Always respond in Persian unless the user explicitly requests another language. Do not switch languages automatically. ';
-        }
-        systemPrompt += 'Provide helpful, accurate, and concise responses.';
+        // Use complexity to select model
+        const model = complexity === 'advanced' ? 'deepseek-r1' : 'deepseek-chat';
 
         let finalMessages = messages;
         const systemIndex = messages.findIndex(m => m.role === 'system');
@@ -42,7 +68,13 @@ export async function handleChat(data: unknown) {
             finalMessages = [{ role: 'system', content: systemPrompt }, ...messages];
         }
 
-        const result = await chatWithFallback(finalMessages, { maxTokens: 1024, temperature: 0.7 }, userId);
+        const result = await chatWithFallback(finalMessages, {
+            maxTokens: 1024,
+            temperature: complexity === 'advanced' ? 0.5 : 0.7,
+            complexity,
+            model,
+        }, userId);
+
         return { success: true, data: { message: result.content, usage: result.usage }, provider: result.provider };
     } catch (error) {
         logger.error('Chat handler error', undefined, error);
