@@ -51,7 +51,6 @@ export const AiAssistantSection: React.FC = () => {
         setIsFullScreen(!isFullScreen);
     };
 
-    // Close full screen on Escape key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isFullScreen) {
@@ -96,7 +95,6 @@ export const AiAssistantSection: React.FC = () => {
         await updateSession(sessionId, { messages: newMessages });
     };
 
-    // NEW: Streaming call
     const callAiFunctionStream = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
         setStreamingContent('');
@@ -146,7 +144,6 @@ export const AiAssistantSection: React.FC = () => {
                                 fullContent += data.content;
                                 setStreamingContent(fullContent);
                             } else if (data.type === 'done') {
-                                // Final content
                                 return fullContent;
                             } else if (data.type === 'error') {
                                 throw new Error(data.message || 'Unknown error');
@@ -158,8 +155,6 @@ export const AiAssistantSection: React.FC = () => {
                 }
             }
 
-            // If we reach here, streaming completed without a 'done' event
-            // Try to sanitize the full content
             return sanitizeAiResponse(fullContent) || 'پاسخی دریافت نشد';
 
         } catch (err: any) {
@@ -174,7 +169,6 @@ export const AiAssistantSection: React.FC = () => {
         }
     };
 
-    // Legacy non-streaming call (for analyze/recommend/actions that don't need streaming yet)
     const callAiFunction = async (action: Action, payload: any): Promise<string> => {
         setLoading(true);
         const isDev = import.meta.env.MODE === 'development';
@@ -251,7 +245,6 @@ export const AiAssistantSection: React.FC = () => {
             setCurrentSessionId(sessionId);
         }
 
-        // Add user message to UI immediately
         const userMsg: ChatMessage = { role: 'user', content: input };
         const updatedMessages = [...messages, userMsg];
         setMessages(updatedMessages);
@@ -259,14 +252,12 @@ export const AiAssistantSection: React.FC = () => {
 
         await saveMessagesToSession(sessionId, updatedMessages);
 
-        // Use streaming for chat
         const history = updatedMessages.map(m => ({ role: m.role, content: m.content }));
         const response = await callAiFunctionStream('chat', {
             messages: history,
             userId: user?.id,
         });
 
-        // After streaming completes, add the full message to the messages list
         const finalContent = response;
         const assistantMsg: ChatMessage = { role: 'assistant', content: finalContent };
         const finalMessages = [...updatedMessages, assistantMsg];
@@ -388,7 +379,6 @@ export const AiAssistantSection: React.FC = () => {
         advanced: 'تحلیل عمیق با مدل پیشرفته',
     };
 
-    // Build final messages list including streaming content if any
     const displayMessages = [...messages];
     if (loading && streamingContent) {
         const lastMsg = displayMessages[displayMessages.length - 1];
@@ -404,14 +394,12 @@ export const AiAssistantSection: React.FC = () => {
         }
     }
 
-    // Full screen styles
     const containerClass = isFullScreen
         ? 'fixed inset-0 z-50 bg-surface-1 rounded-none border-0 p-4 sm:p-6 flex flex-col h-screen max-h-none min-h-screen'
         : 'bg-surface-1 rounded-2xl border border-border p-4 sm:p-6 flex flex-col h-[75vh] max-h-[700px] min-h-[450px]';
 
     return (
         <div ref={containerRef} className={containerClass} dir="rtl">
-            {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-border mb-4 flex-wrap gap-2 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
@@ -429,7 +417,6 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Full Screen Toggle */}
                     <button
                         onClick={toggleFullScreen}
                         className="p-2 rounded-xl hover:bg-surface-2 transition-colors text-text-secondary hover:text-text-primary"
@@ -481,7 +468,6 @@ export const AiAssistantSection: React.FC = () => {
             </div>
 
             <div className="flex flex-1 min-h-0 relative">
-                {/* Sidebar */}
                 {sidebarOpen && (
                     <div className="absolute inset-0 z-10 bg-surface-1 rounded-2xl border border-border p-3 flex flex-col gap-2 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
@@ -527,9 +513,7 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 )}
 
-                {/* Chat Area */}
                 <div className="flex-1 flex flex-col min-h-0">
-                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
                         {displayMessages.length === 0 && !loading ? (
                             <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
@@ -566,14 +550,14 @@ export const AiAssistantSection: React.FC = () => {
                                     className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
                                 >
                                     <div
-                                        className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                            ? 'bg-accent-muted text-accent-hover rounded-tr-none'
-                                            : 'bg-white border border-border text-text-primary rounded-tl-none shadow-sm'
+                                        className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                                            ? 'bg-accent-muted text-accent-hover rounded-tr-none border border-accent-subtle/30'
+                                            : 'bg-surface-1 border border-border text-text-primary rounded-tl-none'
                                             }`}
                                     >
                                         <AiMessageContent content={msg.content} isUser={msg.role === 'user'} />
                                         {index === displayMessages.length - 1 && loading && streamingContent && (
-                                            <span className="inline-block w-1.5 h-4 bg-indigo-500 animate-pulse ml-1" />
+                                            <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-1" />
                                         )}
                                     </div>
                                 </div>
@@ -581,8 +565,8 @@ export const AiAssistantSection: React.FC = () => {
                         )}
                         {loading && !streamingContent && (
                             <div className="flex justify-end">
-                                <div className="bg-white border border-border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 text-sm text-text-secondary shadow-sm">
-                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                                <div className="bg-surface-1 border border-border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2 text-sm text-text-secondary shadow-sm">
+                                    <Loader2 className="w-4 h-4 animate-spin text-accent" />
                                     <span>در حال نوشتن پاسخ...</span>
                                 </div>
                             </div>
@@ -590,7 +574,6 @@ export const AiAssistantSection: React.FC = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input */}
                     <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
                         <input
                             type="text"
@@ -598,7 +581,7 @@ export const AiAssistantSection: React.FC = () => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="سوال خود را اینجا بنویسید..."
                             disabled={loading}
-                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors disabled:opacity-50 text-right"
+                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors disabled:opacity-50 text-right"
                         />
                         <button
                             type="submit"
@@ -611,7 +594,6 @@ export const AiAssistantSection: React.FC = () => {
                 </div>
             </div>
 
-            {/* Close button for full screen (visible only in full screen) */}
             {isFullScreen && (
                 <button
                     onClick={toggleFullScreen}
