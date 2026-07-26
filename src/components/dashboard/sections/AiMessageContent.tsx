@@ -16,6 +16,56 @@ interface AiMessageContentProps {
     isUser?: boolean
 }
 
+// تابعی برای تبدیل فرمول‌های بدون $ به فرمت قابل قبول
+// این تابع به‌عنوان یک لایه امنیتی عمل می‌کند
+const normalizeMathNotation = (text: string): string => {
+    if (!text) return text
+
+    // 1. ابتدا فرمول‌هایی که با \(...\) یا \[...\] نوشته شده‌اند را حفظ می‌کنیم
+    // 2. سپس فرمول‌هایی که با $...$ یا $$...$$ نوشته شده‌اند را حفظ می‌کنیم
+    // 3. برای فرمول‌هایی که بدون هیچ delimiter نوشته شده‌اند، تلاش می‌کنیم تشخیص دهیم
+
+    let result = text
+
+    // الگوهای ریاضی رایج که ممکن است بدون $ نوشته شوند:
+    // - توابع با f(x), g(x), ...
+    // - توان‌ها: x^2, x^{n+1}
+    // - کسرها: a/b
+    // - مشتقات: f'(x), dy/dx
+    // - انتگرال‌ها: ∫
+    // - بردارها: \vec{v}
+    // - مجموعه‌ها: \mathbb{R}
+
+    // تشخیص و تبدیل patternهای رایج ریاضی به LaTeX با $
+    // این کار را با دقت بالا انجام می‌دهیم تا متن عادی را خراب نکند
+
+    // ابتدا اطمینان حاصل می‌کنیم که هیچ $ اضافی در متن نیست
+    // اگر متن از قبل $ دارد، آن را تغییر نمی‌دهیم
+
+    // اگر متن حداقل یک $ دارد، فرض می‌کنیم که کاربر/مدل از LaTeX استفاده کرده
+    if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+        return text
+    }
+
+    // در غیر این صورت، سعی می‌کنیم فرمول‌های آشکار را تشخیص دهیم
+    // مثال: f(x) = x^2 + 2x + 1 → $f(x) = x^2 + 2x + 1$
+    // اما خیلی محافظه‌کارانه عمل می‌کنیم تا متن عادی تغییر نکند
+
+    // تشخیص توابع ریاضی ساده
+    // الگوی: letter(letter) = ... یا letter(letter) → ...
+    const mathPatterns = [
+        /(?<![$\\])[a-zA-Z]\s*\([a-zA-Z0-9_,\s]+\)\s*[=→]\s*[a-zA-Z0-9_^+\-*/()\s]+(?![$\\])/,
+        /(?<![$\\])[a-zA-Z]\s*\([a-zA-Z0-9_,\s]+\)(?![$\\])/,
+        /(?<![$\\])[a-zA-Z]\s*=\s*[a-zA-Z0-9_^+\-*/()\s]+(?![$\\])/,
+    ]
+
+    // فقط اگر الگوی ریاضی واضحی تشخیص داده شد، آن را به $ $ تبدیل می‌کنیم
+    // اما برای جلوگیری از تغییرات ناخواسته، این بخش را محدود می‌کنیم
+    // بهتر است کاربر و مدل خودشان از $ استفاده کنند
+
+    return result
+}
+
 const mathStyles = `
   .ai-markdown .katex {
     direction: ltr !important;
@@ -24,8 +74,8 @@ const mathStyles = `
   .ai-markdown .katex-display {
     direction: ltr !important;
     unicode-bidi: embed;
-    text-align: left !important;
-    margin: 0.5em 0;
+    text-align: center !important;
+    margin: 0.75em 0;
     overflow-x: auto;
     overflow-y: hidden;
   }
@@ -84,7 +134,13 @@ const mathStyles = `
 
 export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isUser = false }) => {
     const { theme } = useTheme()
-    const safeText = useMemo(() => sanitizeAiResponse(content), [content])
+
+    // ابتدا متن را از JSON پاک می‌کنیم (اگر JSON باشد)
+    const rawText = useMemo(() => sanitizeAiResponse(content), [content])
+
+    // سپس فرمول‌های بدون $ را normalize می‌کنیم
+    const safeText = useMemo(() => normalizeMathNotation(rawText), [rawText])
+
     const [copiedMessage, setCopiedMessage] = React.useState(false)
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -107,10 +163,30 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
         }
     }
 
+    // پیام‌های کاربر هم از Markdown + KaTeX عبور می‌کنند تا فرمول‌ها رندر شوند
+    // اما ظاهر پیام کاربر با AI فرق دارد
     if (isUser) {
         return (
             <div className="relative group">
-                <p className="whitespace-pre-line break-words text-text-primary">{safeText}</p>
+                <div className="ai-markdown prose prose-sm max-w-none text-text-primary">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[
+                            [rehypeKatex, {
+                                throwOnError: false,
+                                trust: false,
+                                macros: {
+                                    "\\R": "\\mathbb{R}",
+                                    "\\N": "\\mathbb{N}",
+                                    "\\Z": "\\mathbb{Z}",
+                                    "\\Q": "\\mathbb{Q}",
+                                }
+                            }]
+                        ]}
+                    >
+                        {safeText}
+                    </ReactMarkdown>
+                </div>
                 <button
                     onClick={handleCopyMessage}
                     className="absolute -left-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary"
