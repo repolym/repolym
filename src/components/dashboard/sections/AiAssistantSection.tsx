@@ -387,13 +387,11 @@ export const AiAssistantSection: React.FC = () => {
         advanced: 'تحلیل عمیق با مدل پیشرفته',
     };
 
-    // Build full message list including streaming content
     const allMessages = useMemo(() => {
         const base = [...messages];
         if (loading && streamingContent) {
             const lastMsg = base[base.length - 1];
             if (lastMsg?.role === 'assistant') {
-                // Update last message content with streaming
                 const updated = [...base];
                 updated[updated.length - 1] = { ...lastMsg, content: streamingContent };
                 return updated;
@@ -404,7 +402,6 @@ export const AiAssistantSection: React.FC = () => {
         return base;
     }, [messages, loading, streamingContent]);
 
-    // Filter messages based on search term
     const filteredMessages = useMemo(() => {
         if (!searchTerm.trim()) return allMessages;
         const term = searchTerm.trim().toLowerCase();
@@ -433,7 +430,6 @@ export const AiAssistantSection: React.FC = () => {
 
     return (
         <div ref={containerRef} className={containerClass} dir="rtl">
-            {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3 flex-wrap gap-2 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
@@ -501,7 +497,6 @@ export const AiAssistantSection: React.FC = () => {
                 </div>
             </div>
 
-            {/* Search Bar */}
             <div className="flex items-center gap-2 mb-3 shrink-0">
                 <div className="relative flex-1">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
@@ -529,7 +524,6 @@ export const AiAssistantSection: React.FC = () => {
             </div>
 
             <div className="flex flex-1 min-h-0 relative">
-                {/* Sidebar */}
                 {sidebarOpen && (
                     <div className="absolute inset-0 z-10 bg-surface-1 rounded-2xl border border-border p-3 flex flex-col gap-2 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
@@ -575,9 +569,7 @@ export const AiAssistantSection: React.FC = () => {
                     </div>
                 )}
 
-                {/* Chat Area */}
                 <div className="flex-1 flex flex-col min-h-0">
-                    {/* Messages */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 mb-4 p-2 bg-surface-2 rounded-xl border border-border/50">
                         {filteredMessages.length === 0 && !loading ? (
                             <div className="h-full flex flex-col items-center justify-center text-text-secondary gap-3 p-4 sm:p-6 text-center">
@@ -613,7 +605,7 @@ export const AiAssistantSection: React.FC = () => {
                                 return (
                                     <div
                                         key={index}
-                                        className={`flex ${isUser ? 'justify-start' : 'justify-end'} group relative`}
+                                        className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}
                                     >
                                         <div
                                             className={`max-w-[90%] sm:max-w-[85%] min-w-0 rounded-2xl px-3 sm:px-4 py-3 text-sm leading-relaxed shadow-sm ${isUser
@@ -629,21 +621,6 @@ export const AiAssistantSection: React.FC = () => {
                                                 <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-1" />
                                             )}
                                         </div>
-                                        {/* Copy button for each message */}
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    await navigator.clipboard.writeText(msg.content);
-                                                    showToast('پیام کپی شد!', 'success');
-                                                } catch {
-                                                    showToast('خطا در کپی کردن', 'error');
-                                                }
-                                            }}
-                                            className="absolute -left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary"
-                                            title="کپی پیام"
-                                        >
-                                            <Copy className="w-3.5 h-3.5" />
-                                        </button>
                                     </div>
                                 );
                             })
@@ -659,7 +636,6 @@ export const AiAssistantSection: React.FC = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input */}
                     <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
                         <input
                             type="text"

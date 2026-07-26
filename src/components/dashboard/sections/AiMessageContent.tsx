@@ -4,7 +4,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { AlertTriangle, Copy } from 'lucide-react'
+import { AlertTriangle, Copy, Check } from 'lucide-react'
 import { sanitizeAiResponse } from '../../../utils/ai-response-parser'
 import { useTheme } from '../../../context/ThemeContext'
 
@@ -16,7 +16,6 @@ interface AiMessageContentProps {
     isUser?: boolean
 }
 
-// استایل‌های مخصوص جهت‌دهی فرمول‌های ریاضی و اصلاح تم تاریک
 const mathStyles = `
   .ai-markdown .katex {
     direction: ltr !important;
@@ -83,25 +82,44 @@ const mathStyles = `
   }
 `
 
-/**
- * رندرکنندهٔ مشترک محتوای چت دستیار هوشمند با پشتیبانی از:
- * - فرمول‌های ریاضی (KaTeX) با جهت‌دهی چپ‌به‌راست
- * - کد با هایلایت سینتکس
- * - Markdown کامل
- * - تم تاریک/روشن
- */
-export const AiMessageContent: React.FC<AiMessageContentProps> = ({
-    content,
-    isUser = false,
-}) => {
+export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isUser = false }) => {
     const { theme } = useTheme()
     const safeText = useMemo(() => sanitizeAiResponse(content), [content])
+    const [copiedMessage, setCopiedMessage] = React.useState(false)
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     const codeStyle = isDark ? vscDarkPlus : vs
 
+    const handleCopyMessage = async () => {
+        try {
+            await navigator.clipboard.writeText(content)
+            setCopiedMessage(true)
+            setTimeout(() => setCopiedMessage(false), 2000)
+        } catch {
+            const textarea = document.createElement('textarea')
+            textarea.value = content
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+            setCopiedMessage(true)
+            setTimeout(() => setCopiedMessage(false), 2000)
+        }
+    }
+
     if (isUser) {
-        return <p className="whitespace-pre-line break-words text-text-primary">{safeText}</p>
+        return (
+            <div className="relative group">
+                <p className="whitespace-pre-line break-words text-text-primary">{safeText}</p>
+                <button
+                    onClick={handleCopyMessage}
+                    className="absolute -left-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary"
+                    title="کپی پیام"
+                >
+                    {copiedMessage ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+            </div>
+        )
     }
 
     if (!safeText.trim()) {
@@ -114,8 +132,17 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({
     }
 
     return (
-        <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full text-text-primary">
+        <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full text-text-primary relative group">
             <style>{mathStyles}</style>
+
+            {/* دکمه کopy پیام در گوشه */}
+            <button
+                onClick={handleCopyMessage}
+                className="absolute -left-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary z-10"
+                title="کپی پیام"
+            >
+                {copiedMessage ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
 
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
@@ -195,13 +222,11 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({
                                         {language}
                                     </span>
                                     <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(code)
-                                        }}
+                                        onClick={() => navigator.clipboard.writeText(code)}
                                         className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-surface-3 dark:hover:bg-gray-700 transition-colors text-text-tertiary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200"
                                     >
                                         <Copy className="w-3.5 h-3.5" />
-                                        <span className="text-[10px]">کپی</span>
+                                        <span className="text-[10px]">کپی کد</span>
                                     </button>
                                 </div>
                                 <SyntaxHighlighter
