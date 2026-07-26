@@ -48,7 +48,7 @@ export const useTodos = ({ userId, status, subjectId, search, dateFrom, dateTo }
         try {
             let query = supabase
                 .from('todos')
-                .select('*, subjects(id, name, color), study_session(*), plan(*)')
+                .select('*, subjects(id, name, color), study_sessions(*), plan(*)')
                 .eq('user_id', userId)
                 .order('deadline', { ascending: true, nullsFirst: false })
 

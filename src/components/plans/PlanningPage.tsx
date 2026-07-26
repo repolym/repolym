@@ -11,6 +11,7 @@ import { Button } from '../common/Button'
 import { EmptyState, PageLoader, ErrorMessage } from '../common/Loading'
 import { daysAgo, today, formatDate } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
+import * as jalaali from 'jalaali-js'
 import {
     DndContext,
     closestCenter,
@@ -37,6 +38,15 @@ import {
 } from 'lucide-react'
 
 type ViewMode = 'list' | 'calendar' | 'timeline'
+
+// Helper to get Jalali month name and year from a Gregorian date
+function getJalaliMonthYear(gregDate: Date): { monthName: string; year: string } {
+    const j = jalaali.toJalaali(gregDate)
+    const monthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+    return { monthName: monthNames[j.jm - 1], year: toPersianDigits(j.jy) }
+}
+
+// Helper to get Jalali day number from a Gregorian date
 
 export const PlanningPage: React.FC = () => {
     const { user } = useAuth()
@@ -129,15 +139,21 @@ export const PlanningPage: React.FC = () => {
         setEditing(null)
     }
 
-    // Calendar view helpers
-    const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate()
-    const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month - 1, 1).getDay()
+    // Calendar view helpers - using Jalali (Persian) calendar
+    const [calendarDate, setCalendarDate] = useState(new Date()) // Gregorian date representing the first day of the current Jalali month
 
-    const [calendarDate, setCalendarDate] = useState(new Date())
-    const calendarYear = calendarDate.getFullYear()
-    const calendarMonth = calendarDate.getMonth() + 1
-    const daysInMonth = getDaysInMonth(calendarYear, calendarMonth)
-    const firstDay = getFirstDayOfMonth(calendarYear, calendarMonth)
+    // Compute Jalali month/year for header
+    const jalaliInfo = getJalaliMonthYear(calendarDate)
+    // Get first day of the Jalali month in Gregorian
+    const j = jalaali.toJalaali(calendarDate)
+    const firstDayGreg = jalaali.toGregorian(j.jy, j.jm, 1)
+    const firstDayDate = new Date(firstDayGreg.gy, firstDayGreg.gm - 1, firstDayGreg.gd)
+    // Day of week for first day (0 = Sunday in JS, but our calendar starts Saturday)
+    const firstDayOfWeek = firstDayDate.getDay() // 0 = Sunday
+    // Shift so Saturday = 0, Sunday = 1, ... Friday = 6
+    const startOffset = (firstDayOfWeek + 1) % 7 // Saturday=0, Sunday=1, ... Friday=6
+
+    const daysInMonth = jalaali.jalaaliMonthLength(j.jy, j.jm)
 
     const plansByDate = useMemo(() => {
         const map: Record<string, Plan[]> = {}
@@ -150,23 +166,27 @@ export const PlanningPage: React.FC = () => {
     }, [plans])
 
     const renderCalendar = () => {
-        const days = []
         const todayStr = today()
-        for (let i = 0; i < firstDay; i++) {
+        const days = []
+        // Empty cells before first day
+        for (let i = 0; i < startOffset; i++) {
             days.push(<div key={`empty-${i}`} className="h-24 border border-border-subtle rounded-lg" />)
         }
+        // Days of the month
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateObj = new Date(calendarYear, calendarMonth - 1, d)
+            const gregDate = jalaali.toGregorian(j.jy, j.jm, d)
+            const dateObj = new Date(gregDate.gy, gregDate.gm - 1, gregDate.gd)
             const dateStr = dateObj.toISOString().split('T')[0]
             const isToday = dateStr === todayStr
             const dayPlans = plansByDate[dateStr] || []
+            const jalaliDay = toPersianDigits(d)
             days.push(
                 <div
                     key={dateStr}
                     className={`h-24 border border-border-subtle rounded-lg p-1 overflow-y-auto ${isToday ? 'bg-accent-muted' : ''}`}
                 >
                     <div className={`text-xs font-medium ${isToday ? 'text-accent-hover' : 'text-text-secondary'}`}>
-                        {toPersianDigits(d)}
+                        {jalaliDay}
                     </div>
                     <div className="space-y-0.5 mt-1">
                         {dayPlans.slice(0, 3).map((p) => (
@@ -189,14 +209,22 @@ export const PlanningPage: React.FC = () => {
     }
 
     const prevMonth = () => {
-        const newDate = new Date(calendarDate)
-        newDate.setMonth(newDate.getMonth() - 1)
-        setCalendarDate(newDate)
+        // Go to previous Jalali month
+        const jCurrent = jalaali.toJalaali(calendarDate)
+        let newJm = jCurrent.jm - 1
+        let newJy = jCurrent.jy
+        if (newJm < 1) { newJm = 12; newJy-- }
+        const g = jalaali.toGregorian(newJy, newJm, 1)
+        setCalendarDate(new Date(g.gy, g.gm - 1, g.gd))
     }
+
     const nextMonth = () => {
-        const newDate = new Date(calendarDate)
-        newDate.setMonth(newDate.getMonth() + 1)
-        setCalendarDate(newDate)
+        const jCurrent = jalaali.toJalaali(calendarDate)
+        let newJm = jCurrent.jm + 1
+        let newJy = jCurrent.jy
+        if (newJm > 12) { newJm = 1; newJy++ }
+        const g = jalaali.toGregorian(newJy, newJm, 1)
+        setCalendarDate(new Date(g.gy, g.gm - 1, g.gd))
     }
 
     // Timeline view: group plans by week
@@ -310,13 +338,13 @@ export const PlanningPage: React.FC = () => {
             {viewMode === 'calendar' && (
                 <div>
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={prevMonth} className="btn-ghost p-1">
+                        <button onClick={prevMonth} className="btn-ghost p-1" aria-label="ماه قبل">
                             <ChevronRight className="w-5 h-5" />
                         </button>
                         <h2 className="text-lg font-semibold text-text-primary">
-                            {new Intl.DateTimeFormat('fa-IR', { month: 'long', year: 'numeric' }).format(calendarDate)}
+                            {jalaliInfo.monthName} {jalaliInfo.year}
                         </h2>
-                        <button onClick={nextMonth} className="btn-ghost p-1">
+                        <button onClick={nextMonth} className="btn-ghost p-1" aria-label="ماه بعد">
                             <ChevronLeft className="w-5 h-5" />
                         </button>
                     </div>
