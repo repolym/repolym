@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeRaw from 'rehype-raw'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { AlertTriangle, Copy, Check } from 'lucide-react'
@@ -135,7 +136,6 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
         <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full text-text-primary relative group">
             <style>{mathStyles}</style>
 
-            {/* دکمه کopy پیام در گوشه */}
             <button
                 onClick={handleCopyMessage}
                 className="absolute -left-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-text-tertiary hover:text-text-primary z-10"
@@ -146,16 +146,19 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
 
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
-                rehypePlugins={[[rehypeKatex, {
-                    throwOnError: false,
-                    trust: false,
-                    macros: {
-                        "\\R": "\\mathbb{R}",
-                        "\\N": "\\mathbb{N}",
-                        "\\Z": "\\mathbb{Z}",
-                        "\\Q": "\\mathbb{Q}",
-                    }
-                }]]}
+                rehypePlugins={[
+                    rehypeRaw,
+                    [rehypeKatex, {
+                        throwOnError: false,
+                        trust: false,
+                        macros: {
+                            "\\R": "\\mathbb{R}",
+                            "\\N": "\\mathbb{N}",
+                            "\\Z": "\\mathbb{Z}",
+                            "\\Q": "\\mathbb{Q}",
+                        }
+                    }]
+                ]}
                 components={{
                     p: ({ children }) => (
                         <p className="mb-3 last:mb-0 whitespace-pre-line leading-relaxed text-text-primary">
