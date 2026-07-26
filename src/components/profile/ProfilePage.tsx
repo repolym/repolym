@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -76,6 +76,21 @@ export const ProfilePage: React.FC = () => {
     const olympiadTheme = user?.olympiad_id ? getOlympiad(user.olympiad_id) : null
     const OlympiadIcon = olympiadTheme ? OLYMPIAD_ICON_MAP[olympiadTheme.icon] : null
     const existingSubjectNames = subjects.map((s) => s.name)
+
+    // Save theme to database when it changes and user is logged in
+    useEffect(() => {
+        if (!user?.id) return
+        const currentPrefs = user.preferences || {}
+        if (currentPrefs.theme !== theme) {
+            supabase
+                .from('users')
+                .update({ preferences: { ...currentPrefs, theme } })
+                .eq('id', user.id)
+                .then(({ error }) => {
+                    if (error) console.warn('Failed to save theme preference:', error)
+                })
+        }
+    }, [theme, user])
 
     const handleSaveName = async () => {
         if (!name.trim()) { showToast('نام نمی‌تواند خالی باشد', 'error'); return }

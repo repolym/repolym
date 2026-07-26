@@ -1,6 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '../config/supabase';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 type ThemeMode = 'light' | 'dark' | 'sepia' | 'system';
 const THEME_STORAGE_KEY = 'repolym-theme';
@@ -24,7 +22,6 @@ const applyTheme = (theme: ThemeMode) => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
     const [theme, setThemeState] = useState<ThemeMode>(() => {
         const stored = localStorage.getItem(THEME_STORAGE_KEY);
         if (stored && ['light', 'dark', 'sepia', 'system'].includes(stored)) {
@@ -37,21 +34,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     useEffect(() => {
         applyTheme(theme);
         localStorage.setItem(THEME_STORAGE_KEY, theme);
-
-        // Optionally save to database if user is logged in
-        if (user?.id) {
-            const currentPrefs = user.preferences || {};
-            if (currentPrefs.theme !== theme) {
-                supabase
-                    .from('users')
-                    .update({ preferences: { ...currentPrefs, theme } })
-                    .eq('id', user.id)
-                    .then(({ error }) => {
-                        if (error) console.warn('Failed to save theme preference:', error);
-                    });
-            }
-        }
-    }, [theme, user]);
+    }, [theme]);
 
     // Listen to system preference changes if theme is 'system'
     useEffect(() => {

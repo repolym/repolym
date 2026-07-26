@@ -1,10 +1,10 @@
-// src/App.tsx (SIMPLIFIED)
 import React, { Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DashboardProvider } from './context/DashboardContext'
 import { ToastProvider } from './context/ToastContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { AppShell } from './components/AppShell'
 import { AuthGuard } from './components/common/AuthGuard'
 import { AdminRoute } from './components/common/AdminRoute'
@@ -71,70 +71,72 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // ---------- App ----------
 const App: React.FC = () => {
   return (
-    <HashRouter>
+    <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <ErrorBoundary>
-            <AnimatePresence mode="wait">
-              <Routes>
-                {/* Public */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/public/:userId" element={<PublicStudyPage />} />
+        <HashRouter>
+          <ToastProvider>
+            <ErrorBoundary>
+              <AnimatePresence mode="wait">
+                <Routes>
+                  {/* Public */}
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-                {/* Admin */}
-                <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-                <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
-                <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
-                <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
-                <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
-                <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
-                <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
+                  {/* Admin */}
+                  <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+                  <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
+                  <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+                  <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
+                  <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
+                  <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
+                  <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
 
-                {/* Onboarding – no extra guards needed; AuthGuard will handle if user is already onboarded */}
-                <Route
-                  path="/onboarding"
-                  element={
-                    <AuthGuard requireBaseline={false}>
-                      <Suspense fallback={<PageLoader />}>
-                        <OnboardingFlow />
-                      </Suspense>
-                    </AuthGuard>
-                  }
-                />
+                  {/* Onboarding – no extra guards needed; AuthGuard will handle if user is already onboarded */}
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <AuthGuard requireBaseline={false}>
+                        <Suspense fallback={<PageLoader />}>
+                          <OnboardingFlow />
+                        </Suspense>
+                      </AuthGuard>
+                    }
+                  />
 
-                {/* Baseline Survey – AuthGuard will redirect if already done */}
-                <Route
-                  path="/baseline"
-                  element={
-                    <AuthGuard requireOnboarding={true}>
-                      <Suspense fallback={<PageLoader />}>
-                        <BaselineSurvey />
-                      </Suspense>
-                    </AuthGuard>
-                  }
-                />
+                  {/* Baseline Survey – AuthGuard will redirect if already done */}
+                  <Route
+                    path="/baseline"
+                    element={
+                      <AuthGuard requireOnboarding={true}>
+                        <Suspense fallback={<PageLoader />}>
+                          <BaselineSurvey />
+                        </Suspense>
+                      </AuthGuard>
+                    }
+                  />
 
-                {/* Student routes */}
-                <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
-                <Route path="/study" element={<StudentLayout><StudySessionsPage /></StudentLayout>} />
-                <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
-                <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
-                <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
-                <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
-                <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
-                <Route path="/focus" element={<StudentLayout><FocusMode /></StudentLayout>} />
+                  {/* Student routes */}
+                  <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
+                  <Route path="/study" element={<StudentLayout><StudySessionsPage /></StudentLayout>} />
+                  <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
+                  <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
+                  <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />
+                  <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
+                  <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
+                  <Route path="/focus" element={<StudentLayout><FocusMode /></StudentLayout>} />
 
-                {/* Root */}
-                <Route path="/" element={<RootHandler />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AnimatePresence>
-          </ErrorBoundary>
-          <ToastContainer />
-        </ToastProvider>
+                  {/* Root */}
+                  <Route path="/" element={<RootHandler />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </AnimatePresence>
+            </ErrorBoundary>
+            <ToastContainer />
+          </ToastProvider>
+        </HashRouter>
       </AuthProvider>
-    </HashRouter>
+    </ThemeProvider>
   )
 }
 
