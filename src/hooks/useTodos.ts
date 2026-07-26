@@ -27,7 +27,6 @@ export const useTodos = ({ userId, status, subjectId, search, dateFrom, dateTo }
         if (!userId) return
         if (fetchingRef.current) return
 
-        // ✅ Check for valid session before making request
         if (!userId) {
             setData([])
             setError(null)
@@ -48,7 +47,7 @@ export const useTodos = ({ userId, status, subjectId, search, dateFrom, dateTo }
         try {
             let query = supabase
                 .from('todos')
-                .select('*, subjects(id, name, color), study_sessions(*), plan(*)')
+                .select('*, subjects(id, name, color), study_sessions(*), plans(*)')
                 .eq('user_id', userId)
                 .order('deadline', { ascending: true, nullsFirst: false })
 
@@ -58,7 +57,6 @@ export const useTodos = ({ userId, status, subjectId, search, dateFrom, dateTo }
             if (dateTo) query = query.lte('deadline', dateTo)
 
             if (search) {
-                // Search in both title and description
                 query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
             }
 

@@ -10,20 +10,21 @@ interface UseStudySessionsParams {
   userId: string | null;
   dateFrom?: string;
   dateTo?: string;
+  subjectId?: string | null;
 }
 
 const CACHE_TTL = 60_000;
 
-export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsParams) => {
+export const useStudySessions = ({ userId, dateFrom, dateTo, subjectId }: UseStudySessionsParams) => {
   const [data, setData] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
-  const cacheKey = `study_sessions|${userId}|${dateFrom}|${dateTo}`;
+  const cacheKey = `study_sessions|${userId}|${dateFrom}|${dateTo}|${subjectId || 'all'}`;
 
   const executeQuery = useCallback(
-    async (userId: string, dateFrom?: string, dateTo?: string): Promise<StudySession[]> => {
+    async (userId: string, dateFrom?: string, dateTo?: string, subjectId?: string | null): Promise<StudySession[]> => {
       let query = supabase
         .from('study_sessions')
         .select('*, subjects(id, name, color)')
@@ -32,6 +33,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
 
       if (dateFrom) query = query.gte('date', dateFrom);
       if (dateTo) query = query.lte('date', dateTo);
+      if (subjectId) query = query.eq('subject_id', subjectId);
 
       const { data: rows, error: err } = await query;
       if (err) throw err;
@@ -48,7 +50,7 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
       try {
         const result = await queryDeduplicator.dedupedQuery(
           cacheKey,
-          () => executeQuery(userId, dateFrom, dateTo),
+          () => executeQuery(userId, dateFrom, dateTo, subjectId),
           forceRefresh ? 0 : CACHE_TTL
         );
         if (mountedRef.current) {
@@ -60,13 +62,13 @@ export const useStudySessions = ({ userId, dateFrom, dateTo }: UseStudySessionsP
           const message = formatError(err);
           setError(message);
           setData([]);
-          logger.error('Failed to fetch study sessions', err, { userId, dateFrom, dateTo });
+          logger.error('Failed to fetch study sessions', err, { userId, dateFrom, dateTo, subjectId });
         }
       } finally {
         if (mountedRef.current) setLoading(false);
       }
     },
-    [userId, dateFrom, dateTo, cacheKey, executeQuery]
+    [userId, dateFrom, dateTo, subjectId, cacheKey, executeQuery]
   );
 
   useEffect(() => {

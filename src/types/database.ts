@@ -204,8 +204,8 @@ export interface Todo {
   created_at: string
   updated_at: string
   subjects?: Subject
-  study_session?: StudySession
-  plan?: Plan
+  study_sessions?: StudySession
+  plans?: Plan
 }
 
 export interface TodoFormData {

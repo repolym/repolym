@@ -20,21 +20,17 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         sort: 'newest' as 'newest' | 'oldest' | 'longest' | 'shortest',
     });
 
-    // دریافت جلسات بر اساس بازه‌ی تاریخ
+    // دریافت جلسات بر اساس بازه‌ی تاریخ و درس
     const { data: allSessions, loading, error } = useStudySessions({
         userId,
         dateFrom: filters.dateRange.from,
         dateTo: filters.dateRange.to,
+        subjectId: filters.subjectId, // اضافه شد
     });
 
     // اعمال فیلترهای دیگر روی داده‌ها
     const filteredSessions = useMemo(() => {
         let list = [...allSessions];
-
-        // فیلتر بر اساس subject
-        if (filters.subjectId) {
-            list = list.filter(s => s.subject_id === filters.subjectId);
-        }
 
         // فیلتر بر اساس tags
         if (filters.tags.trim()) {
