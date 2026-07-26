@@ -16,7 +16,7 @@ interface AiMessageContentProps {
     isUser?: boolean
 }
 
-// استایل‌های مخصوص جهت‌دهی فرمول‌های ریاضی
+// استایل‌های مخصوص جهت‌دهی فرمول‌های ریاضی و اصلاح تم تاریک
 const mathStyles = `
   .ai-markdown .katex {
     direction: ltr !important;
@@ -32,7 +32,6 @@ const mathStyles = `
     display: inline-block;
     text-align: left;
   }
-  /* برای اطمینان از اینکه اعداد و متغیرها در فرمول به‌درستی چپ‌چین شوند */
   .ai-markdown .katex .mathnormal,
   .ai-markdown .katex .mord,
   .ai-markdown .katex .mbin,
@@ -43,6 +42,43 @@ const mathStyles = `
   .ai-markdown .katex .minner {
     direction: ltr !important;
     unicode-bidi: embed;
+  }
+  /* تنظیمات تم تاریک برای کد و محتوای Markdown */
+  .dark .ai-markdown {
+    color: #e5e7eb !important;
+  }
+  .dark .ai-markdown .text-text-primary {
+    color: #e5e7eb !important;
+  }
+  .dark .ai-markdown .text-text-secondary {
+    color: #9ca3af !important;
+  }
+  .dark .ai-markdown h1,
+  .dark .ai-markdown h2,
+  .dark .ai-markdown h3,
+  .dark .ai-markdown strong {
+    color: #f3f4f6 !important;
+  }
+  .dark .ai-markdown code {
+    background: #374151 !important;
+    color: #e5e7eb !important;
+  }
+  .dark .ai-markdown blockquote {
+    background: rgba(55, 65, 81, 0.5) !important;
+    color: #d1d5db !important;
+  }
+  .dark .ai-markdown table th {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+  }
+  .dark .ai-markdown table td {
+    color: #d1d5db !important;
+  }
+  .dark .ai-markdown table {
+    border-color: #4b5563 !important;
+  }
+  .dark .ai-markdown .border-border-subtle {
+    border-color: #374151 !important;
   }
 `
 
@@ -68,7 +104,7 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
     }
 
     if (isUser) {
-        return <p className="whitespace-pre-line break-words">{content}</p>
+        return <p className="whitespace-pre-line break-words text-text-primary">{content}</p>
     }
 
     if (!safeText.trim()) {
@@ -81,8 +117,8 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
     }
 
     return (
-        <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full">
-            {/* استایل‌های جهت‌دهی ریاضی */}
+        <div className="ai-markdown text-sm leading-relaxed break-words w-full max-w-full text-text-primary">
+            {/* استایل‌های جهت‌دهی ریاضی و تم تاریک */}
             <style>{mathStyles}</style>
 
             <ReactMarkdown
@@ -136,7 +172,7 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
                         if (isInline) {
                             return (
                                 <code
-                                    className="bg-surface-3 text-accent-hover px-1.5 py-0.5 rounded-md text-xs font-mono whitespace-pre-wrap break-words"
+                                    className="bg-surface-3 dark:bg-gray-700 text-accent-hover dark:text-gray-200 px-1.5 py-0.5 rounded-md text-xs font-mono whitespace-pre-wrap break-words"
                                     {...props}
                                 >
                                     {children}
@@ -149,14 +185,14 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
                         const codeId = Math.random().toString(36).slice(2, 8)
 
                         return (
-                            <div className="relative my-3 rounded-xl overflow-hidden border border-border-subtle">
-                                <div className="flex items-center justify-between px-4 py-2 bg-surface-3/50 border-b border-border-subtle text-xs text-text-secondary">
+                            <div className="relative my-3 rounded-xl overflow-hidden border border-border-subtle dark:border-gray-700">
+                                <div className="flex items-center justify-between px-4 py-2 bg-surface-3/50 dark:bg-gray-800 border-b border-border-subtle dark:border-gray-700 text-xs text-text-secondary dark:text-gray-400">
                                     <span className="font-mono uppercase text-[10px] tracking-wider">
                                         {language}
                                     </span>
                                     <button
                                         onClick={() => handleCopy(code, codeId)}
-                                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-surface-3 transition-colors text-text-tertiary hover:text-text-primary"
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-surface-3 dark:hover:bg-gray-700 transition-colors text-text-tertiary dark:text-gray-400 hover:text-text-primary dark:hover:text-gray-200"
                                     >
                                         {copied === codeId ? (
                                             <>
@@ -192,23 +228,23 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
                     },
                     pre: ({ children }) => <>{children}</>,
                     table: ({ children }) => (
-                        <div className="overflow-x-auto my-3 rounded-xl border border-border-subtle">
+                        <div className="overflow-x-auto my-3 rounded-xl border border-border-subtle dark:border-gray-700">
                             <table className="w-full text-sm border-collapse">
                                 {children}
                             </table>
                         </div>
                     ),
                     th: ({ children }) => (
-                        <th className="border border-border-subtle px-4 py-2.5 bg-surface-2 text-right font-semibold text-text-primary">
+                        <th className="border border-border-subtle dark:border-gray-700 px-4 py-2.5 bg-surface-2 dark:bg-gray-800 text-right font-semibold text-text-primary dark:text-gray-200">
                             {children}
                         </th>
                     ),
                     td: ({ children }) => (
-                        <td className="border border-border-subtle px-4 py-2.5 text-text-secondary">
+                        <td className="border border-border-subtle dark:border-gray-700 px-4 py-2.5 text-text-secondary dark:text-gray-300">
                             {children}
                         </td>
                     ),
-                    hr: () => <hr className="my-4 border-border-subtle" />,
+                    hr: () => <hr className="my-4 border-border-subtle dark:border-gray-700" />,
                     a: ({ href, children }) => (
                         <a
                             href={href}

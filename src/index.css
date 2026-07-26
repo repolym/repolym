@@ -4,10 +4,6 @@
 
 /* ============================================================
    THEME VARIABLES
-   Add this block near the very top of src/index.css, right after
-   the @tailwind directives and before @layer base.
-   Colors are "R G B" (space separated, no commas) so Tailwind can
-   apply opacity via rgb(var(--x) / <alpha-value>).
    ============================================================ */
 
 :root {
@@ -55,8 +51,6 @@
   --color-text-inverse: 17 24 39;
 }
 
-/* NEW THEME: "Sepia" — a warm, paper-like reading theme. Selected the
-   same way as light/dark from the theme picker in the Profile tab. */
 .theme-sepia {
   --color-surface-0: 250 244 230;
   --color-surface-1: 245 236 217;
@@ -96,6 +90,24 @@
     font-family: 'Vazirmatn', system-ui, sans-serif;
   }
 
+  /* ===== SELECTION STYLE - پررنگ‌تر ===== */
+  ::selection {
+    @apply bg-accent text-white;
+  }
+
+  ::-moz-selection {
+    @apply bg-accent text-white;
+  }
+
+  /* برای حالت تاریک، انتخاب رنگ کمی متفاوت */
+  .dark ::selection {
+    @apply bg-accent text-white;
+  }
+
+  .dark ::-moz-selection {
+    @apply bg-accent text-white;
+  }
+
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -111,10 +123,6 @@
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-border-strong;
-  }
-
-  ::selection {
-    @apply bg-accent-muted text-text-primary;
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator {
