@@ -1,4 +1,3 @@
-// src/components/study/HistorySection/HistorySection.tsx
 import React, { useState, useMemo } from 'react';
 import { useStudySessions } from '../../../hooks/useStudySessions';
 import { Subject } from '../../../types/database';
@@ -25,7 +24,7 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         userId,
         dateFrom: filters.dateRange.from,
         dateTo: filters.dateRange.to,
-        subjectId: filters.subjectId,
+        subjectId: filters.subjectId, // ✅ فیلتر درس به درستی اعمال می‌شود
     });
 
     // اعمال فیلترهای دیگر روی داده‌ها

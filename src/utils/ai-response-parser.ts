@@ -1,15 +1,8 @@
 /**
  * ai-response-parser.ts
  *
- * دستیار هوشمند گاهی به‌جای متن ساده، یک رشتهٔ JSON خام (یا JSON داخل فنس
- * ```json ... ```) برمی‌گرداند — مثلاً وقتی مدل زیرساخت به‌اشتباه در حالت
- * jsonMode پاسخ می‌دهد یا سرور نتوانسته parse کند و متن خام را fallback
- * کرده باشد (ر.ک. supabase/functions/ai-assistant/routes/analyze.ts و
- * recommend.ts). این ماژول یک لایهٔ دفاعیِ سمت کلاینت است تا در هیچ شرایطی
- * JSON خام مستقیم به کاربر نمایش داده نشود.
- *
- * این تابع API سرور را تغییر نمی‌دهد — فقط خروجی نهایی را قبل از رندر
- * پاک‌سازی می‌کند.
+ * Improved math rendering for AI responses.
+ * Supports multiple LaTeX formats and ensures proper display.
  */
 
 // کلیدهایی که معمولاً پیام قابل‌نمایش داخلشان است (به ترتیب اولویت)
@@ -40,9 +33,7 @@ const looksLikeJson = (raw: string): boolean => {
 
 /**
  * تلاش می‌کند از یک آبجکت JSON پارس‌شده، متنی که باید به کاربر نمایش داده
- * شود را استخراج کند. اگر ساختار شناخته‌شده‌ای پیدا نشد، JSON را به شکل
- * خوانا (bullet list) تبدیل می‌کند تا حداقل هیچ‌گاه {..."key":"val"...}
- * خام دیده نشود.
+ * شود را استخراج کند.
  */
 const extractDisplayText = (parsed: unknown): string => {
     if (typeof parsed === 'string') return parsed
@@ -68,7 +59,7 @@ const extractDisplayText = (parsed: unknown): string => {
                         return out
                     }
                 }
-                // بخش‌های لیستی را هم به انتهای پیام اضافه کن (مثل analyze.ts)
+                // بخش‌های لیستی را هم به انتهای پیام اضافه کن
                 const extraSections: string[] = []
                 for (const listKey of LIST_KEYS) {
                     const list = obj[listKey]
@@ -82,7 +73,7 @@ const extractDisplayText = (parsed: unknown): string => {
             }
         }
 
-        // اگر فقط کلیدهای لیستی موجود بودند (مثل پاسخ recommend)
+        // اگر فقط کلیدهای لیستی موجود بودند
         for (const listKey of LIST_KEYS) {
             const list = obj[listKey]
             if (Array.isArray(list) && list.length > 0) {
@@ -103,50 +94,23 @@ const extractDisplayText = (parsed: unknown): string => {
 /**
  * نرمال‌سازی فرمول‌های ریاضی تولیدشده توسط AI
  *
- * مدل‌های مختلف ممکن است به‌جای:
- *
- * $$ ... $$
- *
- * از:
- *
- * [ ... ]
- *
- * یا:
- *
- * ( ... )
- *
- * استفاده کنند.
- *
  * این تابع فرمت‌های رایج را به Markdown Math تبدیل می‌کند.
  */
-const normalizeMathDelimiters = (text: string): string => {
+export const normalizeMathDelimiters = (text: string): string => {
     if (!text) return text
 
     let result = text
 
     // ---------------------------------------------------------
     // 1. تبدیل بلاک‌های [ ... ] به $$ ... $$
-    //
-    // مثال:
-    //
-    // [
-    // \nabla f = (...)
-    // ]
-    //
-    // تبدیل می‌شود به:
-    //
-    // $$
-    // \nabla f = (...)
-    // $$
     // ---------------------------------------------------------
-
     result = result.replace(
         /(?:^|\n)\[\s*\n?([\s\S]*?)\n?\s*\](?=\n|$)/g,
         (_, formula: string) => {
             const clean = formula.trim()
             // فقط اگر واقعاً شبیه فرمول LaTeX باشد
             if (
-                /\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right)/.test(clean) ||
+                /\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right|begin|end)/.test(clean) ||
                 /[=^_{}]/.test(clean)
             ) {
                 return `\n\n$$\n${clean}\n$$\n\n`
@@ -158,7 +122,6 @@ const normalizeMathDelimiters = (text: string): string => {
     // ---------------------------------------------------------
     // 2. تبدیل \( ... \) به $ ... $
     // ---------------------------------------------------------
-
     result = result.replace(
         /\\\(([\s\S]*?)\\\)/g,
         (_, formula: string) => `$${formula.trim()}$`
@@ -167,7 +130,6 @@ const normalizeMathDelimiters = (text: string): string => {
     // ---------------------------------------------------------
     // 3. تبدیل \[ ... \] به $$ ... $$
     // ---------------------------------------------------------
-
     result = result.replace(
         /\\\[([\s\S]*?)\\\]/g,
         (_, formula: string) => `\n\n$$\n${formula.trim()}\n$$\n\n`
@@ -175,16 +137,14 @@ const normalizeMathDelimiters = (text: string): string => {
 
     // ---------------------------------------------------------
     // 4. تبدیل ( ... ) به $ ... $ فقط در صورتی که داخل آن فرمول باشد
-    // این کار را با دقت انجام می‌دهیم تا متن عادی تغییر نکند
     // ---------------------------------------------------------
-
     result = result.replace(
         /\(([^)]*)\)/g,
         (fullMatch: string, inner: string) => {
             const trimmed = inner.trim()
             // اگر داخل پرانتز شامل الگوی ریاضی باشد
             if (
-                /\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right)/.test(trimmed) ||
+                /\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right|begin|end)/.test(trimmed) ||
                 /[=^_{}]/.test(trimmed)
             ) {
                 // اگر پرانتز تنها چیزی است که در خط وجود دارد، به‌عنوان display در نظر بگیر
@@ -193,25 +153,29 @@ const normalizeMathDelimiters = (text: string): string => {
                 }
                 return `$${trimmed}$`
             }
-            // اگر داخل پرانتز فقط یک عدد یا متغیر ساده باشد، می‌توانیم آن را هم فرمول کنیم
+            // اگر داخل پرانتز فقط یک عدد یا متغیر ساده باشد
             if (/^[a-zA-Z0-9_\s]+$/.test(trimmed) && trimmed.length < 20) {
                 return `$${trimmed}$`
             }
-            // در غیر این صورت، پرانتز را به‌عنوان متن عادی نگه دار
             return fullMatch
         }
     )
 
     // ---------------------------------------------------------
     // 5. تبدیل متن‌هایی که با تگ‌های ریاضی شروع می‌شوند ولی delimiter ندارند
-    // مثال: \frac{...}{...} → $ \frac{...}{...} $
     // ---------------------------------------------------------
-
-    // الگوهای ریاضی که معمولاً باید با دلار محصور شوند
     result = result.replace(
-        /(?<![$\\])(\\frac{[^}]*}{[^}]*}|\\nabla|\\partial|\\sum|\\int|\\sqrt{[^}]*}|\\mathbb{[A-Z]}|\\vec{[a-zA-Z]}|\\lim)/g,
+        /(?<![$\\])(\\frac{[^}]*}{[^}]*}|\\nabla|\\partial|\\sum|\\int|\\sqrt{[^}]*}|\\mathbb{[A-Z]}|\\vec{[a-zA-Z]}|\\lim|\\begin{[a-zA-Z]*})/g,
         (match) => `$${match}$`
     )
+
+    // ---------------------------------------------------------
+    // 6. پاک‌سازی فاصله‌های اضافی اطراف دلارها
+    // ---------------------------------------------------------
+    result = result.replace(/\$\s+/g, '$')
+    result = result.replace(/\s+\$/g, '$')
+    result = result.replace(/\$\$\s+/g, '$$')
+    result = result.replace(/\s+\$\$/g, '$$')
 
     return result
 }
@@ -234,7 +198,6 @@ export const sanitizeAiResponse = (raw: string | null | undefined): string => {
     try {
         const parsed = JSON.parse(unfenced)
         const text = extractDisplayText(parsed)
-        // بعد از استخراج متن، normalizer را اعمال کن
         return normalizeMathDelimiters(text || unfenced)
     } catch {
         // JSON نامعتبر بود؛ حداقل فنس کد را حذف کرده‌ایم — همان را برگردان با normalizer

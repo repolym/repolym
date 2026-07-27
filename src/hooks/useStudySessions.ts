@@ -91,9 +91,23 @@ export const useStudySessions = ({ userId, dateFrom, dateTo, subjectId }: UseStu
         return false;
       }
       try {
-        const { error: err } = await supabase.from('study_sessions').insert([
-          { ...formData, user_id: userId },
-        ]);
+        // ✅ اطمینان از اینکه subject_id به درستی در payload قرار می‌گیرد
+        const payload = {
+          user_id: userId,
+          subject_id: formData.subject_id || null,
+          date: formData.date,
+          duration_minutes: formData.duration_minutes,
+          activities: formData.activities || null,
+          resource: formData.resource || null,
+          question_count: formData.question_count || null,
+          question_difficulty: formData.question_difficulty || null,
+          estimated_difficulty: formData.estimated_difficulty || null,
+          question_type: formData.question_type || null,
+          todo_relation: formData.todo_relation || null,
+          tags: formData.tags || null,
+        };
+
+        const { error: err } = await supabase.from('study_sessions').insert([payload]);
         if (err) throw err;
         queryDeduplicator.invalidate(cacheKey);
         await fetch(true);

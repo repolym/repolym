@@ -93,11 +93,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="flex items-center px-5 py-6 border-b border-border-subtle">
-          <img
-            src={import.meta.env.BASE_URL + 'logo.png'}
-            alt="لوگو"
-            className={`h-12 w-auto object-contain transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
-          />
+          {/* ✅ لوگو به‌عنوان Link به داشبورد */}
+          <Link to="/dashboard" className="flex items-center">
+            <img
+              src={import.meta.env.BASE_URL + 'logo.png'}
+              alt="لوگو"
+              className={`h-12 w-auto object-contain transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
+            />
+          </Link>
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -163,11 +166,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-border-subtle">
           <div className="flex items-center gap-2">
-            <img
-              src={import.meta.env.BASE_URL + 'logo.png'}
-              alt="لوگو"
-              className={`h-8 w-auto transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
-            />
+            {/* ✅ لوگوی هدر هم به داشبورد لینک می‌شود */}
+            <Link to="/dashboard">
+              <img
+                src={import.meta.env.BASE_URL + 'logo.png'}
+                alt="لوگو"
+                className={`h-8 w-auto transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
+              />
+            </Link>
             <span className="text-sm font-bold text-text-secondary hidden sm:inline">علامه حلی 10</span>
           </div>
 

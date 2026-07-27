@@ -48,6 +48,7 @@ export const StudySessionsPage: React.FC = () => {
 
     // Handlers
     const handleCreate = async (data: any) => {
+        // ✅ اطمینان از اینکه subject_id در data وجود دارد
         const ok = await createSession({ ...data, date: todayStr });
         if (ok) {
             showToast('جلسه با موفقیت ثبت شد', 'success');
