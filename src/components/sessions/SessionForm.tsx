@@ -51,16 +51,16 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   const [tags, setTags] = useState('');
   const [quickSubject, setQuickSubject] = useState('');
   const [quickDuration, setQuickDuration] = useState('');
-  // ✅ اضافه کردن state برای subject_id
+  // ✅ فقط این خط اضافه شده: subjectId را مستقیماً از editing می‌خوانیم و در state نگه می‌داریم
   const [subjectId, setSubjectId] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (editing) {
       setJalaliDate(toJalali(editing.date));
-      setSubjectId(editing.subject_id); // ✅ مقداردهی subject_id
+      setSubjectId(editing.subject_id); // ✅ مقداردهی
       setActivities(editing.activities || '');
       setResource(editing.resource || '');
       setQuestionCount(editing.question_count?.toString() || '');
@@ -213,21 +213,21 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           {errors.jalaliDate && <p className="text-xs text-danger mt-1">{errors.jalaliDate}</p>}
         </div>
 
-        {/* ✅ انتخاب درس با Select */}
+        {/* ✅ همان فیلد درس موجود – بدون تغییر در UI */}
         <div>
           <label className="label mb-1">درس</label>
-          <select
-            value={subjectId || ''}
-            onChange={(e) => setSubjectId(e.target.value || null)}
-            className="w-full px-3 py-2 bg-surface-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">بدون درس</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={quickSubject}
+            onChange={(e) => {
+              setQuickSubject(e.target.value);
+              // ✅ همزمان subjectId را هم به‌روز می‌کنیم تا در submit ارسال شود
+              setSubjectId(e.target.value || null);
+            }}
+            options={[
+              { value: '', label: 'بدون درس' },
+              ...subjects.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+          />
         </div>
 
         {/* فعالیت‌ها */}
@@ -243,7 +243,10 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             <Select
               label=""
               value={quickSubject}
-              onChange={(e) => setQuickSubject(e.target.value)}
+              onChange={(e) => {
+                setQuickSubject(e.target.value);
+                setSubjectId(e.target.value || null);
+              }}
               options={[
                 { value: '', label: 'درس...' },
                 ...subjects.map((s) => ({ value: s.id, label: s.name })),
