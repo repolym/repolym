@@ -1,4 +1,4 @@
-import{c as nr,r as we,aM as mr,ag as qr,aO as Qt,aP as xc,j as F,aQ as zt,aR as mv,aS as qu,ai as fv,aT as gv,aU as oa,aV as hv,aW as kd,aX as bv,aY as yv,aZ as vv,a_ as Ev,T as Sv,ap as wv,a$ as Tv}from"./index-DSHZOnv-.js";/**
+import{c as nr,r as we,aM as mr,ag as qr,aO as Qt,aP as xc,j as F,aQ as zt,aR as mv,aS as qu,ai as fv,aT as gv,aU as oa,aV as hv,aW as kd,aX as bv,aY as yv,aZ as vv,a_ as Ev,T as Sv,ap as wv,a$ as Tv}from"./index-B4V47AXR.js";/**
  * @license lucide-react v1.25.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -335,7 +335,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 `+s.map(u=>`- ${u}`).join(`
 `))}}return a+i.join("")}}for(const r of Ub){const n=t[r];if(Array.isArray(n)&&n.length>0)return n.map(a=>`- ${a}`).join(`
 `)}return Object.entries(t).filter(([,r])=>r!=null&&r!=="").map(([r,n])=>`**${r}:** ${typeof n=="string"?n:JSON.stringify(n)}`).join(`
-`)}return String(e)},zu=e=>{if(!e)return e;let t=e;return t=t.replace(/(?:^|\n)\[\s*\n?([\s\S]*?)\n?\s*\](?=\n|$)/g,(r,n)=>{const a=n.trim();return/\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right)/.test(a)||/[=^_{}]/.test(a)?`
+`)}return String(e)},zu=e=>{if(!e)return e;let t=e;return t=t.replace(/(?:^|\n)\[\s*\n?([\s\S]*?)\n?\s*\](?=\n|$)/g,(r,n)=>{const a=n.trim();return/\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right|begin|end)/.test(a)||/[=^_{}]/.test(a)?`
 
 $$
 ${a}
@@ -349,13 +349,13 @@ $$
 ${n.trim()}
 $$
 
-`),t=t.replace(/\(([^)]*)\)/g,(r,n)=>{const a=n.trim();return/\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right)/.test(a)||/[=^_{}]/.test(a)?r.trim()===r&&!r.includes(" ")?`
+`),t=t.replace(/\(([^)]*)\)/g,(r,n)=>{const a=n.trim();return/\\(frac|partial|nabla|sum|int|sqrt|sin|cos|tan|theta|alpha|beta|gamma|mathbb|vec|lim|left|right|begin|end)/.test(a)||/[=^_{}]/.test(a)?r.trim()===r&&!r.includes(" ")?`
 
 $$
 ${a}
 $$
 
-`:`$${a}$`:/^[a-zA-Z0-9_\s]+$/.test(a)&&a.length<20?`$${a}$`:r}),t=t.replace(new RegExp("(?<![$\\\\])(\\\\frac{[^}]*}{[^}]*}|\\\\nabla|\\\\partial|\\\\sum|\\\\int|\\\\sqrt{[^}]*}|\\\\mathbb{[A-Z]}|\\\\vec{[a-zA-Z]}|\\\\lim)","g"),r=>`$${r}$`),t},Yr=e=>{if(!e)return"";const t=B8(e);if(!dv(t))return zu(t);try{const r=JSON.parse(t),n=pv(r);return zu(n||t)}catch{return zu(t)}},P8=`
+`:`$${a}$`:/^[a-zA-Z0-9_\s]+$/.test(a)&&a.length<20?`$${a}$`:r}),t=t.replace(new RegExp("(?<![$\\\\])(\\\\frac{[^}]*}{[^}]*}|\\\\nabla|\\\\partial|\\\\sum|\\\\int|\\\\sqrt{[^}]*}|\\\\mathbb{[A-Z]}|\\\\vec{[a-zA-Z]}|\\\\lim|\\\\begin{[a-zA-Z]*})","g"),r=>`$${r}$`),t=t.replace(/\$\s+/g,"$"),t=t.replace(/\s+\$/g,"$"),t=t.replace(/\$\$\s+/g,"$$"),t=t.replace(/\s+\$\$/g,"$$"),t},Yr=e=>{if(!e)return"";const t=B8(e);if(!dv(t))return zu(t);try{const r=JSON.parse(t),n=pv(r);return zu(n||t)}catch{return zu(t)}},P8=`
   .ai-markdown .katex {
     direction: ltr !important;
     unicode-bidi: embed;
