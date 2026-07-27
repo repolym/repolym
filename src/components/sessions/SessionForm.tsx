@@ -51,16 +51,16 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   const [tags, setTags] = useState('');
   const [quickSubject, setQuickSubject] = useState('');
   const [quickDuration, setQuickDuration] = useState('');
-  // ✅ فقط این خط اضافه شده: subjectId را مستقیماً از editing می‌خوانیم و در state نگه می‌داریم
+  // ✅ subjectId را نگه می‌داریم تا در submit ارسال شود
   const [subjectId, setSubjectId] = useState<string | null>(null);
-  const [errors, setErrors] = = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({}); // ✅ تایپو رفع شد
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (editing) {
       setJalaliDate(toJalali(editing.date));
-      setSubjectId(editing.subject_id); // ✅ مقداردهی
+      setSubjectId(editing.subject_id);
       setActivities(editing.activities || '');
       setResource(editing.resource || '');
       setQuestionCount(editing.question_count?.toString() || '');
@@ -138,7 +138,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       const duration = parseActivitiesDuration(activities);
 
       const data: SessionFormData = {
-        subject_id: subjectId, // ✅ مقدار subject_id را مستقیماً می‌فرستیم
+        subject_id: subjectId,
         date: gregorianDate,
         duration_minutes: duration || 0,
         activities: activities.trim(),
@@ -213,14 +213,13 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           {errors.jalaliDate && <p className="text-xs text-danger mt-1">{errors.jalaliDate}</p>}
         </div>
 
-        {/* ✅ همان فیلد درس موجود – بدون تغییر در UI */}
+        {/* ✅ فیلد درس موجود – با اتصال به subjectId */}
         <div>
           <label className="label mb-1">درس</label>
           <Select
             value={quickSubject}
             onChange={(e) => {
               setQuickSubject(e.target.value);
-              // ✅ همزمان subjectId را هم به‌روز می‌کنیم تا در submit ارسال شود
               setSubjectId(e.target.value || null);
             }}
             options={[
