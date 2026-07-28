@@ -143,8 +143,8 @@ export const DashboardPage: React.FC = () => {
             {/* Special Banner for specific users */}
             {isSpecialUser && (
                 <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white p-4 rounded-2xl shadow-lg text-center border border-white/20">
-                    <p className="text-lg font-bold tracking-wide">#blacklivesdoesntmatter</p>
-                    <p className="text-xs opacity-80 mt-1">این پیام فقط برای شما نمایش داده می‌شود</p>
+                    <p className="text-lg font-bold tracking-wide">به زودی</p>
+                    <p className="text-xs opacity-80 mt-1">به زودی</p>
                 </div>
             )}
 
