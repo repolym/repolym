@@ -7,11 +7,13 @@ import { toPersianDigits } from '../../../utils/jalali';
 interface Props {
     sessions: StudySession[];
     loading: boolean;
+    onEdit: (session: StudySession) => void;
+    onDelete: (id: string) => Promise<void>;
 }
 
 const PAGE_SIZE = 20;
 
-export const HistoryList: React.FC<Props> = ({ sessions, loading }) => {
+export const HistoryList: React.FC<Props> = ({ sessions, loading, onEdit, onDelete }) => {
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     const visibleSessions = sessions.slice(0, visibleCount);
@@ -34,12 +36,11 @@ export const HistoryList: React.FC<Props> = ({ sessions, loading }) => {
             </div>
             <div className="space-y-1">
                 {visibleSessions.map((s) => (
-                    // src/components/study/HistorySection/HistoryList.tsx (line ~41)
                     <SessionCard
                         key={s.id}
                         session={s}
-                        onEdit={() => { }}
-                        onDelete={async () => { }}   // ✅ returns Promise<void>
+                        onEdit={() => onEdit(s)}
+                        onDelete={() => onDelete(s.id)}
                     />
                 ))}
             </div>
