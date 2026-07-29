@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useStudySessions } from '../../../hooks/useStudySessions';
-import { Subject } from '../../../types/database';
+import { Subject, StudySession } from '../../../types/database';
 import { HistoryFilters } from './HistoryFilters';
 import { HistoryList } from './HistoryList';
 import { daysAgo, today } from '../../../utils/date-utils';
+import { SessionForm } from '../../sessions/SessionForm';
+import { useToast } from '../../../context/ToastContext';
 
 interface Props {
     userId: string | null;
@@ -11,6 +13,8 @@ interface Props {
 }
 
 export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
+    const { showToast } = useToast();
+
     const [filters, setFilters] = useState({
         dateRange: { from: daysAgo(30), to: today() },
         subjectId: null as string | null,
@@ -19,19 +23,19 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         sort: 'newest' as 'newest' | 'oldest' | 'longest' | 'shortest',
     });
 
-    // دریافت جلسات بر اساس بازه‌ی تاریخ و درس - subjectId now passed
-    const { data: allSessions, loading, error } = useStudySessions({
+    const { data: allSessions, loading, error, refetch, updateSession, deleteSession } = useStudySessions({
         userId,
         dateFrom: filters.dateRange.from,
         dateTo: filters.dateRange.to,
-        subjectId: filters.subjectId, // ✅ فیلتر درس به درستی اعمال می‌شود
+        subjectId: filters.subjectId,
     });
 
-    // اعمال فیلترهای دیگر روی داده‌ها
+    const [editingSession, setEditingSession] = useState<StudySession | null>(null);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+
     const filteredSessions = useMemo(() => {
         let list = [...allSessions];
 
-        // فیلتر بر اساس tags
         if (filters.tags.trim()) {
             const tagQueries = filters.tags.split(',').map(t => t.trim().toLowerCase());
             list = list.filter(s => {
@@ -41,7 +45,6 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
             });
         }
 
-        // جستجو در activities و نام درس
         if (filters.search.trim()) {
             const q = filters.search.trim().toLowerCase();
             list = list.filter(s => {
@@ -51,7 +54,6 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
             });
         }
 
-        // مرتب‌سازی
         switch (filters.sort) {
             case 'newest':
                 list.sort((a, b) => b.date.localeCompare(a.date));
@@ -73,7 +75,41 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     };
 
-    // اگر خطایی رخ داده باشد
+    const handleEdit = (session: StudySession) => {
+        setEditingSession(session);
+        setIsFormOpen(true);
+    };
+
+    const handleDelete = async (id: string) => {
+        const ok = await deleteSession(id);
+        if (ok) {
+            showToast('جلسه با موفقیت حذف شد', 'success');
+            refetch();
+        } else {
+            showToast('خطا در حذف جلسه', 'error');
+        }
+    };
+
+    const handleUpdate = async (data: any) => {
+        if (!editingSession) return false;
+        const ok = await updateSession(editingSession.id, data);
+        if (ok) {
+            showToast('جلسه با موفقیت به‌روزرسانی شد', 'success');
+            setIsFormOpen(false);
+            setEditingSession(null);
+            refetch();
+            return true;
+        } else {
+            showToast('خطا در به‌روزرسانی جلسه', 'error');
+            return false;
+        }
+    };
+
+    const handleCloseForm = () => {
+        setIsFormOpen(false);
+        setEditingSession(null);
+    };
+
     if (error) {
         return (
             <div className="text-center py-8 text-red-500">
@@ -95,7 +131,20 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
                 filters={filters}
                 onFilterChange={handleFilterChange}
             />
-            <HistoryList sessions={filteredSessions} loading={loading} />
+            <HistoryList
+                sessions={filteredSessions}
+                loading={loading}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+            />
+
+            <SessionForm
+                isOpen={isFormOpen}
+                onClose={handleCloseForm}
+                onSubmit={handleUpdate}
+                subjects={subjects}
+                editing={editingSession}
+            />
         </div>
     );
 };
