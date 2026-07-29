@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { StudySession } from '../../types/database';
 import { formatDate, formatMinutes } from '../../utils/date-utils';
 import { ConfirmModal } from '../common/Modal';
+import { today, daysAgo } from '../../utils/date-utils';
 
 interface SessionCardProps {
   session: StudySession;
@@ -17,6 +18,9 @@ const getActivitiesPreview = (activities: string | null): string => {
 export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDelete }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // محدودیت ویرایش: فقط امروز و دیروز
+  const canEdit = session.date === today() || session.date === daysAgo(1);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -68,16 +72,20 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, onEdit, onDel
 
           {/* دکمه‌ها */}
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* دکمه ویرایش با محدودیت */}
             <button
               onClick={() => onEdit(session)}
-              className="btn-ghost text-xs"
-              title="ویرایش"
+              disabled={!canEdit}
+              className={`btn-ghost text-xs ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={!canEdit ? 'تنها تاریخ امروز و دیروز قابل ویرایش است' : 'ویرایش'}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
+
+            {/* دکمه حذف (همیشه فعال) */}
             <button
               onClick={() => setConfirmOpen(true)}
               className="btn-ghost text-xs text-text-tertiary hover:text-danger"
