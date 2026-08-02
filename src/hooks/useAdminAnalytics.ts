@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { adminAnalyticsService, AdminAnalyticsData } from '../services/adminAnalyticsService';
+import { adminAnalyticsService } from '../services/adminAnalyticsService';
+import { AdminAnalyticsData } from '../types/admin';
 import { logger } from '../utils/logger';
 import { formatError } from '../utils/error-handler';
 
 interface UseAdminAnalyticsParams {
-    timeRange: 'today' | 'week' | 'month' | 'quarter';
+    olympiadId: string | null;
+    dateRange: 'today' | 'week' | 'month' | 'quarter';
     forceRefresh?: boolean;
 }
 
-export const useAdminAnalytics = ({ timeRange }: UseAdminAnalyticsParams) => {
+export const useAdminAnalytics = ({ olympiadId, dateRange, forceRefresh = false }: UseAdminAnalyticsParams) => {
     const [data, setData] = useState<AdminAnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export const useAdminAnalytics = ({ timeRange }: UseAdminAnalyticsParams) => {
         setLoading(true);
         setError(null);
         try {
-            const result = await adminAnalyticsService.getDashboardAnalytics(timeRange);
+            const result = await adminAnalyticsService.getDashboardAnalytics(olympiadId, dateRange);
             if (mountedRef.current) {
                 setData(result);
             }
@@ -27,14 +29,14 @@ export const useAdminAnalytics = ({ timeRange }: UseAdminAnalyticsParams) => {
             if (mountedRef.current) {
                 const msg = formatError(err);
                 setError(msg);
-                logger.error('Admin analytics fetch failed', err, { timeRange });
+                logger.error('Admin analytics fetch failed', err, { olympiadId, dateRange });
             }
         } finally {
             if (mountedRef.current) {
                 setLoading(false);
             }
         }
-    }, [timeRange]);
+    }, [olympiadId, dateRange]);
 
     useEffect(() => {
         mountedRef.current = true;
