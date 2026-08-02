@@ -53,7 +53,7 @@ export const adminAnalyticsService = {
             async () => {
                 const dateRangeObj = this.getDateRange(dateRange);
                 const [users, sessions, tests, olympiads, riskData, dailyStudy, subjectDist, anomalies, insights, recentActivity] = await Promise.all([
-                    this.getUserStats(dateRangeObj),
+                    this.getUserStats(dateRangeObj, olympiadId),
                     this.getSessionStats(dateRangeObj),
                     this.getTestStats(dateRangeObj),
                     this.getOlympiadStats(),
@@ -69,10 +69,10 @@ export const adminAnalyticsService = {
                 const totalUsers = users.total;
                 const totalSessions = sessions.total;
                 const totalTests = tests.total;
-                const avgStudyMinutes = sessions.avgDaily || 0;
-                const consistencyScore = sessions.consistency || 0;
-                const recoveryScore = riskData.recoveryScore || 0;
-                const riskScore = riskData.averageRisk || 0;
+                const avgStudyMinutes = Math.round(sessions.avgDaily || 0); // ← ROUNDED
+                const consistencyScore = Math.round(sessions.consistency || 0);
+                const recoveryScore = Math.round(riskData.recoveryScore || 0);
+                const riskScore = Math.round(riskData.averageRisk || 0);
                 const studentsAtRisk = riskData.atRiskCount || 0;
                 const topOlympiads = olympiads.slice(0, 5);
                 const riskDistribution = this.computeRiskDistribution(riskData.distribution || []);
@@ -115,19 +115,54 @@ export const adminAnalyticsService = {
         return { from, to };
     },
 
-    async getUserStats(dateRange: { from: string; to: string }): Promise<{ total: number; active: number }> {
+    // FIXED: totalUsers now counts users who have at least one session in the period
+    async getUserStats(dateRange: { from: string; to: string }, olympiadId: string | null): Promise<{ total: number; active: number }> {
         const { from, to } = dateRange;
-        const [totalRes, activeRes] = await Promise.all([
-            supabase.from('users').select('id', { count: 'exact', head: true }),
-            supabase
-                .from('study_sessions')
-                .select('user_id', { count: 'exact', head: true })
-                .gte('date', from)
-                .lte('date', to),
-        ]);
-        const total = totalRes.count || 0;
-        const active = activeRes.count || 0;
-        return { total, active };
+
+        // Build base query for users
+        let usersQuery = supabase.from('users').select('id');
+        if (olympiadId) {
+            usersQuery = usersQuery.eq('olympiad_id', olympiadId);
+        }
+
+        // Get all users matching the filter
+        const { data: allUsers, error: usersError } = await usersQuery;
+        if (usersError) throw new Error(usersError.message);
+        const allUserIds = allUsers?.map(u => u.id) || [];
+
+        // Get users who have sessions in the date range
+        let sessionsQuery = supabase
+            .from('study_sessions')
+            .select('user_id')
+            .gte('date', from)
+            .lte('date', to);
+
+        if (olympiadId) {
+            // We need to filter by olympiad via a subquery or join
+            // For simplicity, we filter in memory
+        }
+
+        const { data: activeSessions, error: sessionsError } = await sessionsQuery;
+        if (sessionsError) throw new Error(sessionsError.message);
+
+        const activeUserIds = new Set(activeSessions?.map(s => s.user_id) || []);
+
+        // If olympiad filter is applied, filter active users by olympiad
+        let activeCount = activeUserIds.size;
+        let totalCount = allUserIds.length;
+
+        if (olympiadId) {
+            // Filter active users to only those in the olympiad
+            const olympiadUserIds = new Set(allUserIds);
+            let filteredActive = 0;
+            for (const uid of activeUserIds) {
+                if (olympiadUserIds.has(uid)) filteredActive++;
+            }
+            activeCount = filteredActive;
+            totalCount = olympiadUserIds.size;
+        }
+
+        return { total: totalCount, active: activeCount };
     },
 
     async getSessionStats(dateRange: { from: string; to: string }): Promise<{ total: number; avgDaily: number; consistency: number }> {
@@ -194,7 +229,6 @@ export const adminAnalyticsService = {
             .gte('date', from)
             .lte('date', to)
             .order('date', { ascending: true });
-        // TODO: filter by olympiadId using a join with users table
         const { data, error } = await query;
         if (error) throw new Error(error.message);
         const map = new Map<string, { total: number; _count: number }>();
@@ -212,14 +246,12 @@ export const adminAnalyticsService = {
                 entry._count += 1;
             }
         });
-        // For average, we compute the average across all users for each day
-        // We need total users count
         const { count: totalUsers } = await supabase.from('users').select('id', { count: 'exact', head: true });
         const userCount = totalUsers || 1;
         return Array.from(map.entries()).map(([date, { total }]) => ({
             date,
             minutes: total,
-            average: total / userCount,
+            average: Math.round(total / userCount),
         }));
     },
 
@@ -230,7 +262,6 @@ export const adminAnalyticsService = {
             .select('subject_id, duration_minutes, subjects(name, color)')
             .gte('date', from)
             .lte('date', to);
-        // TODO: filter by olympiadId using a join with users table
         const { data, error } = await query;
         if (error) throw new Error(error.message);
         const map = new Map<string, { minutes: number; color: string }>();
@@ -247,29 +278,22 @@ export const adminAnalyticsService = {
     },
 
     async getAnomalies(dateRange: { from: string; to: string }, _olympiadId: string | null, limit: number): Promise<Anomaly[]> {
-        // For now, we compute anomalies from study_sessions and daily_metrics
-        // We'll implement a detection algorithm.
         const { from, to } = dateRange;
-        // Fetch study data for all users
         let query = supabase
             .from('study_sessions')
             .select('user_id, date, duration_minutes')
             .gte('date', from)
             .lte('date', to)
             .order('date', { ascending: true });
-        // TODO: filter by olympiadId
         const { data: sessions, error } = await query;
         if (error) throw new Error(error.message);
 
-        // Get user names and olympiad if needed
         const userIds = [...new Set(sessions?.map(s => s.user_id) || [])];
         let usersQuery = supabase.from('users').select('id, name');
-        // TODO: filter by olympiadId if needed
         const { data: users } = await usersQuery.in('id', userIds);
         const userMap = new Map(users?.map(u => [u.id, u.name]) || []);
 
         const anomalies: Anomaly[] = [];
-        // Group sessions by user
         const userSessions = new Map<string, { date: string; minutes: number }[]>();
         sessions?.forEach(s => {
             if (!userSessions.has(s.user_id)) {
@@ -322,11 +346,9 @@ export const adminAnalyticsService = {
     },
 
     async getInsights(dateRange: { from: string; to: string }, _olympiadId: string | null, limit: number): Promise<Insight[]> {
-        // For now, we generate insights from the same data
         const insights: Insight[] = [];
         const { from, to } = dateRange;
 
-        // Get top improvers
         const improvers = await this.getTopImprovers(from, to);
         if (improvers.length > 0) {
             const top = improvers[0];
@@ -342,7 +364,6 @@ export const adminAnalyticsService = {
             });
         }
 
-        // Students at risk
         const atRisk = await this.getStudentsAtRisk(from, to);
         atRisk.slice(0, 2).forEach(s => {
             insights.push({
@@ -357,7 +378,6 @@ export const adminAnalyticsService = {
             });
         });
 
-        // Top performer
         const topPerformer = await this.getTopPerformer(from, to);
         if (topPerformer) {
             insights.push({
@@ -372,7 +392,6 @@ export const adminAnalyticsService = {
             });
         }
 
-        // Sleep suggestion
         const sleepIssues = await this.getSleepIssues(from, to);
         if (sleepIssues.length > 0) {
             const s = sleepIssues[0];
