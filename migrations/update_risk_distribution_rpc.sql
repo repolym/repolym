@@ -18,7 +18,6 @@ BEGIN
         SELECT
             u.id,
             u.name,
-            u.olympiad_id,
             COALESCE(s.current_streak, 0) AS streak,
             COALESCE(s.longest_streak, 0) AS longest_streak,
             COALESCE((
@@ -54,7 +53,6 @@ BEGIN
         SELECT
             id,
             name,
-            olympiad_id,
             GREATEST(0, LEAST(100,
                 (1 - consistency) * 30 +
                 (1 - (avg_study / 120)) * 20 +

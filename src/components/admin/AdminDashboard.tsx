@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAdminAnalytics } from '../../hooks/useAdminAnalytics';
-import { useAdminFilters } from '../../hooks/useAdminFilters';
 import { useOlympiadList } from '../../hooks/useOlympiadList';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,53 +7,27 @@ import {
   Activity,
   Clock,
   AlertCircle,
-  ChevronRight,
-  Download,
   RefreshCw,
-  Brain,
-  TrendingUp,
-  Award,
-  BarChart3,
-  PieChart,
-  Calendar,
-  Filter,
-  Search,
-  UserPlus,
-  UserCheck,
-  UserX,
-  Zap,
-  Shield,
-  Eye,
-  Settings,
-  Menu,
-  X,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
-import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-utils';
+import { formatDate, formatMinutes } from '../../utils/date-utils';
 import { toPersianDigits } from '../../utils/jalali';
 import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  PieChart as RePieChart,
+  PieChart,
   Pie,
   Cell,
-  ComposedChart,
   Line,
 } from 'recharts';
 import { Button } from '../common/Button';
 import { Select } from '../common/Input';
 import { Skeleton } from '../common/Loading';
 import { Link } from 'react-router-dom';
-import { AdminFilters } from './AdminFilters';
 import { OlympiadSelector } from './OlympiadSelector';
 import { RiskDistributionCard } from './RiskDistributionCard';
 import { OlympiadLeaderboard } from './OlympiadLeaderboard';
@@ -110,7 +83,6 @@ const StatCard: React.FC<{
 // ---------- Main Dashboard ----------
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { filters, setFilters, resetFilters } = useAdminFilters();
   const { olympiads } = useOlympiadList();
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedOlympiad, setSelectedOlympiad] = useState<string | null>(null);
@@ -205,7 +177,6 @@ export const AdminDashboard: React.FC = () => {
           </Button>
           <ExportButton
             data={analytics}
-            filters={{ olympiadId: selectedOlympiad, dateRange }}
             label="خروجی"
           />
         </div>
@@ -288,7 +259,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <RePieChart>
+              <PieChart>
                 <Pie
                   data={analytics?.subjectDistribution || []}
                   dataKey="minutes"
@@ -303,7 +274,7 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip formatter={(value: any) => formatMinutes(value)} />
-              </RePieChart>
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>

@@ -1,43 +1,41 @@
 import React, { useState } from 'react';
 import { Button } from '../common/Button';
-import { Download, FileSpreadsheet, FileText, FileJson } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 interface ExportButtonProps {
     data: any;
-    filters: any;
     label?: string;
 }
 
-export const ExportButton: React.FC<ExportButtonProps> = ({ data, filters, label = 'خروجی' }) => {
-    const [exporting, setExporting] = useState(false);
+export const ExportButton: React.FC<ExportButtonProps> = ({ data, label = 'خروجی' }) => {
     const { showToast } = useToast();
+    const [loading, setLoading] = useState(false);
 
     const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
-        setExporting(true);
+        if (!data) {
+            showToast('داده‌ای برای خروجی وجود ندارد', 'error');
+            return;
+        }
+        setLoading(true);
         try {
-            // Simulate export - in real implementation, generate file
+            // Simulate export - in production, this would call a service
             await new Promise(resolve => setTimeout(resolve, 1000));
-            showToast(`خروجی ${format} با موفقیت دانلود شد`, 'success');
-        } catch (error) {
-            showToast('خطا در خروجی', 'error');
+            showToast(`خروجی ${format === 'csv' ? 'CSV' : format === 'excel' ? 'Excel' : 'PDF'} با موفقیت ایجاد شد`, 'success');
+        } catch (err) {
+            showToast('خطا در ایجاد خروجی', 'error');
         } finally {
-            setExporting(false);
+            setLoading(false);
         }
     };
 
     return (
         <div className="relative inline-block">
-            <Button
-                variant="primary"
-                onClick={() => handleExport('csv')}
-                loading={exporting}
-                disabled={!data}
-            >
+            <Button variant="secondary" loading={loading} onClick={() => handleExport('csv')}>
                 <Download className="w-4 h-4" />
                 {label}
             </Button>
-            {/* Dropdown for format selection can be added here */}
+            {/* In a real implementation, we'd have a dropdown for format selection */}
         </div>
     );
 };

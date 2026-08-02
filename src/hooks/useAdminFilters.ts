@@ -1,36 +1,24 @@
-import { useState, useMemo, useCallback } from 'react';
-import { AdminFilters } from '../types/admin';
+import { useState, useCallback } from 'react';
+import { AdminFilterState } from '../types/admin';
 
-const defaultFilters: AdminFilters = {
-    olympiadId: null,
-    dateRange: 'month',
-    dateFrom: null,
-    dateTo: null,
-    riskLevel: 'all',
-    status: 'all',
+const defaultFilters: AdminFilterState = {
     search: '',
+    olympiadId: null,
+    riskLevel: null,
+    status: null,
+    dateRange: 'month',
 };
 
 export const useAdminFilters = () => {
-    const [filters, setFiltersState] = useState<AdminFilters>(defaultFilters);
+    const [filters, setFiltersState] = useState<AdminFilterState>(defaultFilters);
 
-    const setFilters = useCallback((newFilters: Partial<AdminFilters>) => {
-        setFiltersState(prev => ({ ...prev, ...newFilters }));
+    const setFilter = useCallback((key: keyof AdminFilterState, value: any) => {
+        setFiltersState((prev: AdminFilterState) => ({ ...prev, [key]: value }));
     }, []);
 
     const resetFilters = useCallback(() => {
         setFiltersState(defaultFilters);
     }, []);
 
-    const isFiltered = useMemo(() => {
-        return (
-            filters.olympiadId !== null ||
-            filters.dateRange !== 'month' ||
-            filters.riskLevel !== 'all' ||
-            filters.status !== 'all' ||
-            filters.search !== ''
-        );
-    }, [filters]);
-
-    return { filters, setFilters, resetFilters, isFiltered };
+    return { filters, setFilter, resetFilters };
 };

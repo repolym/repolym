@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { adminService } from '../../services/adminService'
-import { adminAnalyticsService } from '../../services/adminAnalyticsService'
-import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-utils'
-import { toPersianDigits } from '../../utils/jalali'
-import { Skeleton } from '../common/Loading'
-import { Avatar, getAvatarUrl } from '../common/Avatar'
-import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react'
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { adminService } from '../../services/adminService';
+import { adminAnalyticsService } from '../../services/adminAnalyticsService';
+import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-utils';
+import { toPersianDigits } from '../../utils/jalali';
+import { Skeleton } from '../common/Loading';
+import { Avatar, getAvatarUrl } from '../common/Avatar';
+import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -18,76 +18,77 @@ import {
     PieChart,
     Pie,
     Cell,
-} from 'recharts'
+} from 'recharts';
 
 // Types
 interface UserDetailType {
-    id: string
-    name: string
-    email: string
-    olympiad_id: string | null
-    created_at: string
-    preferences: Record<string, unknown> | null
-    status: string
+    id: string;
+    name: string;
+    email: string;
+    olympiad_id: string | null;
+    created_at: string;
+    preferences: Record<string, unknown> | null;
+    status: string;
 }
 
 interface UserStatsType {
-    totalSessions: number
-    totalMinutes: number
-    totalTests: number
-    avgTestScore: number
-    currentStreak: number
-    longestStreak: number
+    totalSessions: number;
+    totalMinutes: number;
+    totalTests: number;
+    avgTestScore: number;
+    currentStreak: number;
+    longestStreak: number;
 }
 
 interface SessionDetailType {
-    id: string
-    date: string
-    duration_minutes: number
-    subjects: { name: string; color: string } | null
+    id: string;
+    date: string;
+    duration_minutes: number;
+    subjects: { name: string; color: string } | null;
 }
 
 interface ActivityLogType {
-    id: string
-    action: string
-    created_at: string
+    id: string;
+    action: string;
+    created_at: string;
 }
 
 interface DailyStudy {
-    date: string
-    minutes: number
+    date: string;
+    minutes: number;
+    average: number;
 }
 
 interface SubjectDist {
-    subject: string
-    minutes: number
-    color: string
+    subject: string;
+    minutes: number;
+    color: string;
 }
 
 export const UserDetail: React.FC = () => {
-    const { userId } = useParams<{ userId: string }>()
-    const [user, setUser] = useState<UserDetailType | null>(null)
-    const [stats, setStats] = useState<UserStatsType | null>(null)
-    const [sessions, setSessions] = useState<SessionDetailType[]>([])
-    const [logs, setLogs] = useState<ActivityLogType[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [dailyStudy, setDailyStudy] = useState<DailyStudy[]>([])
-    const [subjectDist, setSubjectDist] = useState<SubjectDist[]>([])
+    const { userId } = useParams<{ userId: string }>();
+    const [user, setUser] = useState<UserDetailType | null>(null);
+    const [stats, setStats] = useState<UserStatsType | null>(null);
+    const [sessions, setSessions] = useState<SessionDetailType[]>([]);
+    const [logs, setLogs] = useState<ActivityLogType[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [dailyStudy, setDailyStudy] = useState<DailyStudy[]>([]);
+    const [subjectDist, setSubjectDist] = useState<SubjectDist[]>([]);
 
     useEffect(() => {
-        if (!userId) return
+        if (!userId) return;
         const fetchData = async () => {
-            setLoading(true)
+            setLoading(true);
             try {
                 const [userData, statsData, sessionsData, logsData, dailyData, subjectData] = await Promise.all([
                     adminService.getUserById(userId),
                     adminService.getUserStats(userId),
                     adminService.getUserSessions(userId, 50, 0),
                     adminService.getUserActivityLogs(userId, 20),
-                    adminAnalyticsService.getDailyStudyTrend({ from: daysAgo(30), to: today() }),
-                    adminAnalyticsService.getSubjectDistribution({ from: daysAgo(90), to: today() }),
-                ])
+                    adminAnalyticsService.getDailyStudyTrend({ from: daysAgo(30), to: today() }, null),
+                    adminAnalyticsService.getSubjectDistribution({ from: daysAgo(90), to: today() }, null),
+                ]);
                 if (userData) {
                     const mappedUser: UserDetailType = {
                         id: userData.id,
@@ -97,30 +98,30 @@ export const UserDetail: React.FC = () => {
                         created_at: userData.created_at,
                         preferences: userData.preferences,
                         status: userData.status || 'active',
-                    }
-                    setUser(mappedUser)
+                    };
+                    setUser(mappedUser);
                 } else {
-                    setUser(null)
+                    setUser(null);
                 }
-                setStats(statsData)
+                setStats(statsData);
                 const mappedSessions: SessionDetailType[] = sessionsData.map((s: any) => ({
                     id: s.id,
                     date: s.date,
                     duration_minutes: s.duration_minutes,
                     subjects: s.subjects ? { name: s.subjects.name, color: s.subjects.color } : null,
-                }))
-                setSessions(mappedSessions)
-                setLogs(logsData)
-                setDailyStudy(dailyData)
-                setSubjectDist(subjectData)
+                }));
+                setSessions(mappedSessions);
+                setLogs(logsData);
+                setDailyStudy(dailyData);
+                setSubjectDist(subjectData);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات')
+                setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات');
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        fetchData()
-    }, [userId])
+        };
+        fetchData();
+    }, [userId]);
 
     if (loading) {
         return (
@@ -132,7 +133,7 @@ export const UserDetail: React.FC = () => {
                 <Skeleton className="h-64 rounded-2xl" />
                 <Skeleton className="h-64 rounded-2xl" />
             </div>
-        )
+        );
     }
 
     if (error || !user) {
@@ -146,7 +147,7 @@ export const UserDetail: React.FC = () => {
                     بازگشت به لیست کاربران
                 </Link>
             </div>
-        )
+        );
     }
 
     return (
@@ -294,5 +295,5 @@ export const UserDetail: React.FC = () => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

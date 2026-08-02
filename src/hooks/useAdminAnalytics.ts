@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { adminAnalyticsService } from '../services/adminAnalyticsService';
-import { AdminAnalyticsData } from '../types/admin';
+import { adminAnalyticsService, AdminAnalyticsData } from '../services/adminAnalyticsService';
 import { logger } from '../utils/logger';
 import { formatError } from '../utils/error-handler';
 
@@ -10,7 +9,7 @@ interface UseAdminAnalyticsParams {
     forceRefresh?: boolean;
 }
 
-export const useAdminAnalytics = ({ olympiadId, dateRange, forceRefresh = false }: UseAdminAnalyticsParams) => {
+export const useAdminAnalytics = ({ olympiadId, dateRange }: UseAdminAnalyticsParams) => {
     const [data, setData] = useState<AdminAnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
