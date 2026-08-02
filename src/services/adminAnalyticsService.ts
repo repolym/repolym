@@ -24,6 +24,14 @@ export interface Insight {
     studentName?: string;
 }
 
+export interface DailyMetricType {
+    date: string;
+    sleep_hours: number | null;
+    phone_usage_minutes: number | null;
+    bedtime: string | null;
+    wake_time: string | null;
+}
+
 export interface AdminAnalyticsData {
     totalUsers: number;
     activeUsers: number;
@@ -69,7 +77,7 @@ export const adminAnalyticsService = {
                 const totalUsers = users.total;
                 const totalSessions = sessions.total;
                 const totalTests = tests.total;
-                const avgStudyMinutes = Math.round(sessions.avgDaily || 0); // ← ROUNDED
+                const avgStudyMinutes = Math.round(sessions.avgDaily || 0);
                 const consistencyScore = Math.round(sessions.consistency || 0);
                 const recoveryScore = Math.round(riskData.recoveryScore || 0);
                 const riskScore = Math.round(riskData.averageRisk || 0);
@@ -115,7 +123,6 @@ export const adminAnalyticsService = {
         return { from, to };
     },
 
-    // FIXED: totalUsers now counts users who have at least one session in the period
     async getUserStats(dateRange: { from: string; to: string }, olympiadId: string | null): Promise<{ total: number; active: number }> {
         const { from, to } = dateRange;
 
@@ -125,7 +132,6 @@ export const adminAnalyticsService = {
             usersQuery = usersQuery.eq('olympiad_id', olympiadId);
         }
 
-        // Get all users matching the filter
         const { data: allUsers, error: usersError } = await usersQuery;
         if (usersError) throw new Error(usersError.message);
         const allUserIds = allUsers?.map(u => u.id) || [];
@@ -137,22 +143,15 @@ export const adminAnalyticsService = {
             .gte('date', from)
             .lte('date', to);
 
-        if (olympiadId) {
-            // We need to filter by olympiad via a subquery or join
-            // For simplicity, we filter in memory
-        }
-
         const { data: activeSessions, error: sessionsError } = await sessionsQuery;
         if (sessionsError) throw new Error(sessionsError.message);
 
         const activeUserIds = new Set(activeSessions?.map(s => s.user_id) || []);
 
-        // If olympiad filter is applied, filter active users by olympiad
         let activeCount = activeUserIds.size;
         let totalCount = allUserIds.length;
 
         if (olympiadId) {
-            // Filter active users to only those in the olympiad
             const olympiadUserIds = new Set(allUserIds);
             let filteredActive = 0;
             for (const uid of activeUserIds) {
@@ -223,7 +222,7 @@ export const adminAnalyticsService = {
 
     async getDailyStudyTrend(dateRange: { from: string; to: string }, _olympiadId: string | null): Promise<{ date: string; minutes: number; average: number }[]> {
         const { from, to } = dateRange;
-        let query = supabase
+        const query = supabase
             .from('study_sessions')
             .select('date, duration_minutes')
             .gte('date', from)
@@ -257,7 +256,7 @@ export const adminAnalyticsService = {
 
     async getSubjectDistribution(dateRange: { from: string; to: string }, _olympiadId: string | null): Promise<{ subject: string; minutes: number; color: string }[]> {
         const { from, to } = dateRange;
-        let query = supabase
+        const query = supabase
             .from('study_sessions')
             .select('subject_id, duration_minutes, subjects(name, color)')
             .gte('date', from)
@@ -279,7 +278,7 @@ export const adminAnalyticsService = {
 
     async getAnomalies(dateRange: { from: string; to: string }, _olympiadId: string | null, limit: number): Promise<Anomaly[]> {
         const { from, to } = dateRange;
-        let query = supabase
+        const query = supabase
             .from('study_sessions')
             .select('user_id, date, duration_minutes')
             .gte('date', from)
@@ -429,7 +428,7 @@ export const adminAnalyticsService = {
     },
 
     async getUserStudyStats(from: string, to: string): Promise<Map<string, { avg: number; name: string }>> {
-        let query = supabase
+        const query = supabase
             .from('study_sessions')
             .select('user_id, duration_minutes, users(name)')
             .gte('date', from)
@@ -567,4 +566,17 @@ export const adminAnalyticsService = {
             count: map.get(level) || 0,
         }));
     },
+
+    // NEW: Get daily metrics for a specific user
+    async getUserDailyMetrics(userId: string, from: string, to: string): Promise<DailyMetricType[]> {
+        const { data, error } = await supabase
+            .from('daily_metrics')
+            .select('date, sleep_hours, phone_usage_minutes, bedtime, wake_time')
+            .eq('user_id', userId)
+            .gte('date', from)
+            .lte('date', to)
+            .order('date', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
 };

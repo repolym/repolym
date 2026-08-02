@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { adminAnalyticsService } from '../../services/adminAnalyticsService';
@@ -6,19 +6,13 @@ import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-util
 import { toPersianDigits } from '../../utils/jalali';
 import { Skeleton } from '../common/Loading';
 import { Avatar, getAvatarUrl } from '../common/Avatar';
-import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react';
 import {
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    PieChart,
-    Pie,
-    Cell,
-} from 'recharts';
+    Mail, Calendar, BookOpen, Award, Activity, ArrowRight,
+    Search, Download, Moon, Smartphone, BarChart3
+} from 'lucide-react';
+import { Button } from '../common/Button';
+import { Select } from '../common/Input';
+import { useToast } from '../../context/ToastContext';
 
 // Types
 interface UserDetailType {
@@ -31,66 +25,109 @@ interface UserDetailType {
     status: string;
 }
 
-interface UserStatsType {
-    totalSessions: number;
-    totalMinutes: number;
-    totalTests: number;
-    avgTestScore: number;
-    currentStreak: number;
-    longestStreak: number;
-}
 
 interface SessionDetailType {
     id: string;
     date: string;
     duration_minutes: number;
+    subject_id: string | null;
     subjects: { name: string; color: string } | null;
+    activities: string | null;
 }
 
-interface ActivityLogType {
-    id: string;
-    action: string;
-    created_at: string;
-}
-
-interface DailyStudy {
+interface DailyMetricType {
     date: string;
-    minutes: number;
-    average: number;
-}
-
-interface SubjectDist {
-    subject: string;
-    minutes: number;
-    color: string;
+    sleep_hours: number | null;
+    phone_usage_minutes: number | null;
+    bedtime: string | null;
+    wake_time: string | null;
 }
 
 export const UserDetail: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
+    const { showToast } = useToast();
     const [user, setUser] = useState<UserDetailType | null>(null);
-    const [stats, setStats] = useState<UserStatsType | null>(null);
     const [sessions, setSessions] = useState<SessionDetailType[]>([]);
-    const [logs, setLogs] = useState<ActivityLogType[]>([]);
+    const [metrics, setMetrics] = useState<DailyMetricType[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [dailyStudy, setDailyStudy] = useState<DailyStudy[]>([]);
-    const [subjectDist, setSubjectDist] = useState<SubjectDist[]>([]);
+
+    // Filter states
+    const [dateFrom, setDateFrom] = useState(daysAgo(30));
+    const [dateTo, setDateTo] = useState(today());
+    const [subjectFilter, setSubjectFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'sessions' | 'metrics'>('sessions');
+
+    // Get unique subjects for filter
+    const subjects = useMemo(() => {
+        const subMap = new Map<string, string>();
+        sessions.forEach(s => {
+            if (s.subjects) {
+                subMap.set(s.subject_id || '', s.subjects.name);
+            }
+        });
+        return Array.from(subMap.entries()).map(([id, name]) => ({ id, name }));
+    }, [sessions]);
+
+    // Filtered sessions
+    const filteredSessions = useMemo(() => {
+        let list = sessions;
+        if (dateFrom) {
+            list = list.filter(s => s.date >= dateFrom);
+        }
+        if (dateTo) {
+            list = list.filter(s => s.date <= dateTo);
+        }
+        if (subjectFilter !== 'all') {
+            list = list.filter(s => s.subject_id === subjectFilter);
+        }
+        if (searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            list = list.filter(s =>
+                s.activities?.toLowerCase().includes(q) ||
+                s.subjects?.name?.toLowerCase().includes(q)
+            );
+        }
+        return list.sort((a, b) => b.date.localeCompare(a.date));
+    }, [sessions, dateFrom, dateTo, subjectFilter, searchQuery]);
+
+    // Filtered metrics
+    const filteredMetrics = useMemo(() => {
+        let list = metrics;
+        if (dateFrom) {
+            list = list.filter(m => m.date >= dateFrom);
+        }
+        if (dateTo) {
+            list = list.filter(m => m.date <= dateTo);
+        }
+        return list.sort((a, b) => b.date.localeCompare(a.date));
+    }, [metrics, dateFrom, dateTo]);
+
+    // Computed stats from filtered data
+    const filteredStats = useMemo(() => {
+        const totalMinutes = filteredSessions.reduce((sum, s) => sum + s.duration_minutes, 0);
+        const totalSessions = filteredSessions.length;
+        const days = Math.max(1, filteredSessions.length > 0 ?
+            new Set(filteredSessions.map(s => s.date)).size : 1);
+        const avgDaily = totalMinutes / days;
+        const avgSleep = filteredMetrics.reduce((sum, m) => sum + (m.sleep_hours || 0), 0) / (filteredMetrics.length || 1);
+        const avgPhone = filteredMetrics.reduce((sum, m) => sum + (m.phone_usage_minutes || 0), 0) / (filteredMetrics.length || 1);
+        return { totalMinutes, totalSessions, avgDaily, avgSleep, avgPhone, days };
+    }, [filteredSessions, filteredMetrics]);
 
     useEffect(() => {
         if (!userId) return;
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [userData, statsData, sessionsData, logsData, dailyData, subjectData] = await Promise.all([
+                const [userData, sessionsData, metricsData] = await Promise.all([
                     adminService.getUserById(userId),
-                    adminService.getUserStats(userId),
-                    adminService.getUserSessions(userId, 50, 0),
-                    adminService.getUserActivityLogs(userId, 20),
-                    adminAnalyticsService.getDailyStudyTrend({ from: daysAgo(30), to: today() }, null),
-                    adminAnalyticsService.getSubjectDistribution({ from: daysAgo(90), to: today() }, null),
+                    adminService.getUserSessions(userId, 500, 0),
+                    adminAnalyticsService.getUserDailyMetrics(userId, daysAgo(90), today()),
                 ]);
                 if (userData) {
-                    const mappedUser: UserDetailType = {
+                    setUser({
                         id: userData.id,
                         name: userData.name,
                         email: userData.email,
@@ -98,22 +135,17 @@ export const UserDetail: React.FC = () => {
                         created_at: userData.created_at,
                         preferences: userData.preferences,
                         status: userData.status || 'active',
-                    };
-                    setUser(mappedUser);
-                } else {
-                    setUser(null);
+                    });
                 }
-                setStats(statsData);
-                const mappedSessions: SessionDetailType[] = sessionsData.map((s: any) => ({
+                setSessions(sessionsData.map((s: any) => ({
                     id: s.id,
                     date: s.date,
                     duration_minutes: s.duration_minutes,
-                    subjects: s.subjects ? { name: s.subjects.name, color: s.subjects.color } : null,
-                }));
-                setSessions(mappedSessions);
-                setLogs(logsData);
-                setDailyStudy(dailyData);
-                setSubjectDist(subjectData);
+                    subject_id: s.subject_id,
+                    subjects: s.subjects,
+                    activities: s.activities,
+                })));
+                setMetrics(metricsData || []);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات');
             } finally {
@@ -123,6 +155,37 @@ export const UserDetail: React.FC = () => {
         fetchData();
     }, [userId]);
 
+    const handleExport = () => {
+        const rows = viewMode === 'sessions'
+            ? filteredSessions.map(s => [
+                formatDate(s.date),
+                s.duration_minutes,
+                s.subjects?.name || 'بدون درس',
+                s.activities || ''
+            ])
+            : filteredMetrics.map(m => [
+                formatDate(m.date),
+                m.sleep_hours ?? '—',
+                m.phone_usage_minutes ?? '—',
+                m.bedtime || '—',
+                m.wake_time || '—'
+            ]);
+
+        const headers = viewMode === 'sessions'
+            ? ['تاریخ', 'مدت (دقیقه)', 'درس', 'فعالیت‌ها']
+            : ['تاریخ', 'ساعت خواب', 'استفاده از گوشی (دقیقه)', 'زمان خواب', 'زمان بیداری'];
+
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user_data_${userId}_${today()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('خروجی با موفقیت دانلود شد', 'success');
+    };
+
     if (loading) {
         return (
             <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6">
@@ -130,7 +193,6 @@ export const UserDetail: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
                 </div>
-                <Skeleton className="h-64 rounded-2xl" />
                 <Skeleton className="h-64 rounded-2xl" />
             </div>
         );
@@ -151,24 +213,33 @@ export const UserDetail: React.FC = () => {
     }
 
     return (
-        <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6" dir="rtl">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
-                <Link to="/admin/users" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
-                    <ArrowRight className="w-4 h-4" />
-                    بازگشت
-                </Link>
+        <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6" dir="rtl">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
+                    <Link to="/admin/users" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
+                        <ArrowRight className="w-4 h-4" />
+                        بازگشت
+                    </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={handleExport} size="sm">
+                        <Download className="w-4 h-4" />
+                        خروجی CSV
+                    </Button>
+                </div>
             </div>
 
             {/* User Info */}
-            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex items-center gap-6">
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex flex-wrap items-center gap-6">
                 <Avatar
                     name={user.name}
                     avatarUrl={getAvatarUrl(user.preferences)}
                     fallback={<span>{user.name?.charAt(0) || '?'}</span>}
                     className="w-16 h-16 rounded-full bg-accent text-white text-2xl font-bold"
                 />
-                <div>
+                <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-bold text-text-primary">{user.name}</h2>
                     <p className="text-sm text-text-secondary flex items-center gap-1"><Mail className="w-4 h-4" /> {user.email}</p>
                     <div className="flex flex-wrap gap-3 mt-2 text-xs">
@@ -188,111 +259,190 @@ export const UserDetail: React.FC = () => {
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
-                    <p className="text-sm text-text-secondary">جلسات مطالعه</p>
-                    <p className="text-2xl font-bold">{toPersianDigits(stats?.totalSessions || 0)}</p>
+                    <p className="text-sm text-text-secondary">کل جلسات</p>
+                    <p className="text-2xl font-bold">{toPersianDigits(filteredStats.totalSessions)}</p>
                 </div>
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
-                    <p className="text-sm text-text-secondary">مدت کل</p>
-                    <p className="text-2xl font-bold">{formatMinutes(stats?.totalMinutes || 0)}</p>
+                    <p className="text-sm text-text-secondary">کل مطالعه</p>
+                    <p className="text-2xl font-bold">{formatMinutes(filteredStats.totalMinutes)}</p>
                 </div>
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
-                    <p className="text-sm text-text-secondary">آزمون‌ها</p>
-                    <p className="text-2xl font-bold">{toPersianDigits(stats?.totalTests || 0)}</p>
+                    <p className="text-sm text-text-secondary">میانگین روزانه</p>
+                    <p className="text-2xl font-bold">{formatMinutes(Math.round(filteredStats.avgDaily))}</p>
                 </div>
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
-                    <p className="text-sm text-text-secondary">میانگین نمره</p>
-                    <p className="text-2xl font-bold">{toPersianDigits(Math.round(stats?.avgTestScore || 0))}%</p>
+                    <p className="text-sm text-text-secondary">روزهای فعال</p>
+                    <p className="text-2xl font-bold">{toPersianDigits(filteredStats.days)}</p>
                 </div>
             </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
-                    <h3 className="text-sm font-semibold text-text-secondary mb-4">روند مطالعه روزانه</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={dailyStudy}>
-                                <defs>
-                                    <linearGradient id="userStudyGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
-                                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatMinutes(v)} />
-                                <Tooltip formatter={(value: any) => formatMinutes(value)} labelFormatter={(label) => formatDate(label)} />
-                                <Area type="monotone" dataKey="minutes" stroke="#6366f1" fill="url(#userStudyGradient)" strokeWidth={2} />
-                            </AreaChart>
-                        </ResponsiveContainer>
+            {/* Sleep & Phone Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                        <Moon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-text-secondary">میانگین خواب</p>
+                        <p className="text-xl font-bold">
+                            {filteredStats.avgSleep > 0 ? `${toPersianDigits(filteredStats.avgSleep.toFixed(1))} ساعت` : '—'}
+                        </p>
                     </div>
                 </div>
-                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
-                    <h3 className="text-sm font-semibold text-text-secondary mb-4">توزیع دروس</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={subjectDist}
-                                    dataKey="minutes"
-                                    nameKey="subject"
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={80}
-                                    label={({ name }) => name}
-                                >
-                                    {subjectDist.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color || '#6366f1'} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value: any) => formatMinutes(value)} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-rose-50 text-rose-600">
+                        <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-text-secondary">میانگین استفاده از گوشی</p>
+                        <p className="text-xl font-bold">
+                            {filteredStats.avgPhone > 0 ? `${toPersianDigits(Math.round(filteredStats.avgPhone))} دقیقه` : '—'}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Recent Sessions */}
-            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-accent" />
-                    آخرین جلسات مطالعه
-                </h3>
-                {sessions.length === 0 ? (
-                    <p className="text-text-tertiary text-sm">هیچ جلسه‌ای ثبت نشده</p>
-                ) : (
-                    <div className="space-y-2">
-                        {sessions.slice(0, 10).map(s => (
-                            <div key={s.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
-                                <div>
-                                    <p className="text-sm font-medium">{s.subjects?.name || 'بدون درس'}</p>
-                                    <p className="text-xs text-text-tertiary">{formatDate(s.date)}</p>
-                                </div>
-                                <span className="font-mono text-sm">{formatMinutes(s.duration_minutes)}</span>
-                            </div>
-                        ))}
+            {/* Filters */}
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
+                <div className="flex flex-wrap gap-4 items-end">
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-text-secondary">از تاریخ</label>
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                        />
                     </div>
-                )}
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-text-secondary">تا تاریخ</label>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                        />
+                    </div>
+                    <Select
+                        value={subjectFilter}
+                        onChange={(e) => setSubjectFilter(e.target.value)}
+                        options={[
+                            { value: 'all', label: 'همه دروس' },
+                            ...subjects.map(s => ({ value: s.id, label: s.name })),
+                        ]}
+                        className="w-44"
+                    />
+                    <div className="flex-1 min-w-[150px]">
+                        <div className="relative">
+                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                            <input
+                                type="text"
+                                placeholder="جستجو در فعالیت‌ها..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pr-10 px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-1 bg-surface-3 p-1 rounded-xl">
+                        <button
+                            onClick={() => setViewMode('sessions')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'sessions'
+                                ? 'bg-surface-1 text-accent shadow-sm'
+                                : 'text-text-secondary hover:text-text-secondary'
+                                }`}
+                        >
+                            <BookOpen className="w-4 h-4 inline ml-1" />
+                            جلسات
+                        </button>
+                        <button
+                            onClick={() => setViewMode('metrics')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'metrics'
+                                ? 'bg-surface-1 text-accent shadow-sm'
+                                : 'text-text-secondary hover:text-text-secondary'
+                                }`}
+                        >
+                            <BarChart3 className="w-4 h-4 inline ml-1" />
+                            خواب و گوشی
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-accent" />
-                    فعالیت‌های اخیر
-                </h3>
-                {logs.length === 0 ? (
-                    <p className="text-text-tertiary text-sm">هیچ فعالیتی ثبت نشده</p>
-                ) : (
-                    <div className="space-y-2">
-                        {logs.map(log => (
-                            <div key={log.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
-                                <span className="text-sm">{log.action}</span>
-                                <span className="text-xs text-text-tertiary">{formatDate(log.created_at)}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+            {/* Data Table */}
+            <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-hidden">
+                <div className="overflow-x-auto">
+                    {viewMode === 'sessions' ? (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-surface-2 text-text-secondary border-b border-border">
+                                    <th className="text-right py-3 px-4 font-medium">تاریخ</th>
+                                    <th className="text-right py-3 px-4 font-medium">مدت</th>
+                                    <th className="text-right py-3 px-4 font-medium">درس</th>
+                                    <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredSessions.length === 0 ? (
+                                    <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
+                                ) : (
+                                    filteredSessions.map(s => (
+                                        <tr key={s.id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
+                                            <td className="py-3 px-4 text-xs whitespace-nowrap">{formatDate(s.date)}</td>
+                                            <td className="py-3 px-4 font-mono text-sm whitespace-nowrap">{formatMinutes(s.duration_minutes)}</td>
+                                            <td className="py-3 px-4">
+                                                {s.subjects ? (
+                                                    <span className="px-2 py-1 rounded-full text-xs" style={{
+                                                        backgroundColor: s.subjects.color + '20',
+                                                        color: s.subjects.color
+                                                    }}>
+                                                        {s.subjects.name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-text-tertiary text-xs">بدون درس</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4 text-xs max-w-xs truncate">{s.activities || '—'}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-surface-2 text-text-secondary border-b border-border">
+                                    <th className="text-right py-3 px-4 font-medium">تاریخ</th>
+                                    <th className="text-right py-3 px-4 font-medium">ساعت خواب</th>
+                                    <th className="text-right py-3 px-4 font-medium">زمان خواب</th>
+                                    <th className="text-right py-3 px-4 font-medium">زمان بیداری</th>
+                                    <th className="text-right py-3 px-4 font-medium">استفاده از گوشی (دقیقه)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredMetrics.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-8 text-text-tertiary">هیچ داده‌ای با این فیلترها یافت نشد</td></tr>
+                                ) : (
+                                    filteredMetrics.map(m => (
+                                        <tr key={m.date} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
+                                            <td className="py-3 px-4 text-xs whitespace-nowrap">{formatDate(m.date)}</td>
+                                            <td className="py-3 px-4">{m.sleep_hours ? toPersianDigits(m.sleep_hours.toFixed(1)) : '—'}</td>
+                                            <td className="py-3 px-4">{m.bedtime || '—'}</td>
+                                            <td className="py-3 px-4">{m.wake_time || '—'}</td>
+                                            <td className="py-3 px-4">{m.phone_usage_minutes ? toPersianDigits(m.phone_usage_minutes) : '—'}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+                <div className="px-4 py-3 border-t border-border-subtle text-xs text-text-tertiary">
+                    {viewMode === 'sessions'
+                        ? `${toPersianDigits(filteredSessions.length)} جلسه یافت شد`
+                        : `${toPersianDigits(filteredMetrics.length)} روز داده یافت شد`
+                    }
+                </div>
             </div>
         </div>
     );
