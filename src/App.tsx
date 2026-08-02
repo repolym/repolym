@@ -19,6 +19,8 @@ import { ActivityLog } from './components/admin/ActivityLog'
 import { AdminManagement } from './components/admin/AdminManagement'
 import { UserDetail } from './components/admin/UserDetail'
 import { OlympiadManagement } from './components/admin/OlympiadManagement'
+import AnomaliesPage from './pages/admin/AnomaliesPage'
+import InsightsPage from './pages/admin/InsightsPage'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import { DashboardPage } from './components/dashboard/DashboardPage'
@@ -91,8 +93,10 @@ const App: React.FC = () => {
                   <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
                   <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
                   <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
+                  <Route path="/admin/anomalies" element={<AdminLayout><AnomaliesPage /></AdminLayout>} />
+                  <Route path="/admin/insights" element={<AdminLayout><InsightsPage /></AdminLayout>} />
 
-                  {/* Onboarding – no extra guards needed; AuthGuard will handle if user is already onboarded */}
+                  {/* Onboarding */}
                   <Route
                     path="/onboarding"
                     element={
@@ -104,7 +108,7 @@ const App: React.FC = () => {
                     }
                   />
 
-                  {/* Baseline Survey – AuthGuard will redirect if already done */}
+                  {/* Baseline */}
                   <Route
                     path="/baseline"
                     element={

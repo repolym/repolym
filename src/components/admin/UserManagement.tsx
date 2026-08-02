@@ -33,6 +33,7 @@ export const UserManagement: React.FC = () => {
     const limit = 20;
     const [sortBy, setSortBy] = useState('created_at');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high' | 'critical'>('all');
 
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [confirmAction, setConfirmAction] = useState<'suspend' | 'activate' | 'delete' | null>(null);
@@ -53,6 +54,8 @@ export const UserManagement: React.FC = () => {
     const { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser } = useAdminUsers(params);
     const totalPages = Math.ceil(total / limit);
 
+    const [riskScores, setRiskScores] = useState<Record<string, number>>({});
+
     useEffect(() => {
         const fetchOlympiads = async () => {
             const { data, error } = await supabase
@@ -67,6 +70,21 @@ export const UserManagement: React.FC = () => {
         };
         fetchOlympiads();
     }, []);
+
+    useEffect(() => {
+        const fetchRiskScores = async () => {
+            if (users.length === 0) return;
+            const userIds = users.map(u => u.id);
+            const { data, error } = await supabase
+                .rpc('get_risk_scores_bulk', { p_user_ids: userIds });
+            if (!error && data) {
+                const map: Record<string, number> = {};
+                data.forEach((row: any) => { map[row.user_id] = row.score; });
+                setRiskScores(map);
+            }
+        };
+        fetchRiskScores();
+    }, [users]);
 
     const handleAction = async (userId: string, action: typeof confirmAction) => {
         try {
@@ -104,6 +122,16 @@ export const UserManagement: React.FC = () => {
     const handleFilterChange = (callback: () => void) => {
         setPage(1);
         callback();
+    };
+
+    const getRiskBadge = (score: number | undefined) => {
+        if (score === undefined) return null;
+        let label = 'کم';
+        let color = 'bg-green-100 text-green-700';
+        if (score >= 80) { label = 'بحرانی'; color = 'bg-red-100 text-red-700'; }
+        else if (score >= 60) { label = 'بالا'; color = 'bg-orange-100 text-orange-700'; }
+        else if (score >= 40) { label = 'متوسط'; color = 'bg-yellow-100 text-yellow-700'; }
+        return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{label}</span>;
     };
 
     return (
@@ -195,6 +223,20 @@ export const UserManagement: React.FC = () => {
                             <option value="asc">صعودی</option>
                         </select>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-text-secondary">ریسک:</span>
+                        <select
+                            value={riskFilter}
+                            onChange={(e) => handleFilterChange(() => setRiskFilter(e.target.value as any))}
+                            className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="all">همه</option>
+                            <option value="low">کم</option>
+                            <option value="medium">متوسط</option>
+                            <option value="high">بالا</option>
+                            <option value="critical">بحرانی</option>
+                        </select>
+                    </div>
                     <div className="mr-auto text-sm text-text-secondary">
                         نمایش <span className="font-medium text-text-secondary">{users.length}</span> از <span className="font-medium text-text-secondary">{total}</span> کاربر
                     </div>
@@ -216,6 +258,7 @@ export const UserManagement: React.FC = () => {
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">ایمیل</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">نقش</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">وضعیت</th>
+                                <th className="text-right py-3 px-4 font-medium whitespace-nowrap">ریسک</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap hidden md:table-cell">تاریخ عضویت</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">عملیات</th>
                             </tr>
@@ -223,7 +266,7 @@ export const UserManagement: React.FC = () => {
                         <tbody>
                             {loading && users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-12 text-text-tertiary">
+                                    <td colSpan={7} className="text-center py-12 text-text-tertiary">
                                         <div className="flex justify-center items-center gap-2">
                                             <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                                             در حال بارگذاری...
@@ -232,7 +275,7 @@ export const UserManagement: React.FC = () => {
                                 </tr>
                             ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-12 text-text-tertiary">
+                                    <td colSpan={7} className="text-center py-12 text-text-tertiary">
                                         <div className="flex flex-col items-center gap-2">
                                             <Filter className="w-8 h-8 text-text-tertiary" />
                                             <span>هیچ کاربری با این فیلترها یافت نشد</span>
@@ -240,83 +283,96 @@ export const UserManagement: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                users.map((user) => (
-                                    <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-2/60 transition-colors">
-                                        <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">
-                                            <div className="flex items-center gap-2.5">
-                                                <Avatar
-                                                    name={user.name}
-                                                    avatarUrl={getAvatarUrl(user.preferences)}
-                                                    initialsCount={2}
-                                                    className="w-8 h-8 rounded-lg bg-accent text-white text-xs font-bold flex-shrink-0"
-                                                />
-                                                <span>{user.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{user.email}</td>
-                                        <td className="py-3 px-4 whitespace-nowrap">
-                                            {user.is_admin ? (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent-muted text-accent-hover">
-                                                    ادمین
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-3 text-text-secondary">
-                                                    کاربر
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4 whitespace-nowrap">
-                                            {user.status === 'suspended' ? (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                                    تعلیق
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                    فعال
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4 text-text-secondary whitespace-nowrap text-xs hidden md:table-cell">
-                                            {formatDate(user.created_at)}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-1">
-                                                {user.status !== 'suspended' && (
-                                                    <button
-                                                        onClick={() => openConfirm(user.id, 'suspend')}
-                                                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
-                                                        title="تعلیق"
-                                                    >
-                                                        <UserX className="w-4 h-4" />
-                                                    </button>
+                                users.map((user) => {
+                                    const risk = riskScores[user.id];
+                                    if (riskFilter !== 'all') {
+                                        let level = 'low';
+                                        if (risk >= 80) level = 'critical';
+                                        else if (risk >= 60) level = 'high';
+                                        else if (risk >= 40) level = 'medium';
+                                        if (level !== riskFilter) return null;
+                                    }
+                                    return (
+                                        <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-2/60 transition-colors">
+                                            <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">
+                                                <div className="flex items-center gap-2.5">
+                                                    <Avatar
+                                                        name={user.name}
+                                                        avatarUrl={getAvatarUrl(user.preferences)}
+                                                        initialsCount={2}
+                                                        className="w-8 h-8 rounded-lg bg-accent text-white text-xs font-bold flex-shrink-0"
+                                                    />
+                                                    <span>{user.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{user.email}</td>
+                                            <td className="py-3 px-4 whitespace-nowrap">
+                                                {user.is_admin ? (
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent-muted text-accent-hover">
+                                                        ادمین
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-3 text-text-secondary">
+                                                        کاربر
+                                                    </span>
                                                 )}
-                                                {user.status === 'suspended' && (
-                                                    <button
-                                                        onClick={() => openConfirm(user.id, 'activate')}
-                                                        className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 hover:text-green-800 transition"
-                                                        title="فعال کردن"
-                                                    >
-                                                        <UserCheck className="w-4 h-4" />
-                                                    </button>
+                                            </td>
+                                            <td className="py-3 px-4 whitespace-nowrap">
+                                                {user.status === 'suspended' ? (
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                        تعلیق
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                        فعال
+                                                    </span>
                                                 )}
-                                                <button
-                                                    onClick={() => openConfirm(user.id, 'delete')}
-                                                    className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition"
-                                                    title="حذف"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                <Link
-                                                    to={`/admin/users/${user.id}`}
-                                                    className="p-1.5 rounded-lg text-text-tertiary hover:bg-surface-3 hover:text-text-secondary transition"
-                                                    title="مشاهده پروفایل"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="py-3 px-4 whitespace-nowrap">
+                                                {risk !== undefined ? getRiskBadge(risk) : '—'}
+                                            </td>
+                                            <td className="py-3 px-4 text-text-secondary whitespace-nowrap text-xs hidden md:table-cell">
+                                                {formatDate(user.created_at)}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-1">
+                                                    {user.status !== 'suspended' && (
+                                                        <button
+                                                            onClick={() => openConfirm(user.id, 'suspend')}
+                                                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
+                                                            title="تعلیق"
+                                                        >
+                                                            <UserX className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {user.status === 'suspended' && (
+                                                        <button
+                                                            onClick={() => openConfirm(user.id, 'activate')}
+                                                            className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 hover:text-green-800 transition"
+                                                            title="فعال کردن"
+                                                        >
+                                                            <UserCheck className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => openConfirm(user.id, 'delete')}
+                                                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition"
+                                                        title="حذف"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                    <Link
+                                                        to={`/admin/users/${user.id}`}
+                                                        className="p-1.5 rounded-lg text-text-tertiary hover:bg-surface-3 hover:text-text-secondary transition"
+                                                        title="مشاهده پروفایل"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

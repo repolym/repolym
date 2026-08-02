@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { adminService } from '../../services/adminService'
-import { formatDate, formatMinutes } from '../../utils/date-utils'
+import { adminAnalyticsService } from '../../services/adminAnalyticsService'
+import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Skeleton } from '../common/Loading'
 import { Avatar, getAvatarUrl } from '../common/Avatar'
 import { Mail, Calendar, BookOpen, Award, Clock, Activity, ArrowRight } from 'lucide-react'
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    PieChart,
+    Pie,
+    Cell,
+} from 'recharts'
 
-// Local types that match the data we get
+// Types
 interface UserDetailType {
     id: string
     name: string
@@ -40,6 +53,17 @@ interface ActivityLogType {
     created_at: string
 }
 
+interface DailyStudy {
+    date: string
+    minutes: number
+}
+
+interface SubjectDist {
+    subject: string
+    minutes: number
+    color: string
+}
+
 export const UserDetail: React.FC = () => {
     const { userId } = useParams<{ userId: string }>()
     const [user, setUser] = useState<UserDetailType | null>(null)
@@ -48,19 +72,22 @@ export const UserDetail: React.FC = () => {
     const [logs, setLogs] = useState<ActivityLogType[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [dailyStudy, setDailyStudy] = useState<DailyStudy[]>([])
+    const [subjectDist, setSubjectDist] = useState<SubjectDist[]>([])
 
     useEffect(() => {
         if (!userId) return
         const fetchData = async () => {
             setLoading(true)
             try {
-                const [userData, statsData, sessionsData, logsData] = await Promise.all([
+                const [userData, statsData, sessionsData, logsData, dailyData, subjectData] = await Promise.all([
                     adminService.getUserById(userId),
                     adminService.getUserStats(userId),
-                    adminService.getUserSessions(userId, 20, 0),
+                    adminService.getUserSessions(userId, 50, 0),
                     adminService.getUserActivityLogs(userId, 20),
+                    adminAnalyticsService.getDailyStudyTrend({ from: daysAgo(30), to: today() }),
+                    adminAnalyticsService.getSubjectDistribution({ from: daysAgo(90), to: today() }),
                 ])
-                // Map userData to our expected type (ensure status is string)
                 if (userData) {
                     const mappedUser: UserDetailType = {
                         id: userData.id,
@@ -76,7 +103,6 @@ export const UserDetail: React.FC = () => {
                     setUser(null)
                 }
                 setStats(statsData)
-                // Map sessions data to expected shape
                 const mappedSessions: SessionDetailType[] = sessionsData.map((s: any) => ({
                     id: s.id,
                     date: s.date,
@@ -85,6 +111,8 @@ export const UserDetail: React.FC = () => {
                 }))
                 setSessions(mappedSessions)
                 setLogs(logsData)
+                setDailyStudy(dailyData)
+                setSubjectDist(subjectData)
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات')
             } finally {
@@ -96,7 +124,7 @@ export const UserDetail: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="p-5 md:p-8 max-w-4xl mx-auto space-y-6">
+            <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6">
                 <Skeleton className="h-8 w-48" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
@@ -122,7 +150,7 @@ export const UserDetail: React.FC = () => {
     }
 
     return (
-        <div className="p-5 md:p-8 max-w-4xl mx-auto space-y-6" dir="rtl">
+        <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6" dir="rtl">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
                 <Link to="/admin/users" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
@@ -131,6 +159,7 @@ export const UserDetail: React.FC = () => {
                 </Link>
             </div>
 
+            {/* User Info */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex items-center gap-6">
                 <Avatar
                     name={user.name}
@@ -155,6 +184,7 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                     <p className="text-sm text-text-secondary">جلسات مطالعه</p>
@@ -174,6 +204,54 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
+                    <h3 className="text-sm font-semibold text-text-secondary mb-4">روند مطالعه روزانه</h3>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={dailyStudy}>
+                                <defs>
+                                    <linearGradient id="userStudyGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
+                                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatMinutes(v)} />
+                                <Tooltip formatter={(value: any) => formatMinutes(value)} labelFormatter={(label) => formatDate(label)} />
+                                <Area type="monotone" dataKey="minutes" stroke="#6366f1" fill="url(#userStudyGradient)" strokeWidth={2} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+                <div className="bg-surface-1 rounded-2xl p-6 shadow-card border border-border-subtle">
+                    <h3 className="text-sm font-semibold text-text-secondary mb-4">توزیع دروس</h3>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={subjectDist}
+                                    dataKey="minutes"
+                                    nameKey="subject"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    label={({ name }) => name}
+                                >
+                                    {subjectDist.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || '#6366f1'} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(value: any) => formatMinutes(value)} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Recent Sessions */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-accent" />
@@ -183,7 +261,7 @@ export const UserDetail: React.FC = () => {
                     <p className="text-text-tertiary text-sm">هیچ جلسه‌ای ثبت نشده</p>
                 ) : (
                     <div className="space-y-2">
-                        {sessions.map(s => (
+                        {sessions.slice(0, 10).map(s => (
                             <div key={s.id} className="flex items-center justify-between p-3 bg-surface-2 rounded-xl border border-border-subtle">
                                 <div>
                                     <p className="text-sm font-medium">{s.subjects?.name || 'بدون درس'}</p>
@@ -196,6 +274,7 @@ export const UserDetail: React.FC = () => {
                 )}
             </div>
 
+            {/* Recent Activity */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent" />
