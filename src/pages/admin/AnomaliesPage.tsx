@@ -70,23 +70,10 @@ const AnomaliesPage: React.FC = () => {
                     <h1 className="text-2xl font-bold text-text-primary">ناهنجاری‌های سیستم</h1>
                     <p className="text-sm text-text-secondary mt-1">تشخیص خودکار رفتارهای غیرعادی و دانش‌آموزان در معرض خطر</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Select
-                        value={timeRange}
-                        onChange={(e) => setTimeRange(e.target.value as any)}
-                        options={[
-                            { value: 'today', label: 'امروز' },
-                            { value: 'week', label: 'هفته جاری' },
-                            { value: 'month', label: 'ماه جاری' },
-                            { value: 'quarter', label: 'سه ماهه' },
-                        ]}
-                        className="w-40"
-                    />
-                    <Button variant="secondary" onClick={() => refetch()} loading={loading}>
-                        <RefreshCw className="w-4 h-4" />
-                        بروزرسانی
-                    </Button>
-                </div>
+                <Button variant="secondary" onClick={() => refetch()} loading={loading}>
+                    <RefreshCw className="w-4 h-4" />
+                    بروزرسانی
+                </Button>
             </div>
 
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 mb-6">
@@ -122,6 +109,17 @@ const AnomaliesPage: React.FC = () => {
                             { value: 'high', label: 'بالا' },
                         ]}
                         className="w-36"
+                    />
+                    <Select
+                        value={timeRange}
+                        onChange={(e) => setTimeRange(e.target.value as any)}
+                        options={[
+                            { value: 'today', label: 'امروز' },
+                            { value: 'week', label: 'هفته جاری' },
+                            { value: 'month', label: 'ماه جاری' },
+                            { value: 'quarter', label: 'سه ماهه' },
+                        ]}
+                        className="w-40"
                     />
                 </div>
             </div>
