@@ -1,4 +1,3 @@
-// src/components/admin/UserManagement.tsx - FIXED (removed unused isAdmin and filteredUsers)
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
 import { useToast } from '../../context/ToastContext';
@@ -148,15 +147,18 @@ export const UserManagement: React.FC = () => {
         return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{label}</span>;
     };
 
+    // Consultant cannot perform any admin actions
+    const canEdit = !isConsultant;
+
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto" dir="rtl">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-text-primary">
-                        {isConsultant ? 'مدیریت دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت کاربران'}
+                        {isConsultant ? 'دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت کاربران'}
                     </h1>
                     <p className="text-sm text-text-secondary mt-1">
-                        {isConsultant ? 'مدیریت و جستجوی دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت و جستجوی کاربران سیستم'}
+                        {isConsultant ? 'مشاهده و جستجوی دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت و جستجوی کاربران سیستم'}
                     </p>
                 </div>
                 <Button variant="secondary" onClick={() => refetch()} loading={loading} className="w-full md:w-auto">
@@ -358,7 +360,7 @@ export const UserManagement: React.FC = () => {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-1">
-                                                    {!isConsultant && user.status !== 'suspended' && (
+                                                    {canEdit && user.status !== 'suspended' && (
                                                         <button
                                                             onClick={() => openConfirm(user.id, 'suspend')}
                                                             className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
@@ -367,7 +369,7 @@ export const UserManagement: React.FC = () => {
                                                             <UserX className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    {!isConsultant && user.status === 'suspended' && (
+                                                    {canEdit && user.status === 'suspended' && (
                                                         <button
                                                             onClick={() => openConfirm(user.id, 'activate')}
                                                             className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 hover:text-green-800 transition"
@@ -376,7 +378,7 @@ export const UserManagement: React.FC = () => {
                                                             <UserCheck className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    {!isConsultant && (
+                                                    {canEdit && (
                                                         <button
                                                             onClick={() => openConfirm(user.id, 'delete')}
                                                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition"

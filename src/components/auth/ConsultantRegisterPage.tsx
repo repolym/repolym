@@ -1,4 +1,3 @@
-// src/components/auth/ConsultantRegisterPage.tsx - FIXED (role property now valid)
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,7 +6,7 @@ import { supabase } from '../../config/supabase';
 import { AuthLayout } from './AuthLayout';
 import { formatError } from '../../utils/error-handler';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, UserPlus, X, Eye, EyeOff, Shield } from 'lucide-react';
+import { Mail, Lock, UserPlus, X, Eye, EyeOff, Shield } from 'lucide-react';
 
 export const ConsultantRegisterPage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -15,9 +14,9 @@ export const ConsultantRegisterPage: React.FC = () => {
     const { showToast } = useToast();
     const navigate = useNavigate();
 
-    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +33,6 @@ export const ConsultantRegisterPage: React.FC = () => {
             }
 
             try {
-                // Call the RPC to consume the token
                 const { data, error: rpcError } = await supabase
                     .rpc('consume_consultant_registration_token', { p_token: token });
 
@@ -55,10 +53,14 @@ export const ConsultantRegisterPage: React.FC = () => {
         verifyToken();
     }, [token]);
 
-    // If user already logged in, redirect to dashboard
+    // If user already logged in, redirect to consultant users page
     useEffect(() => {
         if (!isLoading && user) {
-            navigate('/dashboard', { replace: true });
+            if (user.role === 'ai_olympiad_consultant') {
+                navigate('/admin/ai/users', { replace: true });
+            } else {
+                navigate('/dashboard', { replace: true });
+            }
         }
     }, [isLoading, user, navigate]);
 
@@ -69,8 +71,13 @@ export const ConsultantRegisterPage: React.FC = () => {
             return;
         }
 
-        if (!name.trim() || !email.trim() || password.length < 8) {
-            setError('لطفاً تمام اطلاعات را به درستی وارد کنید');
+        if (!email.trim() || password.length < 8) {
+            setError('لطفاً ایمیل و رمز عبور معتبر وارد کنید');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('رمز عبور و تأیید آن مطابقت ندارند');
             return;
         }
 
@@ -78,15 +85,15 @@ export const ConsultantRegisterPage: React.FC = () => {
         setError(null);
 
         try {
-            // Sign up with the consultant role in metadata
+            // Sign up with consultant role - no name, no subjects
             const { requiresEmailConfirmation } = await signUp(
                 email.trim(),
-                name.trim(),
+                'مشاور AI', // placeholder name, will be updated if needed
                 password,
                 {
-                    olympiadId: 'ai', // Consultant is assigned to AI Olympiad
-                    subjects: [], // No subjects needed for consultant
-                    role: 'ai_olympiad_consultant', // This is now valid in OnboardingData
+                    olympiadId: 'ai',
+                    subjects: [],
+                    role: 'ai_olympiad_consultant',
                 }
             );
 
@@ -95,7 +102,7 @@ export const ConsultantRegisterPage: React.FC = () => {
                 navigate('/login', { replace: true });
             } else {
                 showToast('ثبت‌نام با موفقیت انجام شد', 'success');
-                navigate('/dashboard', { replace: true });
+                navigate('/admin/ai/users', { replace: true });
             }
         } catch (err) {
             setError(formatError(err));
@@ -146,23 +153,10 @@ export const ConsultantRegisterPage: React.FC = () => {
                     <h2 className="text-2xl font-bold text-text-primary">ثبت‌نام مشاور المپیاد هوش مصنوعی</h2>
                 </div>
                 <p className="text-sm text-text-secondary mb-8">
-                    با استفاده از این فرم، حساب کاربری مشاور المپیاد هوش مصنوعی ایجاد کنید.
+                    برای ایجاد حساب مشاور، ایمیل و رمز عبور خود را وارد کنید.
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="relative">
-                        <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="نام و نام‌خانوادگی"
-                            required
-                            autoFocus
-                            className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                        />
-                    </div>
-
                     <div className="relative">
                         <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                         <input
@@ -171,6 +165,7 @@ export const ConsultantRegisterPage: React.FC = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="ایمیل"
                             required
+                            autoFocus
                             className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         />
                     </div>
@@ -193,6 +188,18 @@ export const ConsultantRegisterPage: React.FC = () => {
                         >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
+                    </div>
+
+                    <div className="relative">
+                        <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="تأیید رمز عبور"
+                            required
+                            className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        />
                     </div>
 
                     {error && (

@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx - UPDATED with role in OnboardingData
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
@@ -58,13 +57,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', userId)
       .single();
 
+    const updateData: any = {
+      olympiad_id: onboarding.olympiadId,
+      onboarding_completed: true,
+      preferences: { ...(current?.preferences ?? {}), olympiad_id: onboarding.olympiadId },
+    };
+
+    if (onboarding.role === 'ai_olympiad_consultant') {
+      updateData.has_completed_baseline_survey = true;
+      updateData.role = 'ai_olympiad_consultant';
+    }
+
     const { error: updateError } = await supabase
       .from('users')
-      .update({
-        olympiad_id: onboarding.olympiadId,
-        onboarding_completed: true,
-        preferences: { ...(current?.preferences ?? {}), olympiad_id: onboarding.olympiadId },
-      })
+      .update(updateData)
       .eq('id', userId);
 
     if (updateError) throw new Error('خطا در تکمیل ثبت‌نام: ' + updateError.message);

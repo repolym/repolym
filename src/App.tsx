@@ -14,7 +14,6 @@ import { PageLoader } from './components/common/Loading'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 import AdminDashboard from './components/admin/AdminDashboard'
-import AIOlympiadDashboard from './components/admin/AIOlympiadDashboard'
 import { AdminProfile } from './components/admin/AdminProfile'
 import { UserManagement } from './components/admin/UserManagement'
 import { ActivityLog } from './components/admin/ActivityLog'
@@ -48,11 +47,12 @@ const RootHandler: React.FC = () => {
 
   if (!user) return <Navigate to="/login" replace />
 
-  // Consultant users go directly to AI Olympiad dashboard
+  // Consultant users go directly to AI Olympiad users page
   if (user.role === 'ai_olympiad_consultant') {
-    return <Navigate to="/admin/ai-dashboard" replace />
+    return <Navigate to="/admin/ai/users" replace />
   }
 
+  // Student / admin onboarding
   if (!user.onboarding_completed) return <Navigate to="/onboarding" replace />
 
   if (!user.has_completed_baseline_survey) return <Navigate to="/baseline" replace />
@@ -88,7 +88,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode; allowConsultant?: boole
 // ---------- Consultant Layout ----------
 const ConsultantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AuthGuard>
-    <RoleGuard allowedRoles={['ai_olympiad_consultant', 'admin']}>
+    <RoleGuard allowedRoles={['ai_olympiad_consultant']}>
       <DashboardProvider>
         <AppShell>{children}</AppShell>
       </DashboardProvider>
@@ -125,15 +125,10 @@ const App: React.FC = () => {
                   <Route path="/admin/insights" element={<AdminLayout><InsightsPage /></AdminLayout>} />
                   <Route path="/admin/consultant-tokens" element={<AdminLayout><ConsultantTokenManager /></AdminLayout>} />
 
-                  {/* AI Olympiad Consultant Dashboard - Limited access */}
-                  <Route path="/admin/ai-dashboard" element={<ConsultantLayout><AIOlympiadDashboard /></ConsultantLayout>} />
+                  {/* AI Olympiad Consultant - Only users page */}
                   <Route path="/admin/ai/users" element={<ConsultantLayout><UserManagement /></ConsultantLayout>} />
                   <Route path="/admin/ai/users/:userId" element={<ConsultantLayout><UserDetail /></ConsultantLayout>} />
                   <Route path="/admin/ai/users/:userId/session/:sessionId" element={<ConsultantLayout><StudySessionDetails /></ConsultantLayout>} />
-                  <Route path="/admin/ai/olympiads" element={<ConsultantLayout><OlympiadManagement /></ConsultantLayout>} />
-                  <Route path="/admin/ai/anomalies" element={<ConsultantLayout><AnomaliesPage /></ConsultantLayout>} />
-                  <Route path="/admin/ai/insights" element={<ConsultantLayout><InsightsPage /></ConsultantLayout>} />
-                  <Route path="/admin/ai/profile" element={<ConsultantLayout><AdminProfile /></ConsultantLayout>} />
 
                   {/* Onboarding */}
                   <Route

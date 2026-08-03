@@ -21,7 +21,6 @@ import {
   FileText,
   Trophy,
   Sparkles,
-  BarChart3,
   Link as LinkIcon,
 } from 'lucide-react'
 
@@ -68,17 +67,12 @@ const adminNavGroups = [
   },
 ]
 
-// AI Olympiad Consultant navigation (restricted)
+// AI Olympiad Consultant navigation - only Users
 const consultantNavGroups = [
   {
-    label: 'مدیریت المپیاد هوش مصنوعی',
+    label: 'مدیریت دانش‌آموزان',
     items: [
-      { to: '/admin/ai-dashboard', label: 'داشبورد', icon: BarChart3 },
       { to: '/admin/ai/users', label: 'دانش‌آموزان', icon: Users },
-      { to: '/admin/ai/olympiads', label: 'رتبه‌بندی', icon: Trophy },
-      { to: '/admin/ai/anomalies', label: 'ناهنجاری‌ها', icon: Zap },
-      { to: '/admin/ai/insights', label: 'بینش‌ها', icon: Sparkles },
-      { to: '/admin/ai/profile', label: 'پروفایل', icon: UserCog },
     ],
   },
 ]
@@ -125,7 +119,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="flex items-center px-5 py-6 border-b border-border-subtle">
-          <Link to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'} className="flex items-center">
+          <Link to={isConsultant ? '/admin/ai/users' : '/dashboard'} className="flex items-center">
             <img
               src={import.meta.env.BASE_URL + 'logo.png'}
               alt="لوگو"
@@ -173,7 +167,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </nav>
 
         <Link
-          to={isConsultant ? '/admin/ai/profile' : '/profile'}
+          to={isConsultant ? '/admin/ai/users' : '/profile'}
           className="mx-3 mb-4 p-3 rounded-2xl bg-surface-2 border border-border-subtle hover:bg-surface-3 transition-colors block group"
         >
           <div className="flex items-center gap-3">
@@ -197,7 +191,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-border-subtle">
           <div className="flex items-center gap-2">
-            <Link to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'}>
+            <Link to={isConsultant ? '/admin/ai/users' : '/dashboard'}>
               <img
                 src={import.meta.env.BASE_URL + 'logo.png'}
                 alt="لوگو"
@@ -213,12 +207,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
           <div className="flex items-center gap-2">
             <Link
-              to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'}
+              to={isConsultant ? '/admin/ai/users' : '/dashboard'}
               className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
             >
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">
-                {isConsultant ? 'داشبورد' : 'داشبورد'}
+                {isConsultant ? 'دانش‌آموزان' : 'داشبورد'}
               </span>
             </Link>
 
