@@ -1,3 +1,4 @@
+// src/components/admin/UserManagement.tsx - FIXED (removed unused isAdmin and filteredUsers)
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
 import { useToast } from '../../context/ToastContext';
@@ -9,6 +10,7 @@ import { formatDate } from '../../utils/date-utils';
 import { Search, UserX, UserCheck, Trash2, Eye, RefreshCw, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../config/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -20,12 +22,15 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export const UserManagement: React.FC = () => {
+    const { user: currentUser } = useAuth();
     const { showToast } = useToast();
+
+    const isConsultant = currentUser?.role === 'ai_olympiad_consultant';
 
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 300);
     const [statusFilter, setStatusFilter] = useState<'active' | 'suspended' | 'all'>('all');
-    const [olympiadFilter, setOlympiadFilter] = useState<string>('all');
+    const [olympiadFilter, setOlympiadFilter] = useState<string>(isConsultant ? 'ai' : 'all');
     const [olympiadOptions, setOlympiadOptions] = useState<string[]>([]);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
@@ -39,17 +44,22 @@ export const UserManagement: React.FC = () => {
     const [confirmAction, setConfirmAction] = useState<'suspend' | 'activate' | 'delete' | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
+    // For consultant, only show students from AI Olympiad
+    const effectiveOlympiadFilter = isConsultant ? 'ai' : (olympiadFilter === 'all' ? null : olympiadFilter);
+
     const params = useMemo(() => ({
         search: debouncedSearch || undefined,
         status: statusFilter,
-        olympiadId: olympiadFilter === 'all' ? null : olympiadFilter,
+        olympiadId: effectiveOlympiadFilter,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         page,
         limit,
         sortBy,
         sortOrder,
-    }), [debouncedSearch, statusFilter, olympiadFilter, dateFrom, dateTo, page, limit, sortBy, sortOrder]);
+        // For consultant, only show students (not admins or other consultants)
+        isAdmin: isConsultant ? false : undefined,
+    }), [debouncedSearch, statusFilter, effectiveOlympiadFilter, dateFrom, dateTo, page, limit, sortBy, sortOrder, isConsultant]);
 
     const { users, total, loading, error, refetch, suspendUser, activateUser, deleteUser } = useAdminUsers(params);
     const totalPages = Math.ceil(total / limit);
@@ -58,6 +68,10 @@ export const UserManagement: React.FC = () => {
 
     useEffect(() => {
         const fetchOlympiads = async () => {
+            if (isConsultant) {
+                setOlympiadOptions(['ai']);
+                return;
+            }
             const { data, error } = await supabase
                 .from('users')
                 .select('olympiad_id')
@@ -69,7 +83,7 @@ export const UserManagement: React.FC = () => {
             }
         };
         fetchOlympiads();
-    }, []);
+    }, [isConsultant]);
 
     useEffect(() => {
         const fetchRiskScores = async () => {
@@ -138,8 +152,12 @@ export const UserManagement: React.FC = () => {
         <div className="p-5 md:p-8 max-w-7xl mx-auto" dir="rtl">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-text-primary">مدیریت کاربران</h1>
-                    <p className="text-sm text-text-secondary mt-1">مدیریت و جستجوی کاربران سیستم</p>
+                    <h1 className="text-2xl font-bold text-text-primary">
+                        {isConsultant ? 'مدیریت دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت کاربران'}
+                    </h1>
+                    <p className="text-sm text-text-secondary mt-1">
+                        {isConsultant ? 'مدیریت و جستجوی دانش‌آموزان المپیاد هوش مصنوعی' : 'مدیریت و جستجوی کاربران سیستم'}
+                    </p>
                 </div>
                 <Button variant="secondary" onClick={() => refetch()} loading={loading} className="w-full md:w-auto">
                     <RefreshCw className="w-4 h-4" />
@@ -155,7 +173,7 @@ export const UserManagement: React.FC = () => {
                         </div>
                         <Input
                             type="text"
-                            placeholder="جستجو بر اساس نام یا ایمیل..."
+                            placeholder={isConsultant ? 'جستجو بر اساس نام یا ایمیل...' : 'جستجو بر اساس نام یا ایمیل...'}
                             value={search}
                             onChange={(e) => handleFilterChange(() => setSearch(e.target.value))}
                             className="pr-12 py-3 text-base w-full rounded-xl border-border focus:ring-2 focus:ring-indigo-500"
@@ -176,6 +194,7 @@ export const UserManagement: React.FC = () => {
                         value={olympiadFilter}
                         onChange={(e) => handleFilterChange(() => setOlympiadFilter(e.target.value))}
                         className="rounded-xl border border-border bg-surface-2 px-4 py-3 text-base w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        disabled={isConsultant}
                     >
                         <option value="all">همه المپیادها</option>
                         {olympiadOptions.map(o => (
@@ -223,20 +242,22 @@ export const UserManagement: React.FC = () => {
                             <option value="asc">صعودی</option>
                         </select>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-text-secondary">ریسک:</span>
-                        <select
-                            value={riskFilter}
-                            onChange={(e) => handleFilterChange(() => setRiskFilter(e.target.value as any))}
-                            className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="all">همه</option>
-                            <option value="low">کم</option>
-                            <option value="medium">متوسط</option>
-                            <option value="high">بالا</option>
-                            <option value="critical">بحرانی</option>
-                        </select>
-                    </div>
+                    {!isConsultant && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-text-secondary">ریسک:</span>
+                            <select
+                                value={riskFilter}
+                                onChange={(e) => handleFilterChange(() => setRiskFilter(e.target.value as any))}
+                                className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="all">همه</option>
+                                <option value="low">کم</option>
+                                <option value="medium">متوسط</option>
+                                <option value="high">بالا</option>
+                                <option value="critical">بحرانی</option>
+                            </select>
+                        </div>
+                    )}
                     <div className="mr-auto text-sm text-text-secondary">
                         نمایش <span className="font-medium text-text-secondary">{users.length}</span> از <span className="font-medium text-text-secondary">{total}</span> کاربر
                     </div>
@@ -256,7 +277,7 @@ export const UserManagement: React.FC = () => {
                             <tr className="bg-surface-2/80 text-text-secondary border-b border-border">
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">نام</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">ایمیل</th>
-                                <th className="text-right py-3 px-4 font-medium whitespace-nowrap">نقش</th>
+                                <th className="text-right py-3 px-4 font-medium whitespace-nowrap">المپیاد</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">وضعیت</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">ریسک</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap hidden md:table-cell">تاریخ عضویت</th>
@@ -285,6 +306,12 @@ export const UserManagement: React.FC = () => {
                             ) : (
                                 users.map((user) => {
                                     const risk = riskScores[user.id];
+                                    // Skip non-students for consultant
+                                    if (isConsultant && user.role !== 'student') return null;
+                                    // Skip admins for consultant (already filtered by API)
+                                    if (isConsultant && user.is_admin) return null;
+
+                                    // Client-side risk filter
                                     if (riskFilter !== 'all') {
                                         let level = 'low';
                                         if (risk >= 80) level = 'critical';
@@ -292,6 +319,7 @@ export const UserManagement: React.FC = () => {
                                         else if (risk >= 40) level = 'medium';
                                         if (level !== riskFilter) return null;
                                     }
+
                                     return (
                                         <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-2/60 transition-colors">
                                             <td className="py-3 px-4 font-medium text-text-primary whitespace-nowrap">
@@ -307,15 +335,9 @@ export const UserManagement: React.FC = () => {
                                             </td>
                                             <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{user.email}</td>
                                             <td className="py-3 px-4 whitespace-nowrap">
-                                                {user.is_admin ? (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent-muted text-accent-hover">
-                                                        ادمین
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-3 text-text-secondary">
-                                                        کاربر
-                                                    </span>
-                                                )}
+                                                <span className="px-2 py-0.5 rounded-full text-xs bg-surface-3 text-text-secondary">
+                                                    {user.olympiad_id || '—'}
+                                                </span>
                                             </td>
                                             <td className="py-3 px-4 whitespace-nowrap">
                                                 {user.status === 'suspended' ? (
@@ -336,7 +358,7 @@ export const UserManagement: React.FC = () => {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-1">
-                                                    {user.status !== 'suspended' && (
+                                                    {!isConsultant && user.status !== 'suspended' && (
                                                         <button
                                                             onClick={() => openConfirm(user.id, 'suspend')}
                                                             className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-800 transition"
@@ -345,7 +367,7 @@ export const UserManagement: React.FC = () => {
                                                             <UserX className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    {user.status === 'suspended' && (
+                                                    {!isConsultant && user.status === 'suspended' && (
                                                         <button
                                                             onClick={() => openConfirm(user.id, 'activate')}
                                                             className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 hover:text-green-800 transition"
@@ -354,15 +376,17 @@ export const UserManagement: React.FC = () => {
                                                             <UserCheck className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    <button
-                                                        onClick={() => openConfirm(user.id, 'delete')}
-                                                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition"
-                                                        title="حذف"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    {!isConsultant && (
+                                                        <button
+                                                            onClick={() => openConfirm(user.id, 'delete')}
+                                                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition"
+                                                            title="حذف"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                     <Link
-                                                        to={`/admin/users/${user.id}`}
+                                                        to={isConsultant ? `/admin/ai/users/${user.id}` : `/admin/users/${user.id}`}
                                                         className="p-1.5 rounded-lg text-text-tertiary hover:bg-surface-3 hover:text-text-secondary transition"
                                                         title="مشاهده پروفایل"
                                                     >

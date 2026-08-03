@@ -1,8 +1,21 @@
+// src/services/adminService.ts - FIXED (removed unused applyConsultantFilter, fixed scoping)
 import { supabase } from '../config/supabase'
 import type { User, ActivityLog, StudySession } from '../types/database'
 import { formatError } from '../utils/error-handler'
 
 export class AdminServiceError extends Error { }
+
+// Helper to check if current user is consultant
+const isConsultant = async (): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+    const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+    return !error && data?.role === 'ai_olympiad_consultant'
+}
 
 export const adminService = {
     // ---------- Users ----------
@@ -24,6 +37,9 @@ export const adminService = {
         const sortBy = filters?.sortBy || 'created_at'
         const sortOrder = filters?.sortOrder || 'desc'
 
+        // Check if user is consultant
+        const isConsult = await isConsultant()
+
         let query = supabase
             .from('users')
             .select('*', { count: 'exact' })
@@ -36,12 +52,17 @@ export const adminService = {
         if (filters?.status && filters.status !== 'all') {
             query = query.eq('status', filters.status)
         }
-        if (filters?.isAdmin !== undefined) {
+        if (filters?.isAdmin !== undefined && !isConsult) {
             query = query.eq('is_admin', filters.isAdmin)
         }
-        if (filters?.olympiadId) {
+
+        // Consultant only sees AI Olympiad students
+        if (isConsult) {
+            query = query.eq('olympiad_id', 'ai').eq('role', 'student')
+        } else if (filters?.olympiadId) {
             query = query.eq('olympiad_id', filters.olympiadId)
         }
+
         if (filters?.dateFrom) {
             query = query.gte('created_at', filters.dateFrom)
         }
@@ -55,11 +76,18 @@ export const adminService = {
     },
 
     async getUserById(userId: string): Promise<User | null> {
-        const { data, error } = await supabase
+        const isConsult = await isConsultant()
+        let query = supabase
             .from('users')
             .select('*')
             .eq('id', userId)
-            .single()
+
+        if (isConsult) {
+            // Consultant can only see AI Olympiad students
+            query = query.eq('olympiad_id', 'ai').eq('role', 'student')
+        }
+
+        const { data, error } = await query.single()
         if (error) {
             if (error.code === 'PGRST116') return null
             throw new AdminServiceError(formatError(error))
@@ -112,12 +140,28 @@ export const adminService = {
     },
 
     async getUserSessions(userId: string, limit = 50, offset = 0): Promise<StudySession[]> {
-        const { data, error } = await supabase
+        let query = supabase
             .from('study_sessions')
             .select('*, subjects(id, name, color)')
             .eq('user_id', userId)
             .order('date', { ascending: false })
             .range(offset, offset + limit - 1)
+
+        // Consultant check is handled at the route level, but we also check here
+        const isConsult = await isConsultant()
+        if (isConsult) {
+            // Verify the user is in AI Olympiad
+            const { data: userData } = await supabase
+                .from('users')
+                .select('olympiad_id, role')
+                .eq('id', userId)
+                .single()
+            if (!userData || userData.olympiad_id !== 'ai' || userData.role !== 'student') {
+                throw new AdminServiceError('شما دسترسی به این جلسات مطالعه را ندارید')
+            }
+        }
+
+        const { data, error } = await query
         if (error) throw new AdminServiceError(formatError(error))
         return data as StudySession[]
     },
@@ -140,7 +184,6 @@ export const adminService = {
             .update({ status: 'suspended', updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
-        // Log the action
         await this.logActivity(userId, 'suspend_user', { target: userId })
     },
 
@@ -165,7 +208,7 @@ export const adminService = {
     async makeAdmin(userId: string): Promise<void> {
         const { error } = await supabase
             .from('users')
-            .update({ is_admin: true, updated_at: new Date().toISOString() })
+            .update({ is_admin: true, role: 'admin', updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
         await this.logActivity(userId, 'promote_admin', { target: userId })
@@ -184,7 +227,7 @@ export const adminService = {
 
         const { error } = await supabase
             .from('users')
-            .update({ is_admin: false, updated_at: new Date().toISOString() })
+            .update({ is_admin: false, role: 'student', updated_at: new Date().toISOString() })
             .eq('id', userId)
         if (error) throw new AdminServiceError(formatError(error))
         await this.logActivity(userId, 'demote_admin', { target: userId })
@@ -192,6 +235,10 @@ export const adminService = {
 
     // ---------- Activity Logs ----------
     async getActivityLogs(limit = 100): Promise<ActivityLog[]> {
+        // Consultants cannot access activity logs (only admins)
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به لاگ فعالیت‌ها را ندارید')
+        }
         const { data, error } = await supabase
             .from('activity_logs')
             .select('*, users(id, name, email)')
@@ -202,7 +249,6 @@ export const adminService = {
     },
 
     async logActivity(userId: string, action: string, details?: Record<string, unknown>): Promise<void> {
-        // Sanitize details to remove sensitive data
         const safeDetails = details ? { ...details } : {}
         const sensitiveKeys = ['password', 'token', 'secret', 'api_key', 'authorization', 'auth']
         for (const key of sensitiveKeys) {
@@ -229,6 +275,9 @@ export const adminService = {
         recentUsers: User[]
         recentActivity: ActivityLog[]
     }> {
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به این اطلاعات را ندارید')
+        }
         const todayStr = new Date().toISOString().split('T')[0]
         const weekAgo = new Date()
         weekAgo.setDate(weekAgo.getDate() - 7)
@@ -312,6 +361,9 @@ export const adminService = {
 
     // ---------- Chart Data ----------
     async getRegistrationTrend(days = 30): Promise<{ date: string; count: number }[]> {
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به این اطلاعات را ندارید')
+        }
         const start = new Date()
         start.setDate(start.getDate() - days)
         const startStr = start.toISOString().split('T')[0]
@@ -337,6 +389,9 @@ export const adminService = {
     },
 
     async getActivityTrend(days = 30): Promise<{ date: string; activeUsers: number }[]> {
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به این اطلاعات را ندارید')
+        }
         const start = new Date()
         start.setDate(start.getDate() - days)
         const startStr = start.toISOString().split('T')[0]
@@ -361,6 +416,9 @@ export const adminService = {
     },
 
     async getOlympiadParticipation(): Promise<{ olympiad: string; count: number }[]> {
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به این اطلاعات را ندارید')
+        }
         const { data, error } = await supabase
             .from('users')
             .select('olympiad_id')
@@ -375,6 +433,9 @@ export const adminService = {
     },
 
     async getSubmissionTrend(days = 30): Promise<{ date: string; submissions: number }[]> {
+        if (await isConsultant()) {
+            throw new AdminServiceError('شما دسترسی به این اطلاعات را ندارید')
+        }
         const start = new Date()
         start.setDate(start.getDate() - days)
         const startStr = start.toISOString().split('T')[0]
@@ -399,6 +460,32 @@ export const adminService = {
     },
 
     async getTopActiveUsers(limit = 10): Promise<{ user_id: string; name: string; total_minutes: number; sessions_count: number }[]> {
+        if (await isConsultant()) {
+            // For consultant, only show AI Olympiad students
+            const { data: sessions, error } = await supabase
+                .from('study_sessions')
+                .select('user_id, duration_minutes, users(name, olympiad_id, role)')
+                .limit(10000)
+            if (error) throw new AdminServiceError(formatError(error))
+
+            const map = new Map<string, { name: string; total_minutes: number; sessions_count: number }>()
+            sessions?.forEach((s: any) => {
+                const user = s.users
+                if (!user || user.olympiad_id !== 'ai' || user.role !== 'student') return
+                const uid = s.user_id
+                if (!map.has(uid)) {
+                    map.set(uid, { name: user.name || 'ناشناس', total_minutes: 0, sessions_count: 0 })
+                }
+                const entry = map.get(uid)!
+                entry.total_minutes += s.duration_minutes
+                entry.sessions_count += 1
+            })
+            return Array.from(map.entries())
+                .map(([user_id, { name, total_minutes, sessions_count }]) => ({ user_id, name, total_minutes, sessions_count }))
+                .sort((a, b) => b.total_minutes - a.total_minutes)
+                .slice(0, limit)
+        }
+
         const { data, error } = await supabase
             .from('study_sessions')
             .select('user_id, duration_minutes, users(name)')

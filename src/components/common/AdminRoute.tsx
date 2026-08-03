@@ -1,43 +1,57 @@
+// src/components/common/AdminRoute.tsx - UPDATED
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../config/supabase';
 import { PageLoader } from './Loading';
 
-export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AdminRouteProps {
+    children: React.ReactNode;
+    allowConsultant?: boolean;
+}
+
+export const AdminRoute: React.FC<AdminRouteProps> = ({ children, allowConsultant = false }) => {
     const { user, isLoading } = useAuth();
-    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+    const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
-        const verifyAdmin = async () => {
+        const verifyAccess = async () => {
             if (!user) {
-                setIsAdmin(false);
+                setIsAuthorized(false);
                 setChecking(false);
                 return;
             }
+
             try {
-                // Use RLS-protected query
+                // Check if user is admin or consultant (if allowed)
                 const { data, error } = await supabase
                     .from('users')
-                    .select('is_admin')
+                    .select('is_admin, role')
                     .eq('id', user.id)
                     .single();
+
                 if (error || !data) {
-                    setIsAdmin(false);
+                    setIsAuthorized(false);
                 } else {
-                    setIsAdmin(data.is_admin);
+                    const isAdmin = data.is_admin || data.role === 'admin';
+                    const isConsultant = data.role === 'ai_olympiad_consultant';
+                    const authorized = isAdmin || (allowConsultant && isConsultant);
+                    setIsAuthorized(authorized);
                 }
             } catch {
-                setIsAdmin(false);
+                setIsAuthorized(false);
             } finally {
                 setChecking(false);
             }
         };
-        verifyAdmin();
-    }, [user]);
+
+        verifyAccess();
+    }, [user, allowConsultant]);
 
     if (isLoading || checking) return <PageLoader />;
-    if (!user || !isAdmin) return <Navigate to="/dashboard" replace />;
+    if (!user || !isAuthorized) return <Navigate to="/dashboard" replace />;
     return <>{children}</>;
 };
+
+export default AdminRoute;

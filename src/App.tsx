@@ -1,3 +1,4 @@
+// src/App.tsx - UPDATED with new routes
 import React, { Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -8,21 +9,25 @@ import { ThemeProvider } from './context/ThemeContext'
 import { AppShell } from './components/AppShell'
 import { AuthGuard } from './components/common/AuthGuard'
 import { AdminRoute } from './components/common/AdminRoute'
+import { RoleGuard } from './components/common/RoleGuard'
 import { ToastContainer } from './components/common/Toast'
 import { PageLoader } from './components/common/Loading'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 import AdminDashboard from './components/admin/AdminDashboard'
+import AIOlympiadDashboard from './components/admin/AIOlympiadDashboard'
 import { AdminProfile } from './components/admin/AdminProfile'
 import { UserManagement } from './components/admin/UserManagement'
 import { ActivityLog } from './components/admin/ActivityLog'
 import { AdminManagement } from './components/admin/AdminManagement'
 import { UserDetail } from './components/admin/UserDetail'
+import { StudySessionDetails } from './components/admin/StudySessionDetails'
 import { OlympiadManagement } from './components/admin/OlympiadManagement'
 import AnomaliesPage from './pages/admin/AnomaliesPage'
 import InsightsPage from './pages/admin/InsightsPage'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
+import ConsultantRegisterPage from './components/auth/ConsultantRegisterPage'
 import { DashboardPage } from './components/dashboard/DashboardPage'
 import { StudySessionsPage } from './components/study/StudySessionsPage'
 import { GoalsPage } from './components/goals/GoalsPage'
@@ -43,9 +48,19 @@ const RootHandler: React.FC = () => {
 
   if (!user) return <Navigate to="/login" replace />
 
+  // Consultant users go directly to AI Olympiad dashboard
+  if (user.role === 'ai_olympiad_consultant') {
+    return <Navigate to="/admin/ai-dashboard" replace />
+  }
+
   if (!user.onboarding_completed) return <Navigate to="/onboarding" replace />
 
   if (!user.has_completed_baseline_survey) return <Navigate to="/baseline" replace />
+
+  // Admin users go to regular admin dashboard
+  if (user.is_admin || user.role === 'admin') {
+    return <Navigate to="/admin" replace />
+  }
 
   return <Navigate to="/dashboard" replace />
 }
@@ -60,13 +75,24 @@ const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 )
 
 // ---------- Admin Layout ----------
-const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const AdminLayout: React.FC<{ children: React.ReactNode; allowConsultant?: boolean }> = ({ children, allowConsultant = false }) => (
   <AuthGuard>
-    <AdminRoute>
+    <AdminRoute allowConsultant={allowConsultant}>
       <DashboardProvider>
         <AppShell>{children}</AppShell>
       </DashboardProvider>
     </AdminRoute>
+  </AuthGuard>
+)
+
+// ---------- Consultant Layout ----------
+const ConsultantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <AuthGuard>
+    <RoleGuard allowedRoles={['ai_olympiad_consultant', 'admin']}>
+      <DashboardProvider>
+        <AppShell>{children}</AppShell>
+      </DashboardProvider>
+    </RoleGuard>
   </AuthGuard>
 )
 
@@ -83,18 +109,30 @@ const App: React.FC = () => {
                   {/* Public */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/register/consultant/:token" element={<ConsultantRegisterPage />} />
                   <Route path="/public/:userId" element={<PublicStudyPage />} />
 
-                  {/* Admin */}
+                  {/* Admin - Full access */}
                   <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
                   <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
                   <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
                   <Route path="/admin/users/:userId" element={<AdminLayout><UserDetail /></AdminLayout>} />
+                  <Route path="/admin/users/:userId/session/:sessionId" element={<AdminLayout><StudySessionDetails /></AdminLayout>} />
                   <Route path="/admin/logs" element={<AdminLayout><ActivityLog /></AdminLayout>} />
                   <Route path="/admin/admins" element={<AdminLayout><AdminManagement /></AdminLayout>} />
                   <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
                   <Route path="/admin/anomalies" element={<AdminLayout><AnomaliesPage /></AdminLayout>} />
                   <Route path="/admin/insights" element={<AdminLayout><InsightsPage /></AdminLayout>} />
+
+                  {/* AI Olympiad Consultant Dashboard - Limited access */}
+                  <Route path="/admin/ai-dashboard" element={<ConsultantLayout><AIOlympiadDashboard /></ConsultantLayout>} />
+                  <Route path="/admin/ai/users" element={<ConsultantLayout><UserManagement /></ConsultantLayout>} />
+                  <Route path="/admin/ai/users/:userId" element={<ConsultantLayout><UserDetail /></ConsultantLayout>} />
+                  <Route path="/admin/ai/users/:userId/session/:sessionId" element={<ConsultantLayout><StudySessionDetails /></ConsultantLayout>} />
+                  <Route path="/admin/ai/olympiads" element={<ConsultantLayout><OlympiadManagement /></ConsultantLayout>} />
+                  <Route path="/admin/ai/anomalies" element={<ConsultantLayout><AnomaliesPage /></ConsultantLayout>} />
+                  <Route path="/admin/ai/insights" element={<ConsultantLayout><InsightsPage /></ConsultantLayout>} />
+                  <Route path="/admin/ai/profile" element={<ConsultantLayout><AdminProfile /></ConsultantLayout>} />
 
                   {/* Onboarding */}
                   <Route

@@ -1,5 +1,6 @@
+// src/components/admin/UserDetail.tsx - FIXED (removed unused isAdmin)
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { adminAnalyticsService } from '../../services/adminAnalyticsService';
 import { formatDate, formatMinutes, today, daysAgo } from '../../utils/date-utils';
@@ -8,11 +9,12 @@ import { Skeleton } from '../common/Loading';
 import { Avatar, getAvatarUrl } from '../common/Avatar';
 import {
     Mail, Calendar, BookOpen, Award, Activity, ArrowRight,
-    Search, Download, Moon, Smartphone, BarChart3
+    Search, Download, Moon, Smartphone, BarChart3, Eye
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Select } from '../common/Input';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Types
 interface UserDetailType {
@@ -25,7 +27,6 @@ interface UserDetailType {
     status: string;
 }
 
-
 interface SessionDetailType {
     id: string;
     date: string;
@@ -33,6 +34,9 @@ interface SessionDetailType {
     subject_id: string | null;
     subjects: { name: string; color: string } | null;
     activities: string | null;
+    resource?: string | null;
+    question_count?: number | null;
+    tags?: string | null;
 }
 
 interface DailyMetricType {
@@ -45,7 +49,10 @@ interface DailyMetricType {
 
 export const UserDetail: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
+    const { user: currentUser } = useAuth();
     const { showToast } = useToast();
+    const navigate = useNavigate();
+
     const [user, setUser] = useState<UserDetailType | null>(null);
     const [sessions, setSessions] = useState<SessionDetailType[]>([]);
     const [metrics, setMetrics] = useState<DailyMetricType[]>([]);
@@ -58,6 +65,9 @@ export const UserDetail: React.FC = () => {
     const [subjectFilter, setSubjectFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'sessions' | 'metrics'>('sessions');
+
+    // Check if current user is consultant
+    const isConsultant = currentUser?.role === 'ai_olympiad_consultant';
 
     // Get unique subjects for filter
     const subjects = useMemo(() => {
@@ -121,11 +131,23 @@ export const UserDetail: React.FC = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
+                // Check access for consultant
+                if (isConsultant) {
+                    // Verify this user is in AI Olympiad
+                    const userData = await adminService.getUserById(userId);
+                    if (!userData || userData.olympiad_id !== 'ai' || userData.role !== 'student') {
+                        setError('شما دسترسی به این کاربر را ندارید');
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 const [userData, sessionsData, metricsData] = await Promise.all([
                     adminService.getUserById(userId),
                     adminService.getUserSessions(userId, 500, 0),
                     adminAnalyticsService.getUserDailyMetrics(userId, daysAgo(90), today()),
                 ]);
+
                 if (userData) {
                     setUser({
                         id: userData.id,
@@ -144,6 +166,9 @@ export const UserDetail: React.FC = () => {
                     subject_id: s.subject_id,
                     subjects: s.subjects,
                     activities: s.activities,
+                    resource: s.resource,
+                    question_count: s.question_count,
+                    tags: s.tags,
                 })));
                 setMetrics(metricsData || []);
             } catch (err) {
@@ -153,7 +178,7 @@ export const UserDetail: React.FC = () => {
             }
         };
         fetchData();
-    }, [userId]);
+    }, [userId, isConsultant]);
 
     const handleExport = () => {
         const rows = viewMode === 'sessions'
@@ -186,6 +211,10 @@ export const UserDetail: React.FC = () => {
         showToast('خروجی با موفقیت دانلود شد', 'success');
     };
 
+    const handleViewSession = (sessionId: string) => {
+        navigate(`/admin/users/${userId}/session/${sessionId}`);
+    };
+
     if (loading) {
         return (
             <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6">
@@ -203,6 +232,21 @@ export const UserDetail: React.FC = () => {
             <div className="p-5 md:p-8 max-w-4xl mx-auto">
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
                     {error || 'کاربر یافت نشد'}
+                </div>
+                <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
+                    <ArrowRight className="w-4 h-4" />
+                    بازگشت به لیست کاربران
+                </Link>
+            </div>
+        );
+    }
+
+    // Show only students for consultant
+    if (isConsultant && user.olympiad_id !== 'ai') {
+        return (
+            <div className="p-5 md:p-8 max-w-4xl mx-auto">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+                    شما دسترسی به این کاربر را ندارید.
                 </div>
                 <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
                     <ArrowRight className="w-4 h-4" />
@@ -380,11 +424,12 @@ export const UserDetail: React.FC = () => {
                                     <th className="text-right py-3 px-4 font-medium">مدت</th>
                                     <th className="text-right py-3 px-4 font-medium">درس</th>
                                     <th className="text-right py-3 px-4 font-medium">فعالیت‌ها</th>
+                                    <th className="text-right py-3 px-4 font-medium">جزئیات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredSessions.length === 0 ? (
-                                    <tr><td colSpan={4} className="text-center py-8 text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
+                                    <tr><td colSpan={5} className="text-center py-8 text-text-tertiary">هیچ جلسه‌ای با این فیلترها یافت نشد</td></tr>
                                 ) : (
                                     filteredSessions.map(s => (
                                         <tr key={s.id} className="border-b border-border-subtle hover:bg-surface-2/50 transition-colors">
@@ -403,6 +448,15 @@ export const UserDetail: React.FC = () => {
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-xs max-w-xs truncate">{s.activities || '—'}</td>
+                                            <td className="py-3 px-4">
+                                                <button
+                                                    onClick={() => handleViewSession(s.id)}
+                                                    className="p-1.5 rounded-lg text-accent hover:bg-accent-muted transition-colors"
+                                                    title="مشاهده جزئیات کامل"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}

@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+// src/components/AppShell.tsx - FIXED (removed unused isAdminRoute)
+import React, { useState, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Avatar, getAvatarUrl } from './common/Avatar'
@@ -20,8 +21,11 @@ import {
   Shield,
   FileText,
   Trophy,
+  Sparkles,
+  BarChart3,
 } from 'lucide-react'
 
+// Student navigation
 const studentNavGroups = [
   {
     label: 'مدیریت جلسات',
@@ -46,6 +50,7 @@ const studentNavGroups = [
   },
 ]
 
+// Admin navigation (full)
 const adminNavGroups = [
   {
     label: 'مدیریت',
@@ -55,7 +60,24 @@ const adminNavGroups = [
       { to: '/admin/admins', label: 'ادمین‌ها', icon: Shield },
       { to: '/admin/logs', label: 'لاگ فعالیت‌ها', icon: FileText },
       { to: '/admin/olympiads', label: 'المپیادها', icon: Trophy },
+      { to: '/admin/anomalies', label: 'ناهنجاری‌ها', icon: Zap },
+      { to: '/admin/insights', label: 'بینش‌ها', icon: Sparkles },
       { to: '/admin/profile', label: 'پروفایل ادمین', icon: UserCog },
+    ],
+  },
+]
+
+// AI Olympiad Consultant navigation (restricted)
+const consultantNavGroups = [
+  {
+    label: 'مدیریت المپیاد هوش مصنوعی',
+    items: [
+      { to: '/admin/ai-dashboard', label: 'داشبورد', icon: BarChart3 },
+      { to: '/admin/ai/users', label: 'دانش‌آموزان', icon: Users },
+      { to: '/admin/ai/olympiads', label: 'رتبه‌بندی', icon: Trophy },
+      { to: '/admin/ai/anomalies', label: 'ناهنجاری‌ها', icon: Zap },
+      { to: '/admin/ai/insights', label: 'بینش‌ها', icon: Sparkles },
+      { to: '/admin/ai/profile', label: 'پروفایل', icon: UserCog },
     ],
   },
 ]
@@ -66,13 +88,22 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [mobileOpen, setMobileOpen] = useState(false)
   const { theme } = useTheme()
 
-  const navGroups = user?.is_admin ? adminNavGroups : studentNavGroups
+  // Determine navigation based on user role
+  const navGroups = useMemo(() => {
+    if (!user) return []
+    if (user.role === 'ai_olympiad_consultant') return consultantNavGroups
+    if (user.is_admin || user.role === 'admin') return adminNavGroups
+    return studentNavGroups
+  }, [user])
 
   // Determine if logo should be inverted (dark mode)
   const resolvedTheme = theme === 'system'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : theme;
   const invertLogo = resolvedTheme === 'dark';
+
+  // Check if current route is an admin/consultant route
+  const isConsultant = user?.role === 'ai_olympiad_consultant'
 
   return (
     <div className="flex h-screen bg-surface-2 overflow-hidden" dir="rtl">
@@ -93,8 +124,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         `}
       >
         <div className="flex items-center px-5 py-6 border-b border-border-subtle">
-          {/* ✅ لوگو به‌عنوان Link به داشبورد */}
-          <Link to="/dashboard" className="flex items-center">
+          <Link to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'} className="flex items-center">
             <img
               src={import.meta.env.BASE_URL + 'logo.png'}
               alt="لوگو"
@@ -142,7 +172,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </nav>
 
         <Link
-          to="/profile"
+          to={isConsultant ? '/admin/ai/profile' : '/profile'}
           className="mx-3 mb-4 p-3 rounded-2xl bg-surface-2 border border-border-subtle hover:bg-surface-3 transition-colors block group"
         >
           <div className="flex items-center gap-3">
@@ -166,26 +196,29 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-surface-1/80 backdrop-blur-xl border-b border-border-subtle">
           <div className="flex items-center gap-2">
-            {/* ✅ لوگوی هدر هم به داشبورد لینک می‌شود */}
-            <Link to="/dashboard">
+            <Link to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'}>
               <img
                 src={import.meta.env.BASE_URL + 'logo.png'}
                 alt="لوگو"
                 className={`h-8 w-auto transition-all duration-300 ${invertLogo ? 'invert' : ''}`}
               />
             </Link>
-            <span className="text-sm font-bold text-text-secondary hidden sm:inline">علامه حلی 10</span>
+            <span className="text-sm font-bold text-text-secondary hidden sm:inline">
+              {isConsultant ? 'مشاور AI' : 'علامه حلی 10'}
+            </span>
           </div>
 
           <div className="flex-1 flex justify-center"></div>
 
           <div className="flex items-center gap-2">
             <Link
-              to="/dashboard"
+              to={isConsultant ? '/admin/ai-dashboard' : '/dashboard'}
               className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-colors"
             >
               <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">داشبورد</span>
+              <span className="hidden sm:inline">
+                {isConsultant ? 'داشبورد' : 'داشبورد'}
+              </span>
             </Link>
 
             <button

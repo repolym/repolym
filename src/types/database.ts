@@ -1,8 +1,10 @@
+// src/types/database.ts - UPDATED
 export interface User {
   id: string
   email: string
   name: string
   is_admin: boolean
+  role: 'student' | 'admin' | 'ai_olympiad_consultant'
   olympiad_id: string | null
   onboarding_completed: boolean
   has_completed_baseline_survey: boolean
@@ -26,21 +28,30 @@ export interface StudySession {
   id: string;
   user_id: string;
   subject_id: string | null;
+  plan_id: string | null;
   date: string;
   duration_minutes: number;
   activities: string | null;
+  resource: string | null;
+  question_count: number | null;
+  question_difficulty: string | null;
+  estimated_difficulty: number | null;
+  question_type: string | null;
+  tags: string | null;
+  todo_relation: string | null;
   created_at: string;
   updated_at: string;
-  resource?: string | null;
-  question_count?: number | null;
-  question_difficulty?: string | null;
-  estimated_difficulty?: number | null;
-  question_type?: string | null;
-  todo_relation?: string | null;
-  tags?: string | null;
-  plan_id?: string | null;
   plan?: Plan | null;
   subjects?: Subject;
+  // AI conversation fields (if any)
+  ai_prompt?: string | null;
+  ai_response?: string | null;
+  ai_conversation?: Record<string, unknown> | null;
+  // Additional fields
+  phone_hours?: number | null;
+  internal_status?: string | null;
+  metadata?: Record<string, unknown> | null;
+  revision_history?: Record<string, unknown>[] | null;
 }
 
 export interface Goal {
@@ -248,4 +259,14 @@ export interface ActivityLog {
   user_agent: string | null
   created_at: string
   users?: User
+}
+
+export interface ConsultantRegistrationToken {
+  id: string
+  token: string
+  expires_at: string
+  created_at: string
+  used_at: string | null
+  used_by: string | null
+  created_by: string | null
 }

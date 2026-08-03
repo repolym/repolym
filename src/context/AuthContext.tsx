@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx - UPDATED with role in OnboardingData
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
@@ -10,6 +11,7 @@ import type { OlympiadSubject } from '../config/olympiads';
 interface OnboardingData {
   olympiadId: string;
   subjects: OlympiadSubject[];
+  role?: 'student' | 'admin' | 'ai_olympiad_consultant';
 }
 
 interface AuthContextType {
@@ -161,11 +163,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const interval = setInterval(async () => {
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
       if (error || !currentSession) {
-        // session expired, sign out
         await signOut();
         navigate('/login', { replace: true });
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [session]);
 
@@ -208,9 +209,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl,
       };
 
-      // Pass olympiad_id to user metadata if provided, so the trigger can set it
       if (onboarding?.olympiadId) {
         options.data.olympiad_id = onboarding.olympiadId;
+      }
+      if (onboarding?.role) {
+        options.data.role = onboarding.role;
       }
 
       const { data, error } = await supabase.auth.signUp({
