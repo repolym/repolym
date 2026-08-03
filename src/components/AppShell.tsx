@@ -1,4 +1,3 @@
-// src/components/AppShell.tsx - FIXED (removed unused isAdminRoute)
 import React, { useState, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -23,6 +22,7 @@ import {
   Trophy,
   Sparkles,
   BarChart3,
+  Link as LinkIcon,
 } from 'lucide-react'
 
 // Student navigation
@@ -62,6 +62,7 @@ const adminNavGroups = [
       { to: '/admin/olympiads', label: 'المپیادها', icon: Trophy },
       { to: '/admin/anomalies', label: 'ناهنجاری‌ها', icon: Zap },
       { to: '/admin/insights', label: 'بینش‌ها', icon: Sparkles },
+      { to: '/admin/consultant-tokens', label: 'توکن‌های مشاور', icon: LinkIcon },
       { to: '/admin/profile', label: 'پروفایل ادمین', icon: UserCog },
     ],
   },
@@ -102,7 +103,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     : theme;
   const invertLogo = resolvedTheme === 'dark';
 
-  // Check if current route is an admin/consultant route
+  // Check if current user is consultant
   const isConsultant = user?.role === 'ai_olympiad_consultant'
 
   return (

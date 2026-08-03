@@ -1,4 +1,3 @@
-// src/App.tsx - UPDATED with new routes
 import React, { Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -25,6 +24,7 @@ import { StudySessionDetails } from './components/admin/StudySessionDetails'
 import { OlympiadManagement } from './components/admin/OlympiadManagement'
 import AnomaliesPage from './pages/admin/AnomaliesPage'
 import InsightsPage from './pages/admin/InsightsPage'
+import ConsultantTokenManager from './components/admin/ConsultantTokenManager'
 import { LoginPage } from './components/auth/LoginForm'
 import { RegisterPage } from './components/auth/RegisterForm'
 import ConsultantRegisterPage from './components/auth/ConsultantRegisterPage'
@@ -123,6 +123,7 @@ const App: React.FC = () => {
                   <Route path="/admin/olympiads" element={<AdminLayout><OlympiadManagement /></AdminLayout>} />
                   <Route path="/admin/anomalies" element={<AdminLayout><AnomaliesPage /></AdminLayout>} />
                   <Route path="/admin/insights" element={<AdminLayout><InsightsPage /></AdminLayout>} />
+                  <Route path="/admin/consultant-tokens" element={<AdminLayout><ConsultantTokenManager /></AdminLayout>} />
 
                   {/* AI Olympiad Consultant Dashboard - Limited access */}
                   <Route path="/admin/ai-dashboard" element={<ConsultantLayout><AIOlympiadDashboard /></ConsultantLayout>} />
