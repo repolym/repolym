@@ -38,7 +38,8 @@ import FocusMode from './components/focus/FocusMode'
 import PublicStudyPage from './components/public/PublicStudyPage'
 import BaselineSurvey from './components/survey/BaselineSurvey'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
-
+import { StudentMessaging } from './components/messaging/StudentMessaging'
+import { AdminInbox } from './components/messaging/AdminInbox'
 // ---------- Root handler ----------
 const RootHandler: React.FC = () => {
   const { user, isLoading } = useAuth()
@@ -163,7 +164,9 @@ const App: React.FC = () => {
                   <Route path="/planning" element={<StudentLayout><PlanningPage /></StudentLayout>} />
                   <Route path="/todos" element={<StudentLayout><TodosPage /></StudentLayout>} />
                   <Route path="/focus" element={<StudentLayout><FocusMode /></StudentLayout>} />
-
+                  <Route path="/messaging" element={<StudentLayout><StudentMessaging /></StudentLayout>} />
+                  <Route path="/admin/inbox" element={<AdminLayout><AdminInbox /></AdminLayout>} />
+                  <Route path="/admin/tests" element={<AdminLayout><TestsPage /></AdminLayout>} />
                   {/* Root */}
                   <Route path="/" element={<RootHandler />} />
                   <Route path="*" element={<Navigate to="/" replace />} />

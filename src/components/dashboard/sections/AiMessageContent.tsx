@@ -1,3 +1,4 @@
+// src/components/dashboard/sections/AiMessageContent.tsx (complete)
 import React, { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -8,7 +9,6 @@ import { AlertTriangle, Copy, Check } from 'lucide-react'
 import { sanitizeAiResponse } from '../../../utils/ai-response-parser'
 import { useTheme } from '../../../context/ThemeContext'
 
-// Import KaTeX CSS
 import 'katex/dist/katex.min.css'
 
 interface AiMessageContentProps {
@@ -85,9 +85,7 @@ const mathStyles = `
 export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isUser = false }) => {
     const { theme } = useTheme()
 
-    // sanitizeAiResponse به‌طور خودکار normalizer را اعمال می‌کند
     const safeText = useMemo(() => sanitizeAiResponse(content), [content])
-
     const [copiedMessage, setCopiedMessage] = React.useState(false)
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -110,8 +108,6 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ content, isU
         }
     }
 
-    // پیام‌های کاربر هم از Markdown + KaTeX عبور می‌کنند تا فرمول‌ها رندر شوند
-    // اما ظاهر پیام کاربر با AI فرق دارد
     if (isUser) {
         return (
             <div className="relative group">

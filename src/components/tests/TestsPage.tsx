@@ -13,13 +13,14 @@ import { toPersianDigits } from '../../utils/jalali'
 
 export const TestsPage: React.FC = () => {
   const { user } = useAuth()
+  const isAdmin = user?.is_admin || user?.role === 'admin'
   const { showToast } = useToast()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Test | null>(null)
 
-  // Fetch tests from the last 365 days (was 180)
   const { data: tests, loading, error, refetch, createTest, updateTest, deleteTest } = useTests({
-    userId: user?.id ?? null,
+    userId: isAdmin ? null : user?.id ?? null,
+    admin: isAdmin,
     dateFrom: daysAgo(365),
     dateTo: today(),
   })
@@ -35,7 +36,10 @@ export const TestsPage: React.FC = () => {
   const handleUpdate = async (data: TestFormData): Promise<boolean> => {
     if (!editing) return false
     const ok = await updateTest(editing.id, data)
-    if (ok) { showToast('آزمون به‌روزرسانی شد', 'success'); setEditing(null) }
+    if (ok) {
+      showToast('آزمون به‌روزرسانی شد', 'success')
+      setEditing(null)
+    }
     return ok
   }
 
@@ -44,7 +48,10 @@ export const TestsPage: React.FC = () => {
     showToast('آزمون حذف شد', 'success')
   }
 
-  const handleClose = () => { setFormOpen(false); setEditing(null) }
+  const handleClose = () => {
+    setFormOpen(false)
+    setEditing(null)
+  }
 
   if (loading && tests.length === 0) return <PageLoader />
 

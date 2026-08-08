@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Avatar, getAvatarUrl } from './common/Avatar'
 import { useTheme } from '../context/ThemeContext'
-
+import { Mail } from 'lucide-react'
 import {
   Clock,
   Target,
@@ -33,6 +33,12 @@ const studentNavGroups = [
     ],
   },
   {
+    label: 'ارتباط',
+    items: [
+      { to: '/messaging', label: 'ارتباط با ادمین', icon: Mail },
+    ],
+  },
+  {
     label: 'پیشرفت',
     items: [
       { to: '/goals', label: 'اهداف', icon: Target },
@@ -57,6 +63,7 @@ const adminNavGroups = [
       { to: '/admin', label: 'داشبورد', icon: Home },
       { to: '/admin/users', label: 'کاربران', icon: Users },
       { to: '/admin/admins', label: 'ادمین‌ها', icon: Shield },
+      { to: '/admin/inbox', label: 'صندوق پیام‌ها', icon: Mail },
       { to: '/admin/logs', label: 'لاگ فعالیت‌ها', icon: FileText },
       { to: '/admin/olympiads', label: 'المپیادها', icon: Trophy },
       { to: '/admin/anomalies', label: 'ناهنجاری‌ها', icon: Zap },

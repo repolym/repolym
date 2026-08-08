@@ -1,3 +1,4 @@
+// src/components/auth/RegisterForm.tsx (complete)
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -36,15 +37,12 @@ export const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [confirmationSent, setConfirmationSent] = useState(false)
 
-  // اگر کاربر از قبل وارد شده، صفحه ثبت‌نام را نشان نده — مستقیم به داشبورد برو
   useEffect(() => {
     if (!isLoading && user && !confirmationSent) {
       navigate('/dashboard', { replace: true })
     }
   }, [isLoading, user, navigate, confirmationSent])
 
-  // با انتخاب المپیاد، دروس پیش‌فرض همان المپیاد بارگذاری می‌شود؛ کاربر می‌تواند
-  // در مرحلهٔ بعد آن‌ها را شخصی‌سازی کند
   const selectedOlympiad = useMemo(
     () => OLYMPIADS.find((o) => o.id === olympiadId) ?? null,
     [olympiadId]
@@ -151,21 +149,17 @@ export const RegisterPage: React.FC = () => {
     exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -24 : 24 }),
   }
 
-  // مراحل المپیاد/دروس به فضای افقی بیشتری نیاز دارند تا گرید ۱۴ گزینه‌ای
-  // فشرده به نظر نرسد — بقیهٔ مراحل (نام/ایمیل/رمز) با عرض جمع‌وجورتر بهتر است
   const isWideStep = step === 'olympiad' || step === 'subjects'
 
   return (
     <AuthLayout olympiadTheme={selectedOlympiad} wide={isWideStep}>
       <div>
-        {/* نشانگر پیشرفت — هر مرحله فقط یک سؤال */}
         <div className="flex items-center gap-1.5 mb-8">
           {STEPS.map((s, i) => (
             <div
               key={s}
-              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                i <= stepIndex ? 'bg-accent' : 'bg-surface-3'
-              }`}
+              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${i <= stepIndex ? 'bg-accent' : 'bg-surface-3'
+                }`}
             />
           ))}
         </div>
@@ -184,7 +178,7 @@ export const RegisterPage: React.FC = () => {
             {step === 'name' && (
               <div>
                 <h2 className="text-2xl font-bold text-text-primary mb-1">اسمت چیه؟</h2>
-                <p className="text-sm text-text-secondary mb-8">بذار بدونیم چطور صدات کنیم</p>
+                <p className="text-sm text-text-secondary mb-8">بذار بدانیم چطور صدات کنیم</p>
                 <div className="relative">
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
                   <input
@@ -193,7 +187,7 @@ export const RegisterPage: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="نام و نام‌خانوادگی"
                     autoFocus
-                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
                   />
                 </div>
               </div>
@@ -212,7 +206,7 @@ export const RegisterPage: React.FC = () => {
                     placeholder="ایمیل خود را وارد کنید"
                     autoFocus
                     autoComplete="email"
-                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
                   />
                 </div>
               </div>
@@ -231,7 +225,7 @@ export const RegisterPage: React.FC = () => {
                     placeholder="حداقل ۸ کاراکتر"
                     autoFocus
                     autoComplete="new-password"
-                    className="w-full pr-12 pl-12 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-12 pl-12 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
                   />
                   <button
                     type="button"
@@ -258,9 +252,8 @@ export const RegisterPage: React.FC = () => {
                         key={o.id}
                         type="button"
                         onClick={() => chooseOlympiad(o.id)}
-                        className={`relative text-right p-4 rounded-2xl border-2 transition-all overflow-hidden ${
-                          active ? 'border-accent ring-2 ring-indigo-100' : 'border-border hover:border-border-strong'
-                        }`}
+                        className={`relative text-right p-4 rounded-2xl border-2 transition-all overflow-hidden ${active ? 'border-accent ring-2 ring-indigo-100' : 'border-border hover:border-border-strong'
+                          }`}
                       >
                         <div className={`absolute inset-0 bg-gradient-to-br ${o.gradient} opacity-[0.08]`} />
                         <div className="relative">
@@ -317,7 +310,7 @@ export const RegisterPage: React.FC = () => {
                       if (e.key === 'Enter') { e.preventDefault(); addSubject() }
                     }}
                     placeholder="نام درس دلخواه…"
-                    className="w-full pr-4 pl-11 py-3 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pr-4 pl-11 py-3 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
                   />
                   <button
                     type="button"
@@ -336,7 +329,7 @@ export const RegisterPage: React.FC = () => {
           <motion.p
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            role="alert" className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-5"
+            role="alert" className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 mt-5"
           >
             {fieldError || submitError}
           </motion.p>

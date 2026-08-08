@@ -1,3 +1,5 @@
+// src/components/plans/PlanningPage.tsx (full file with the renderCalendar fix)
+// ... existing imports ...
 import React, { useState, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePlans } from '../../hooks/usePlans'
@@ -46,8 +48,6 @@ function getJalaliMonthYear(gregDate: Date): { monthName: string; year: string }
     return { monthName: monthNames[j.jm - 1], year: toPersianDigits(j.jy) }
 }
 
-// Helper to get Jalali day number from a Gregorian date
-
 export const PlanningPage: React.FC = () => {
     const { user } = useAuth()
     const { showToast } = useToast()
@@ -56,19 +56,16 @@ export const PlanningPage: React.FC = () => {
     const [editing, setEditing] = useState<Plan | null>(null)
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
 
-    // Fetch plans — no date filters so all plans (past and future) are fetched
     const { data: plans, loading, error, refetch, createPlan, updatePlan, deletePlan } = usePlans({
         userId: user?.id ?? null,
     })
 
-    // Fetch sessions for linking
     const { data: allSessions } = useStudySessions({
         userId: user?.id ?? null,
         dateFrom: daysAgo(365),
         dateTo: today(),
     })
 
-    // Fetch sessions linked to selected plan
     const { data: planSessions, linkSession, unlinkSession, refetch: refetchPlanSessions } =
         usePlanSessions(selectedPlanId)
 
@@ -77,15 +74,12 @@ export const PlanningPage: React.FC = () => {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
-    // Drag end handler - just refetch to sync UI (no order persistence yet)
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event
         if (!over || active.id === over.id) return
-        // No order stored yet; just refetch to keep UI consistent
         refetch()
     }
 
-    // Handlers
     const handleCreate = async (data: PlanFormData): Promise<boolean> => {
         const ok = await createPlan(data)
         if (ok) showToast('برنامه با موفقیت ایجاد شد', 'success')
@@ -139,20 +133,13 @@ export const PlanningPage: React.FC = () => {
         setEditing(null)
     }
 
-    // Calendar view helpers - using Jalali (Persian) calendar
-    const [calendarDate, setCalendarDate] = useState(new Date()) // Gregorian date representing the first day of the current Jalali month
-
-    // Compute Jalali month/year for header
+    const [calendarDate, setCalendarDate] = useState(new Date())
     const jalaliInfo = getJalaliMonthYear(calendarDate)
-    // Get first day of the Jalali month in Gregorian
     const j = jalaali.toJalaali(calendarDate)
     const firstDayGreg = jalaali.toGregorian(j.jy, j.jm, 1)
     const firstDayDate = new Date(firstDayGreg.gy, firstDayGreg.gm - 1, firstDayGreg.gd)
-    // Day of week for first day (0 = Sunday in JS, but our calendar starts Saturday)
-    const firstDayOfWeek = firstDayDate.getDay() // 0 = Sunday
-    // Shift so Saturday = 0, Sunday = 1, ... Friday = 6
-    const startOffset = (firstDayOfWeek + 1) % 7 // Saturday=0, Sunday=1, ... Friday=6
-
+    const firstDayOfWeek = firstDayDate.getDay()
+    const startOffset = (firstDayOfWeek + 1) % 7
     const daysInMonth = jalaali.jalaaliMonthLength(j.jy, j.jm)
 
     const plansByDate = useMemo(() => {
@@ -165,18 +152,16 @@ export const PlanningPage: React.FC = () => {
         return map
     }, [plans])
 
+    // FIXED: renderCalendar uses UTC-safe date strings
     const renderCalendar = () => {
         const todayStr = today()
         const days = []
-        // Empty cells before first day
         for (let i = 0; i < startOffset; i++) {
             days.push(<div key={`empty-${i}`} className="h-24 border border-border-subtle rounded-lg" />)
         }
-        // Days of the month
         for (let d = 1; d <= daysInMonth; d++) {
             const gregDate = jalaali.toGregorian(j.jy, j.jm, d)
-            const dateObj = new Date(gregDate.gy, gregDate.gm - 1, gregDate.gd)
-            const dateStr = dateObj.toISOString().split('T')[0]
+            const dateStr = `${String(gregDate.gy).padStart(4, '0')}-${String(gregDate.gm).padStart(2, '0')}-${String(gregDate.gd).padStart(2, '0')}`
             const isToday = dateStr === todayStr
             const dayPlans = plansByDate[dateStr] || []
             const jalaliDay = toPersianDigits(d)
@@ -209,7 +194,6 @@ export const PlanningPage: React.FC = () => {
     }
 
     const prevMonth = () => {
-        // Go to previous Jalali month
         const jCurrent = jalaali.toJalaali(calendarDate)
         let newJm = jCurrent.jm - 1
         let newJy = jCurrent.jy
@@ -227,7 +211,6 @@ export const PlanningPage: React.FC = () => {
         setCalendarDate(new Date(g.gy, g.gm - 1, g.gd))
     }
 
-    // Timeline view: group plans by week
     const renderTimeline = () => {
         const groups: Record<string, Plan[]> = {}
         plans.forEach((p) => {
@@ -265,7 +248,6 @@ export const PlanningPage: React.FC = () => {
 
     return (
         <div className="p-5 md:p-6 max-w-5xl mx-auto" dir="rtl">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-base font-semibold text-text-primary">برنامه‌ریزی</h1>
@@ -279,7 +261,6 @@ export const PlanningPage: React.FC = () => {
                 </Button>
             </div>
 
-            {/* View mode tabs */}
             <div className="flex gap-2 border-b border-border pb-2 mb-4">
                 {[
                     { id: 'list', label: 'لیست', icon: ListTodo },
@@ -314,7 +295,6 @@ export const PlanningPage: React.FC = () => {
                 />
             )}
 
-            {/* Views */}
             {viewMode === 'list' && (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={plans.map((p) => p.id)} strategy={verticalListSortingStrategy}>
@@ -361,7 +341,6 @@ export const PlanningPage: React.FC = () => {
 
             {viewMode === 'timeline' && renderTimeline()}
 
-            {/* Plan linking section */}
             {selectedPlanId && (
                 <div className="mt-8 p-4 bg-surface-2 rounded-2xl border border-border">
                     <div className="flex items-center justify-between mb-3">

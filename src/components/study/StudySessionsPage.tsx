@@ -1,3 +1,4 @@
+// src/components/study/StudySessionsPage.tsx (full with GoalProgressManager)
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStudySessions } from '../../hooks/useStudySessions';
@@ -9,6 +10,7 @@ import { SessionCard } from '../sessions/SessionCard';
 import { TodaySummary } from './TodaySummary';
 import { DailyCheckinSection } from './DailyCheckinSection';
 import { HistorySection } from './HistorySection/HistorySection';
+import { GoalProgressManager } from './GoalProgressManager';
 import { Button } from '../common/Button';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '../common/Tabs';
 import { today } from '../../utils/date-utils';
@@ -21,7 +23,6 @@ export const StudySessionsPage: React.FC = () => {
 
     const todayStr = today();
 
-    // Today's sessions
     const {
         data: todaySessions,
         loading: todayLoading,
@@ -35,7 +36,6 @@ export const StudySessionsPage: React.FC = () => {
         dateTo: todayStr,
     });
 
-    // Daily metrics for today
     const { data: dailyMetrics, logDailyMetric } = useDailyMetrics({
         userId: user?.id ?? null,
         dateFrom: todayStr,
@@ -43,12 +43,9 @@ export const StudySessionsPage: React.FC = () => {
     });
     const todayMetric = dailyMetrics[0] || null;
 
-    // Subjects
     const { data: subjects } = useSubjects(user?.id ?? null);
 
-    // Handlers
     const handleCreate = async (data: any) => {
-        // ✅ اطمینان از اینکه subject_id در data وجود دارد
         const ok = await createSession({ ...data, date: todayStr });
         if (ok) {
             showToast('جلسه با موفقیت ثبت شد', 'success');
@@ -86,7 +83,6 @@ export const StudySessionsPage: React.FC = () => {
 
     return (
         <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6" dir="rtl">
-            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary">مطالعات من</h1>
@@ -100,7 +96,6 @@ export const StudySessionsPage: React.FC = () => {
                 </Button>
             </div>
 
-            {/* Tabs: Today | History */}
             <Tabs defaultIndex={0}>
                 <TabList>
                     <Tab>امروز</Tab>
@@ -108,10 +103,8 @@ export const StudySessionsPage: React.FC = () => {
                 </TabList>
                 <TabPanels>
                     <TabPanel>
-                        {/* Today's Summary */}
                         <TodaySummary sessions={todaySessions} loading={todayLoading} />
-
-                        {/* Today's Sessions List */}
+                        <GoalProgressManager />
                         <div className="bg-surface-1 rounded-2xl border border-border shadow-sm p-6 mt-6">
                             <h2 className="text-lg font-bold text-text-primary mb-4">جلسات امروز</h2>
                             {todayLoading ? (
@@ -136,8 +129,6 @@ export const StudySessionsPage: React.FC = () => {
                                 </div>
                             )}
                         </div>
-
-                        {/* Daily Check-in Section */}
                         <div className="mt-6">
                             <DailyCheckinSection
                                 metric={todayMetric}
@@ -146,14 +137,12 @@ export const StudySessionsPage: React.FC = () => {
                             />
                         </div>
                     </TabPanel>
-
                     <TabPanel>
                         <HistorySection userId={user?.id ?? null} subjects={subjects} />
                     </TabPanel>
                 </TabPanels>
             </Tabs>
 
-            {/* Session Form Modal */}
             <SessionForm
                 isOpen={isFormOpen}
                 onClose={handleCloseForm}

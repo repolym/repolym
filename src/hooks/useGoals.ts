@@ -86,7 +86,7 @@ export const useGoals = ({ userId, status = 'active' }: UseGoalsParams) => {
     return true
   }
 
-  const updateGoal = async (id: string, updates: Partial<GoalFormData & { status: Goal['status'] }>): Promise<boolean> => {
+  const updateGoal = async (id: string, updates: Partial<GoalFormData & { manual_progress?: number | null; completed_at?: string | null; status?: Goal['status'] }>): Promise<boolean> => {
     if (!userId) return false
     const { error } = await supabase
       .from('goals')

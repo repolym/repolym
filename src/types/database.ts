@@ -65,6 +65,8 @@ export interface Goal {
   status: 'active' | 'completed' | 'archived'
   created_at: string
   updated_at: string
+  manual_progress?: number | null;
+  completed_at?: string | null;
 }
 
 export interface GoalWithProgress extends Goal {

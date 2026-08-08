@@ -1,3 +1,4 @@
+// src/components/auth/LoginForm.tsx (complete)
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -10,15 +11,12 @@ export const LoginPage: React.FC = () => {
   const { signIn, user, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  // اگر AuthGuard کاربر را از یک صفحهٔ محافظت‌شده به اینجا فرستاده باشد،
-  // بعد از ورود موفق باید همان‌جا برگردد، نه همیشه داشبورد
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // اگر کاربر از قبل وارد شده، صفحه ورود را نشان نده — مستقیم برو
   useEffect(() => {
     if (!isLoading && user) {
       navigate(from, { replace: true })
@@ -67,7 +65,7 @@ export const LoginPage: React.FC = () => {
               autoComplete="email"
               autoFocus
               aria-invalid={!!error}
-              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
             />
           </div>
 
@@ -84,7 +82,7 @@ export const LoginPage: React.FC = () => {
               minLength={6}
               autoComplete="current-password"
               aria-invalid={!!error}
-              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pr-12 pl-4 py-3.5 bg-surface-2 border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-text-primary placeholder-text-tertiary"
             />
           </div>
 
@@ -93,7 +91,7 @@ export const LoginPage: React.FC = () => {
               role="alert"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+              className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-3"
             >
               {error}
             </motion.p>
@@ -103,7 +101,7 @@ export const LoginPage: React.FC = () => {
             type="submit"
             disabled={loading}
             aria-busy={loading}
-            className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+            className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-medium py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             {loading ? (
               <motion.div

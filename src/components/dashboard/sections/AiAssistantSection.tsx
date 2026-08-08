@@ -1,3 +1,4 @@
+// src/components/dashboard/sections/AiAssistantSection.tsx (complete)
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -124,7 +125,28 @@ export const AiAssistantSection: React.FC = () => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error ${response.status}`);
+                let errorText = `HTTP error ${response.status}`;
+                try {
+                    const errJson = await response.json();
+                    errorText = errJson.error || errorText;
+                } catch {
+                    errorText = await response.text();
+                }
+                throw new Error(errorText);
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                // Non-streaming fallback
+                const json = await response.json();
+                if (json.success) {
+                    if (action === 'chat') {
+                        return json.data?.message || 'پاسخی دریافت نشد';
+                    }
+                    return sanitizeAiResponse(JSON.stringify(json.data)) || 'پاسخی دریافت نشد';
+                } else {
+                    throw new Error(json.error || 'Unknown error');
+                }
             }
 
             const reader = response.body?.getReader();
@@ -157,7 +179,7 @@ export const AiAssistantSection: React.FC = () => {
                                 throw new Error(data.message || 'Unknown error');
                             }
                         } catch (e) {
-                            // Ignore parse errors
+                            if (isDev) console.warn('SSE parse error:', e);
                         }
                     }
                 }
@@ -586,7 +608,7 @@ export const AiAssistantSection: React.FC = () => {
                                             key={idx}
                                             onClick={qa.action}
                                             disabled={loading}
-                                            className="flex items-center gap-3 bg-white border border-border hover:border-accent hover:shadow-md rounded-xl px-4 py-3 text-right transition-all disabled:opacity-50"
+                                            className="flex items-center gap-3 bg-surface-1 border border-border hover:border-accent hover:shadow-md rounded-xl px-4 py-3 text-right transition-all disabled:opacity-50"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-indigo-600">
                                                 {qa.icon}
@@ -643,7 +665,7 @@ export const AiAssistantSection: React.FC = () => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="سوال خود را اینجا بنویسید..."
                             disabled={loading}
-                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors disabled:opacity-50 text-right"
+                            className="flex-1 min-w-0 bg-surface-2 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors disabled:opacity-50 text-right placeholder-text-tertiary"
                         />
                         <button
                             type="submit"

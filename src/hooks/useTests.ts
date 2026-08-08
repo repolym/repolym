@@ -7,31 +7,26 @@ interface UseTestsParams {
   userId: string | null
   dateFrom?: string
   dateTo?: string
+  admin?: boolean // if true, fetch all tests (admin only)
 }
 
 const cache = new Map<string, { data: Test[]; timestamp: number }>()
 const CACHE_TTL = 60_000
 
-export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
+export const useTests = ({ userId, dateFrom, dateTo, admin = false }: UseTestsParams) => {
   const [data, setData] = useState<Test[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fetchingRef = useRef(false)
-  const cacheKey = `${userId}|${dateFrom}|${dateTo}`
+  const cacheKey = `${userId}|${dateFrom}|${dateTo}|${admin ? 'admin' : 'user'}`
 
   const fetch = useCallback(async (forceRefresh = false) => {
-    if (!userId) return
-    if (fetchingRef.current) return
-
-    // ✅ Check for valid session before making request
-    // The fetch function already has this at the top:
-    if (!userId) {
+    if (!admin && !userId) {
       setData([])
       setError(null)
       setLoading(false)
       return
     }
-    // Delete the session check entirely – no need to call getSession()
 
     const cached = cache.get(cacheKey)
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -47,8 +42,11 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
       let query = supabase
         .from('tests')
         .select('*, subjects(id, name, color)')
-        .eq('user_id', userId)
         .order('date', { ascending: false })
+
+      if (!admin) {
+        query = query.eq('user_id', userId)
+      }
 
       if (dateFrom) query = query.gte('date', dateFrom)
       if (dateTo) query = query.lte('date', dateTo)
@@ -71,14 +69,14 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
       fetchingRef.current = false
       setLoading(false)
     }
-  }, [userId, dateFrom, dateTo, cacheKey])
+  }, [admin, userId, dateFrom, dateTo, cacheKey])
 
   useEffect(() => {
     fetch()
   }, [fetch])
 
   const createTest = async (formData: TestFormData): Promise<boolean> => {
-    if (!userId) return false
+    if (!userId && !admin) return false
     const { error } = await supabase.from('tests').insert([
       { ...formData, user_id: userId, subject_id: formData.subject_id || null },
     ])
@@ -89,7 +87,7 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
   }
 
   const updateTest = async (id: string, formData: Partial<TestFormData>): Promise<boolean> => {
-    if (!userId) return false
+    if (!userId && !admin) return false
     const { error } = await supabase
       .from('tests')
       .update({ ...formData, updated_at: new Date().toISOString() })
@@ -102,7 +100,7 @@ export const useTests = ({ userId, dateFrom, dateTo }: UseTestsParams) => {
   }
 
   const deleteTest = async (id: string): Promise<boolean> => {
-    if (!userId) return false
+    if (!userId && !admin) return false
     const { error } = await supabase.from('tests').delete().eq('id', id).eq('user_id', userId)
     if (error) throw new Error(formatError(error))
     cache.delete(cacheKey)

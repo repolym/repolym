@@ -1,10 +1,11 @@
-// src/components/admin/ConsultantTokenManager.tsx - FIXED
+// src/components/admin/ConsultantTokenManager.tsx (with olympiad selector)
+// This is the full file with the added select for olympiad.
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../config/supabase';
 import { Button } from '../common/Button';
-import { Input } from '../common/Input';
+import { Input, Select } from '../common/Input';
 import { Skeleton } from '../common/Loading';
 import { formatDate } from '../../utils/date-utils';
 import { toPersianDigits } from '../../utils/jalali';
@@ -17,6 +18,7 @@ import {
     Trash2,
     Shield,
 } from 'lucide-react';
+import { useOlympiadList } from '../../hooks/useOlympiadList';
 
 interface Token {
     id: string;
@@ -28,6 +30,7 @@ interface Token {
     created_by: string | null;
     is_used: boolean;
     is_expired: boolean;
+    olympiad_id?: string | null; // add this line
 }
 
 export const ConsultantTokenManager: React.FC = () => {
@@ -37,9 +40,10 @@ export const ConsultantTokenManager: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
-    const [expiryHours, setExpiryHours] = useState(720); // 30 days default
+    const [expiryHours, setExpiryHours] = useState(720);
+    const [selectedOlympiad, setSelectedOlympiad] = useState<string>('');
+    const { olympiads, loading: olympiadsLoading } = useOlympiadList();
 
-    // Only admins can access this page
     const isAdmin = user?.is_admin || user?.role === 'admin';
 
     const fetchTokens = async () => {
@@ -68,6 +72,7 @@ export const ConsultantTokenManager: React.FC = () => {
             const { data, error } = await supabase.rpc('generate_consultant_registration_token', {
                 p_created_by: user?.id,
                 p_expires_in_hours: expiryHours,
+                p_olympiad_id: selectedOlympiad || null,
             });
 
             if (error) throw error;
@@ -75,7 +80,6 @@ export const ConsultantTokenManager: React.FC = () => {
             showToast('توکن با موفقیت تولید شد', 'success');
             await fetchTokens();
 
-            // Copy the token link automatically
             const token = data as string;
             const link = `${window.location.origin}${import.meta.env.BASE_URL}#/register/consultant/${token}`;
             await navigator.clipboard.writeText(link);
@@ -158,7 +162,6 @@ export const ConsultantTokenManager: React.FC = () => {
                 </Button>
             </div>
 
-            {/* Generate Token Form */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 mb-6">
                 <h2 className="text-lg font-semibold text-text-primary mb-4">تولید توکن جدید</h2>
                 <div className="flex flex-wrap items-end gap-4">
@@ -169,10 +172,25 @@ export const ConsultantTokenManager: React.FC = () => {
                         <Input
                             type="number"
                             min={1}
-                            max={8760} // 1 year
+                            max={8760}
                             value={expiryHours}
                             onChange={(e) => setExpiryHours(Number(e.target.value))}
                             className="w-full"
+                        />
+                    </div>
+                    <div className="flex-1 min-w-[200px]">
+                        <label className="text-xs font-medium text-text-secondary block mb-1.5">
+                            المپیاد
+                        </label>
+                        <Select
+                            value={selectedOlympiad}
+                            onChange={(e) => setSelectedOlympiad(e.target.value)}
+                            options={[
+                                { value: '', label: 'همه المپیادها' },
+                                ...olympiads.map(o => ({ value: o.id, label: o.label }))
+                            ]}
+                            className="w-full"
+                            disabled={olympiadsLoading}
                         />
                     </div>
                     <Button
@@ -195,7 +213,6 @@ export const ConsultantTokenManager: React.FC = () => {
                 </p>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 text-center">
                     <p className="text-2xl font-bold text-text-primary">{toPersianDigits(activeTokens.length)}</p>
@@ -211,7 +228,6 @@ export const ConsultantTokenManager: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tokens Table */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -220,6 +236,7 @@ export const ConsultantTokenManager: React.FC = () => {
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">توکن</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">تاریخ ایجاد</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">انقضا</th>
+                                <th className="text-right py-3 px-4 font-medium whitespace-nowrap">المپیاد</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">وضعیت</th>
                                 <th className="text-right py-3 px-4 font-medium whitespace-nowrap">عملیات</th>
                             </tr>
@@ -227,7 +244,7 @@ export const ConsultantTokenManager: React.FC = () => {
                         <tbody>
                             {tokens.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-8 text-text-tertiary">
+                                    <td colSpan={6} className="text-center py-8 text-text-tertiary">
                                         هیچ توکنی ثبت نشده است.
                                     </td>
                                 </tr>
@@ -255,6 +272,9 @@ export const ConsultantTokenManager: React.FC = () => {
                                             </td>
                                             <td className="py-3 px-4 text-text-secondary text-xs whitespace-nowrap">
                                                 {formatDate(token.expires_at)}
+                                            </td>
+                                            <td className="py-3 px-4 text-text-secondary text-xs whitespace-nowrap">
+                                                {token.olympiad_id || 'همه'}
                                             </td>
                                             <td className="py-3 px-4 whitespace-nowrap">
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
@@ -305,7 +325,7 @@ export const ConsultantTokenManager: React.FC = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    );
+                                    )
                                 })
                             )}
                         </tbody>

@@ -1,4 +1,3 @@
-// src/components/admin/UserDetail.tsx - FIXED (removed unused isAdmin)
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
@@ -15,9 +14,9 @@ import { Button } from '../common/Button';
 import { Select } from '../common/Input';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { PhoneUsageSubmissions } from './PhoneUsageSubmissions';
 
-// Types
-interface UserDetailType {
+type UserDetailType = {
     id: string;
     name: string;
     email: string;
@@ -25,9 +24,9 @@ interface UserDetailType {
     created_at: string;
     preferences: Record<string, unknown> | null;
     status: string;
-}
+};
 
-interface SessionDetailType {
+type SessionDetailType = {
     id: string;
     date: string;
     duration_minutes: number;
@@ -37,15 +36,15 @@ interface SessionDetailType {
     resource?: string | null;
     question_count?: number | null;
     tags?: string | null;
-}
+};
 
-interface DailyMetricType {
+type DailyMetricType = {
     date: string;
     sleep_hours: number | null;
     phone_usage_minutes: number | null;
     bedtime: string | null;
     wake_time: string | null;
-}
+};
 
 export const UserDetail: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
@@ -59,17 +58,14 @@ export const UserDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Filter states
     const [dateFrom, setDateFrom] = useState(daysAgo(30));
     const [dateTo, setDateTo] = useState(today());
     const [subjectFilter, setSubjectFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'sessions' | 'metrics'>('sessions');
 
-    // Check if current user is consultant
     const isConsultant = currentUser?.role === 'ai_olympiad_consultant';
 
-    // Get unique subjects for filter
     const subjects = useMemo(() => {
         const subMap = new Map<string, string>();
         sessions.forEach(s => {
@@ -80,18 +76,11 @@ export const UserDetail: React.FC = () => {
         return Array.from(subMap.entries()).map(([id, name]) => ({ id, name }));
     }, [sessions]);
 
-    // Filtered sessions
     const filteredSessions = useMemo(() => {
         let list = sessions;
-        if (dateFrom) {
-            list = list.filter(s => s.date >= dateFrom);
-        }
-        if (dateTo) {
-            list = list.filter(s => s.date <= dateTo);
-        }
-        if (subjectFilter !== 'all') {
-            list = list.filter(s => s.subject_id === subjectFilter);
-        }
+        if (dateFrom) list = list.filter(s => s.date >= dateFrom);
+        if (dateTo) list = list.filter(s => s.date <= dateTo);
+        if (subjectFilter !== 'all') list = list.filter(s => s.subject_id === subjectFilter);
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             list = list.filter(s =>
@@ -102,19 +91,13 @@ export const UserDetail: React.FC = () => {
         return list.sort((a, b) => b.date.localeCompare(a.date));
     }, [sessions, dateFrom, dateTo, subjectFilter, searchQuery]);
 
-    // Filtered metrics
     const filteredMetrics = useMemo(() => {
         let list = metrics;
-        if (dateFrom) {
-            list = list.filter(m => m.date >= dateFrom);
-        }
-        if (dateTo) {
-            list = list.filter(m => m.date <= dateTo);
-        }
+        if (dateFrom) list = list.filter(m => m.date >= dateFrom);
+        if (dateTo) list = list.filter(m => m.date <= dateTo);
         return list.sort((a, b) => b.date.localeCompare(a.date));
     }, [metrics, dateFrom, dateTo]);
 
-    // Computed stats from filtered data
     const filteredStats = useMemo(() => {
         const totalMinutes = filteredSessions.reduce((sum, s) => sum + s.duration_minutes, 0);
         const totalSessions = filteredSessions.length;
@@ -131,9 +114,7 @@ export const UserDetail: React.FC = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Check access for consultant
                 if (isConsultant) {
-                    // Verify this user is in AI Olympiad
                     const userData = await adminService.getUserById(userId);
                     if (!userData || userData.olympiad_id !== 'ai' || userData.role !== 'student') {
                         setError('شما دسترسی به این کاربر را ندارید');
@@ -141,13 +122,11 @@ export const UserDetail: React.FC = () => {
                         return;
                     }
                 }
-
                 const [userData, sessionsData, metricsData] = await Promise.all([
                     adminService.getUserById(userId),
                     adminService.getUserSessions(userId, 500, 0),
                     adminAnalyticsService.getUserDailyMetrics(userId, daysAgo(90), today()),
                 ]);
-
                 if (userData) {
                     setUser({
                         id: userData.id,
@@ -195,11 +174,9 @@ export const UserDetail: React.FC = () => {
                 m.bedtime || '—',
                 m.wake_time || '—'
             ]);
-
         const headers = viewMode === 'sessions'
             ? ['تاریخ', 'مدت (دقیقه)', 'درس', 'فعالیت‌ها']
             : ['تاریخ', 'ساعت خواب', 'استفاده از گوشی (دقیقه)', 'زمان خواب', 'زمان بیداری'];
-
         const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -241,7 +218,6 @@ export const UserDetail: React.FC = () => {
         );
     }
 
-    // Show only students for consultant
     if (isConsultant && user.olympiad_id !== 'ai') {
         return (
             <div className="p-5 md:p-8 max-w-4xl mx-auto">
@@ -258,7 +234,6 @@ export const UserDetail: React.FC = () => {
 
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6" dir="rtl">
-            {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
@@ -275,7 +250,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* User Info */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex flex-wrap items-center gap-6">
                 <Avatar
                     name={user.name}
@@ -300,7 +274,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                     <p className="text-sm text-text-secondary">کل جلسات</p>
@@ -320,7 +293,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Sleep & Phone Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
@@ -346,7 +318,8 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Filters */}
+            <PhoneUsageSubmissions userId={userId!} />
+
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                 <div className="flex flex-wrap gap-4 items-end">
                     <div className="flex items-center gap-2">
@@ -355,7 +328,7 @@ export const UserDetail: React.FC = () => {
                             type="date"
                             value={dateFrom}
                             onChange={(e) => setDateFrom(e.target.value)}
-                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm text-text-primary"
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -364,7 +337,7 @@ export const UserDetail: React.FC = () => {
                             type="date"
                             value={dateTo}
                             onChange={(e) => setDateTo(e.target.value)}
-                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                            className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm text-text-primary"
                         />
                     </div>
                     <Select
@@ -384,7 +357,7 @@ export const UserDetail: React.FC = () => {
                                 placeholder="جستجو در فعالیت‌ها..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pr-10 px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm"
+                                className="w-full pr-10 px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm text-text-primary placeholder-text-tertiary"
                             />
                         </div>
                     </div>
@@ -413,7 +386,6 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Data Table */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-hidden">
                 <div className="overflow-x-auto">
                     {viewMode === 'sessions' ? (

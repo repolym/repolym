@@ -19,6 +19,14 @@ export interface DailyMetricFormData {
 }
 
 export interface AnalyticsSnapshot {
+    subject_study_analysis: Array<{
+        subject_id: string | null;
+        subject_name: string;
+        color: string;
+        minutes: number;
+        study_status: 'کم‌کاری شده' | 'متعادل' | 'تمرکز بالا';
+        recommendation: string;
+    }>;
     productivity_score: {
         productivity_score: number
         components: {

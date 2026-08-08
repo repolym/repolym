@@ -1,4 +1,4 @@
-// src/components/auth/AuthLayout.tsx (fix logo)
+// src/components/auth/AuthLayout.tsx (complete)
 import React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { TrendingUp, Zap } from 'lucide-react'
@@ -129,7 +129,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, olympiadTheme,
           <div className="lg:hidden mb-8 text-center">
             <img src={import.meta.env.BASE_URL + 'logo.png'} alt="لوگو" className="h-48 w-auto object-contain drop-shadow-2xl" />
           </div>
-          <div className="bg-surface-1/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-500/10 p-8 border border-white/50">
+          <div className="bg-surface-1/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-500/10 p-8 border border-border/50">
             {children}
           </div>
         </motion.div>
