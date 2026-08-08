@@ -126,7 +126,6 @@ export const adminAnalyticsService = {
     async getUserStats(dateRange: { from: string; to: string }, olympiadId: string | null): Promise<{ total: number; active: number }> {
         const { from, to } = dateRange;
 
-        // Build base query for users
         let usersQuery = supabase.from('users').select('id');
         if (olympiadId) {
             usersQuery = usersQuery.eq('olympiad_id', olympiadId);
@@ -136,7 +135,6 @@ export const adminAnalyticsService = {
         if (usersError) throw new Error(usersError.message);
         const allUserIds = allUsers?.map(u => u.id) || [];
 
-        // Get users who have sessions in the date range
         let sessionsQuery = supabase
             .from('study_sessions')
             .select('user_id')
@@ -567,7 +565,6 @@ export const adminAnalyticsService = {
         }));
     },
 
-    // NEW: Get daily metrics for a specific user
     async getUserDailyMetrics(userId: string, from: string, to: string): Promise<DailyMetricType[]> {
         const { data, error } = await supabase
             .from('daily_metrics')
@@ -578,5 +575,66 @@ export const adminAnalyticsService = {
             .order('date', { ascending: false });
         if (error) throw new Error(error.message);
         return data || [];
+    },
+
+    // ===== NEW: Weekly metrics for user detail page =====
+    async getUserWeeklyMetrics(userId: string, weeks: number = 8): Promise<{ weekStart: string; studyMinutes: number; phoneMinutes: number }[]> {
+        const todayStr = today();
+        const startDate = daysAgo(weeks * 7);
+
+        const { data: sessions, error: sessionsError } = await supabase
+            .from('study_sessions')
+            .select('date, duration_minutes')
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', todayStr);
+        if (sessionsError) throw new Error(sessionsError.message);
+
+        const { data: metrics, error: metricsError } = await supabase
+            .from('daily_metrics')
+            .select('date, phone_usage_minutes')
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', todayStr);
+        if (metricsError) throw new Error(metricsError.message);
+
+        const studyMap: Record<string, number> = {};
+        sessions?.forEach(s => {
+            studyMap[s.date] = (studyMap[s.date] || 0) + s.duration_minutes;
+        });
+
+        const phoneMap: Record<string, number> = {};
+        metrics?.forEach(m => {
+            if (m.phone_usage_minutes !== null) {
+                phoneMap[m.date] = (phoneMap[m.date] || 0) + m.phone_usage_minutes;
+            }
+        });
+
+        const result: { weekStart: string; studyMinutes: number; phoneMinutes: number }[] = [];
+        const start = new Date(startDate + 'T00:00:00');
+        const end = new Date(todayStr + 'T00:00:00');
+        const current = new Date(start);
+        const day = current.getDay();
+        const diff = (day === 0 ? 6 : day - 1);
+        current.setDate(current.getDate() - diff);
+
+        while (current <= end) {
+            const weekStart = current.toISOString().split('T')[0];
+            const weekEnd = new Date(current);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            let studyTotal = 0;
+            let phoneTotal = 0;
+            let d = new Date(weekStart + 'T00:00:00');
+            while (d <= weekEnd) {
+                const dateStr = d.toISOString().split('T')[0];
+                studyTotal += studyMap[dateStr] || 0;
+                phoneTotal += phoneMap[dateStr] || 0;
+                d.setDate(d.getDate() + 1);
+            }
+            result.push({ weekStart, studyMinutes: studyTotal, phoneMinutes: phoneTotal });
+            current.setDate(current.getDate() + 7);
+        }
+        return result;
     }
 };

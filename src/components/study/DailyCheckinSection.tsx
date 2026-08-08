@@ -6,6 +6,8 @@ import { calculateSleepHours } from '../../utils/sleep-utils';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../config/supabase';
 import { useToast } from '../../context/ToastContext';
+import { formatDate } from '../../utils/date-utils';
+import { toPersianDigits } from '../../utils/jalali';
 
 interface Props {
     metric: DailyMetric | null;
@@ -22,6 +24,8 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
     const [notes, setNotes] = useState<string>('');
     const [saving, setSaving] = useState(false);
     const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+    const [submissions, setSubmissions] = useState<any[]>([]);
+    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
     useEffect(() => {
         if (metric) {
@@ -29,7 +33,21 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
             setSleepTime(metric.bedtime || '');
             setPhoneMinutes(metric.phone_usage_minutes?.toString() ?? '');
         }
-    }, [metric]);
+        fetchSubmissions();
+    }, [metric, user, date]);
+
+    const fetchSubmissions = async () => {
+        if (!user) return;
+        setLoadingSubmissions(true);
+        const { data, error } = await supabase
+            .from('phone_usage_submissions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', date)
+            .order('created_at', { ascending: false });
+        if (!error) setSubmissions(data || []);
+        setLoadingSubmissions(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,6 +82,7 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
                 if (insertError) throw insertError;
                 showToast('گزارش استفاده از گوشی با موفقیت ثبت شد', 'success');
                 setScreenshotFile(null);
+                await fetchSubmissions();
             }
             showToast('وضعیت امروز با موفقیت ذخیره شد. ✅', 'success');
         } catch (error: any) {
@@ -149,6 +168,34 @@ export const DailyCheckinSection: React.FC<Props> = ({ metric, onSave, date }) =
                     ذخیره وضعیت امروز
                 </Button>
             </form>
+
+            {/* 🟢 Student Feedback: Show submissions */}
+            {!loadingSubmissions && submissions.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-border">
+                    <h3 className="text-sm font-semibold text-text-secondary mb-3">گزارش‌های ارسال‌شده</h3>
+                    <div className="space-y-2">
+                        {submissions.map((sub) => (
+                            <div key={sub.id} className="flex items-center justify-between bg-surface-2 p-3 rounded-xl border border-border-subtle">
+                                <div>
+                                    <p className="text-sm font-medium">تاریخ: {formatDate(sub.date)}</p>
+                                    <p className="text-xs text-text-secondary">گزارش شده: {toPersianDigits(sub.reported_minutes)} دقیقه</p>
+                                    <p className="text-xs text-text-tertiary">
+                                        وضعیت: {sub.status === 'pending' ? 'در انتظار بررسی' : sub.status === 'approved' ? 'تأیید شده ✅' : 'رد شده ❌'}
+                                        {sub.admin_note && <span className="block text-xs text-text-secondary mt-1">یادداشت ادمین: {sub.admin_note}</span>}
+                                    </p>
+                                </div>
+                                {sub.screenshot_path && (
+                                    <img
+                                        src={supabase.storage.from('phone_screenshots').getPublicUrl(sub.screenshot_path).data.publicUrl}
+                                        alt="گزارش"
+                                        className="h-12 w-12 object-cover rounded"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

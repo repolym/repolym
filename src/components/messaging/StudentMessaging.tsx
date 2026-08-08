@@ -39,11 +39,17 @@ export const StudentMessaging: React.FC = () => {
     const [sending, setSending] = useState(false)
 
     const fetchAdmins = async () => {
+        // Query both is_admin = true and role = 'admin'
         const { data, error } = await supabase
             .from('users')
             .select('id, name, email')
-            .eq('is_admin', true)
-        if (error) { showToast('خطا در دریافت لیست ادمین‌ها', 'error') } else { setAdmins(data || []) }
+            .or('is_admin.eq.true,role.eq.admin')
+        if (error) {
+            showToast('خطا در دریافت لیست ادمین‌ها', 'error')
+            console.error(error)
+        } else {
+            setAdmins(data || [])
+        }
     }
 
     const fetchConversations = async () => {
@@ -63,6 +69,7 @@ export const StudentMessaging: React.FC = () => {
             .order('created_at', { ascending: false })
         if (error) {
             showToast('خطا در دریافت مکالمات', 'error')
+            console.error(error)
         } else {
             const convs = (data || []).map((c: any) => ({
                 id: c.id,
@@ -121,6 +128,7 @@ export const StudentMessaging: React.FC = () => {
                     content: message.trim(),
                 })
             if (msgError) throw msgError
+
             showToast('پیام ارسال شد', 'success')
             setMessage('')
             setSubject('')
@@ -128,8 +136,41 @@ export const StudentMessaging: React.FC = () => {
             setPriority('normal')
             setShowNewMessage(false)
             fetchConversations()
+
+            // 🟢 Send email notification to admin
+            try {
+                const admin = admins.find(a => a.id === selectedAdmin)
+                if (admin?.email) {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+                    await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${session?.access_token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            to: admin.email,
+                            subject: `📩 پیام جدید از ${user?.name}`,
+                            html: `
+                                <h2>پیام جدید از دانش‌آموز</h2>
+                                <p><strong>از:</strong> ${user?.name}</p>
+                                <p><strong>موضوع:</strong> ${subject || 'بدون موضوع'}</p>
+                                <p><strong>اولویت:</strong> ${priority}</p>
+                                <p><strong>پیام:</strong><br>${message}</p>
+                                <p><a href="${window.location.origin}${import.meta.env.BASE_URL}#/admin/inbox">مشاهده در داشبورد</a></p>
+                            `
+                        })
+                    })
+                }
+            } catch (emailErr) {
+                console.warn('Email notification failed:', emailErr)
+                // Do not block the user
+            }
+
         } catch (err) {
             showToast('خطا در ارسال پیام', 'error')
+            console.error(err)
         } finally {
             setSending(false)
         }

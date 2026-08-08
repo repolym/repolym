@@ -15,6 +15,16 @@ import { Select } from '../common/Input';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { PhoneUsageSubmissions } from './PhoneUsageSubmissions';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from 'recharts';
 
 type UserDetailType = {
     id: string;
@@ -55,6 +65,7 @@ export const UserDetail: React.FC = () => {
     const [user, setUser] = useState<UserDetailType | null>(null);
     const [sessions, setSessions] = useState<SessionDetailType[]>([]);
     const [metrics, setMetrics] = useState<DailyMetricType[]>([]);
+    const [weeklyData, setWeeklyData] = useState<{ weekStart: string; studyMinutes: number; phoneMinutes: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -122,10 +133,11 @@ export const UserDetail: React.FC = () => {
                         return;
                     }
                 }
-                const [userData, sessionsData, metricsData] = await Promise.all([
+                const [userData, sessionsData, metricsData, weeklyMetrics] = await Promise.all([
                     adminService.getUserById(userId),
                     adminService.getUserSessions(userId, 500, 0),
                     adminAnalyticsService.getUserDailyMetrics(userId, daysAgo(90), today()),
+                    adminAnalyticsService.getUserWeeklyMetrics(userId, 8),
                 ]);
                 if (userData) {
                     setUser({
@@ -150,6 +162,7 @@ export const UserDetail: React.FC = () => {
                     tags: s.tags,
                 })));
                 setMetrics(metricsData || []);
+                setWeeklyData(weeklyMetrics || []);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'خطا در دریافت اطلاعات');
             } finally {
@@ -232,8 +245,34 @@ export const UserDetail: React.FC = () => {
         );
     }
 
+    // Format week start for display (show week number or date range)
+    const formatWeekLabel = (weekStart: string) => {
+        const start = new Date(weekStart + 'T00:00:00');
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        return `${formatDate(weekStart)} - ${formatDate(end.toISOString().split('T')[0])}`;
+    };
+
+    // Custom tooltip for charts
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-surface-1 p-3 rounded-xl shadow-lg border border-border">
+                    <p className="text-xs font-medium text-text-secondary mb-2">{formatWeekLabel(label)}</p>
+                    {payload.map((entry: any, index: number) => (
+                        <p key={index} className="text-xs" style={{ color: entry.color }}>
+                            {entry.name}: {toPersianDigits(Math.round(entry.value))} {entry.name === 'مطالعه' ? 'دقیقه' : 'دقیقه'}
+                        </p>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
         <div className="p-5 md:p-8 max-w-7xl mx-auto space-y-6" dir="rtl">
+            {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
@@ -250,6 +289,7 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* User Info */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6 flex flex-wrap items-center gap-6">
                 <Avatar
                     name={user.name}
@@ -274,6 +314,7 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                     <p className="text-sm text-text-secondary">کل جلسات</p>
@@ -293,6 +334,7 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Sleep & Phone Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4 flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
@@ -318,8 +360,59 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* 🟢 NEW: Weekly Charts Section */}
+            {weeklyData.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Study Chart */}
+                    <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
+                        <h3 className="text-sm font-semibold text-text-secondary mb-4">مطالعه هفتگی</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={weeklyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                    <XAxis
+                                        dataKey="weekStart"
+                                        tickFormatter={(v) => formatDate(v)}
+                                        tick={{ fontSize: 10 }}
+                                        interval={Math.floor(weeklyData.length / 6)}
+                                    />
+                                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => toPersianDigits(Math.round(v))} />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend />
+                                    <Bar dataKey="studyMinutes" name="مطالعه" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Phone Usage Chart */}
+                    <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-6">
+                        <h3 className="text-sm font-semibold text-text-secondary mb-4">استفاده از گوشی (هفتگی)</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={weeklyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                    <XAxis
+                                        dataKey="weekStart"
+                                        tickFormatter={(v) => formatDate(v)}
+                                        tick={{ fontSize: 10 }}
+                                        interval={Math.floor(weeklyData.length / 6)}
+                                    />
+                                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => toPersianDigits(Math.round(v))} />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend />
+                                    <Bar dataKey="phoneMinutes" name="گوشی" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Phone Usage Submissions */}
             <PhoneUsageSubmissions userId={userId!} />
 
+            {/* Filters */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle p-4">
                 <div className="flex flex-wrap gap-4 items-end">
                     <div className="flex items-center gap-2">
@@ -386,6 +479,7 @@ export const UserDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Data Table */}
             <div className="bg-surface-1 rounded-2xl shadow-card border border-border-subtle overflow-hidden">
                 <div className="overflow-x-auto">
                     {viewMode === 'sessions' ? (
