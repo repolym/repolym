@@ -1,3 +1,4 @@
+// src/components/messaging/StudentMessaging.tsx
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../config/supabase'
@@ -39,11 +40,10 @@ export const StudentMessaging: React.FC = () => {
     const [sending, setSending] = useState(false)
 
     const fetchAdmins = async () => {
-        // Query both is_admin = true and role = 'admin'
         const { data, error } = await supabase
             .from('users')
             .select('id, name, email')
-            .or('is_admin.eq.true,role.eq.admin')
+            .eq('is_admin', true)
         if (error) {
             showToast('خطا در دریافت لیست ادمین‌ها', 'error')
             console.error(error)
@@ -97,7 +97,6 @@ export const StudentMessaging: React.FC = () => {
         if (!selectedAdmin || !message.trim()) return
         setSending(true)
         try {
-            // Check if conversation exists
             const { data: existing } = await supabase
                 .from('conversations')
                 .select('id')
@@ -137,7 +136,6 @@ export const StudentMessaging: React.FC = () => {
             setShowNewMessage(false)
             fetchConversations()
 
-            // 🟢 Send email notification to admin
             try {
                 const admin = admins.find(a => a.id === selectedAdmin)
                 if (admin?.email) {
@@ -165,7 +163,6 @@ export const StudentMessaging: React.FC = () => {
                 }
             } catch (emailErr) {
                 console.warn('Email notification failed:', emailErr)
-                // Do not block the user
             }
 
         } catch (err) {
