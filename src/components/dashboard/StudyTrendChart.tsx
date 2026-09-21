@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import type { StudySession } from '../../types/database'
-import { daysAgo, formatDateShort } from '../../utils/date-utils'
+import { formatDateShort, getCurrentJalaliMonthRange, getDaysBetween, today } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import {
     LineChart,
@@ -21,17 +21,15 @@ interface StudyTrendChartProps {
 
 export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, loading }) => {
     const data = useMemo(() => {
-        const last30Days = Array.from({ length: 30 }, (_, i) => {
-            const date = daysAgo(29 - i)
-            return { date, minutes: 0 }
-        })
+        const monthRange = getCurrentJalaliMonthRange()
+        const currentMonthDays = getDaysBetween(monthRange.from, today()).map((date) => ({ date, minutes: 0 }))
 
         const minutesByDate = sessions.reduce<Record<string, number>>((acc, s) => {
             acc[s.date] = (acc[s.date] || 0) + s.duration_minutes
             return acc
         }, {})
 
-        return last30Days.map((day) => ({
+        return currentMonthDays.map((day) => ({
             date: day.date,
             minutes: minutesByDate[day.date] || 0,
         }))
@@ -55,7 +53,7 @@ export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, load
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                         <TrendingUp className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <h3 className="font-semibold text-text-primary">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
+                    <h3 className="font-semibold text-text-primary">روند مطالعه روزانه ماه جاری</h3>
                 </div>
                 <div className="flex flex-col items-center py-12 text-center">
                     <p className="text-text-secondary">هنوز داده‌ای برای نمایش وجود ندارد</p>
@@ -74,7 +72,7 @@ export const StudyTrendChart: React.FC<StudyTrendChartProps> = ({ sessions, load
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-text-primary">روند مطالعه روزانه (۳۰ روز اخیر)</h3>
+                <h3 className="font-semibold text-text-primary">روند مطالعه روزانه ماه جاری</h3>
             </div>
 
             <div className="h-64 w-full">

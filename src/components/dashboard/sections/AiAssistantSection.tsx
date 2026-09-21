@@ -112,6 +112,7 @@ export const AiAssistantSection: React.FC = () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
+            if (!token) throw new Error('جلسه ورود منقضی شده است. لطفاً دوباره وارد شوید.');
 
             const payloadWithComplexity = { ...payload, complexity, stream: true };
 
@@ -168,18 +169,21 @@ export const AiAssistantSection: React.FC = () => {
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
+                        let data: any;
                         try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.type === 'chunk' && data.content) {
-                                fullContent += data.content;
-                                setStreamingContent(fullContent);
-                            } else if (data.type === 'done') {
-                                return fullContent;
-                            } else if (data.type === 'error') {
-                                throw new Error(data.message || 'Unknown error');
-                            }
+                            data = JSON.parse(line.slice(6));
                         } catch (e) {
                             if (isDev) console.warn('SSE parse error:', e);
+                            continue;
+                        }
+
+                        if (data.type === 'chunk' && data.content) {
+                            fullContent += data.content;
+                            setStreamingContent(fullContent);
+                        } else if (data.type === 'done') {
+                            return fullContent || data.content || '';
+                        } else if (data.type === 'error') {
+                            throw new Error(data.message || 'Unknown error');
                         }
                     }
                 }
@@ -205,6 +209,7 @@ export const AiAssistantSection: React.FC = () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
+            if (!token) throw new Error('جلسه ورود منقضی شده است. لطفاً دوباره وارد شوید.');
 
             const payloadWithComplexity = { ...payload, complexity };
 

@@ -2,6 +2,7 @@ import {
   toJalaliLong,
   toJalaliShort,
   formatMinutesPersian,
+  getJalaliMonthRange,
 } from './jalali';
 
 export const toLocalISODate = (d: Date): string => {
@@ -19,6 +20,20 @@ export const daysAgo = (days: number): string => {
   const d = new Date();
   d.setDate(d.getDate() - days);
   return toLocalISODate(d);
+};
+
+export const addDays = (dateStr: string, days: number): string => {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return toLocalISODate(d);
+};
+
+export const getCurrentJalaliMonthRange = (referenceDate: Date = new Date()) =>
+  getJalaliMonthRange(referenceDate);
+
+export const getPreviousJalaliMonthRange = (referenceDate: Date = new Date()) => {
+  const current = getJalaliMonthRange(referenceDate);
+  return getJalaliMonthRange(new Date(addDays(current.from, -1) + 'T00:00:00'));
 };
 
 export const formatDate = (gregorianDate: string | null | undefined): string => {
@@ -72,10 +87,7 @@ export const getWeekEnd = (dateStr?: string): string => {
   return toLocalISODate(d);
 };
 
-export const getMonthStart = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
-};
+export const getMonthStart = (): string => getCurrentJalaliMonthRange().from;
 
 export const isToday = (date: string): boolean => date === today();
 

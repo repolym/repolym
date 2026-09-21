@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase'
 import { queryDeduplicator } from '../utils/query-deduplicator'
-import { today } from '../utils/date-utils'
+import { today, getCurrentJalaliMonthRange, getPreviousJalaliMonthRange } from '../utils/date-utils'
 import type { AnalyticsSnapshot } from '../types/analytics'
 import { logger } from '../utils/logger'
 
@@ -13,7 +13,11 @@ const cacheKey = (userId: string, referenceDate: string) => `analytics|${userId}
 export const analyticsService = {
     async getSnapshot(userId: string, options?: { forceRefresh?: boolean; referenceDate?: string }): Promise<AnalyticsSnapshot> {
         const referenceDate = options?.referenceDate ?? today()
-        const key = cacheKey(userId, referenceDate)
+        const reference = new Date(referenceDate + 'T00:00:00')
+        const currentMonth = getCurrentJalaliMonthRange(reference)
+        const previousMonth = getPreviousJalaliMonthRange(reference)
+        const periodDays = Math.max(1, Math.round((Date.parse(referenceDate) - Date.parse(currentMonth.from)) / 86400000) + 1)
+        const key = cacheKey(userId, `${referenceDate}|${currentMonth.from}`)
 
         if (options?.forceRefresh) {
             queryDeduplicator.invalidate(key)
@@ -26,6 +30,10 @@ export const analyticsService = {
                     p_user_id: userId,
                     p_today: referenceDate,
                     p_force_refresh: options?.forceRefresh ?? false,
+                    p_period_start: currentMonth.from,
+                    p_period_days: periodDays,
+                    p_previous_period_start: previousMonth.from,
+                    p_previous_period_end: previousMonth.to,
                 })
 
                 if (error) {
@@ -42,6 +50,8 @@ export const analyticsService = {
     },
 
     invalidate(userId: string, referenceDate: string = today()) {
-        queryDeduplicator.invalidate(cacheKey(userId, referenceDate))
+        const reference = new Date(referenceDate + 'T00:00:00')
+        const currentMonth = getCurrentJalaliMonthRange(reference)
+        queryDeduplicator.invalidate(cacheKey(userId, `${referenceDate}|${currentMonth.from}`))
     },
 }

@@ -33,7 +33,7 @@ import { useDailyMetrics } from '../../../hooks/useDailyMetrics'
 import { useAuth } from '../../../context/AuthContext'
 import { Skeleton, ErrorMessage, EmptyState } from '../../common/Loading'
 import { toPersianDigits } from '../../../utils/jalali'
-import { formatDateShort, daysAgo, today } from '../../../utils/date-utils'
+import { formatDateShort, getCurrentJalaliMonthRange, today } from '../../../utils/date-utils'
 
 // ---------- Safe Tooltip Components ----------
 const SafeTooltipContent = ({ active, payload, label, unit }: any) => {
@@ -85,13 +85,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const PerformanceSection: React.FC = () => {
     const { user } = useAuth()
     const [timeRange, setTimeRange] = useState<'week' | 'month'>('week')
+    const currentMonth = getCurrentJalaliMonthRange()
 
     // داده‌های تحلیلی (مطالعه و آزمون)
     const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch } =
         usePerformanceAnalytics({ userId: user?.id ?? null })
 
-    // داده‌های روزانه (خواب و گوشی) - ۳۰ روز اخیر
-    const dateFrom = daysAgo(30)
+    // داده‌های روزانه (خواب و گوشی) - ماه جاری شمسی
+    const dateFrom = currentMonth.from
     const dateTo = today()
     const { data: dailyMetrics, loading: dailyLoading, error: dailyError, refetch: refetchDaily } =
         useDailyMetrics({
@@ -413,7 +414,7 @@ const PerformanceSection: React.FC = () => {
                         <BookOpen className="h-5 w-5 text-accent" />
                         <h3 className="text-base font-semibold text-text-primary">تحلیل وضعیت دروس</h3>
                     </div>
-                    <p className="text-xs text-text-secondary mb-6">بر اساس توزیع زمان مطالعه در ۳۰ روز گذشته</p>
+                    <p className="text-xs text-text-secondary mb-6">بر اساس توزیع زمان مطالعه در ماه جاری</p>
 
                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                         {studyAnalysis.length > 0 ? (

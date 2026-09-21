@@ -43,6 +43,44 @@ export const toGregorian = (jalaliStr: string): string => {
     return `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')}`
 }
 
+export interface JalaliMonthRange {
+    year: number
+    month: number
+    monthName: string
+    label: string
+    from: string
+    to: string
+}
+
+const gregorianToISO = (gy: number, gm: number, gd: number): string =>
+    `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`
+
+export const getJalaliParts = (gregorianISODate: string): { jy: number; jm: number; jd: number } => {
+    const date = new Date(gregorianISODate + 'T00:00:00')
+    return jalaali.toJalaali(date)
+}
+
+export const getJalaliMonthRange = (date: Date = new Date()): JalaliMonthRange => {
+    const j = jalaali.toJalaali(date)
+    const lastDay = j.jm <= 6
+        ? 31
+        : j.jm <= 11
+            ? 30
+            : (jalaali.isLeapJalaaliYear(j.jy) ? 30 : 29)
+    const start = jalaali.toGregorian(j.jy, j.jm, 1)
+    const end = jalaali.toGregorian(j.jy, j.jm, lastDay)
+    const monthName = PERSIAN_MONTHS[j.jm - 1]
+
+    return {
+        year: j.jy,
+        month: j.jm,
+        monthName,
+        label: `${monthName} ${toPersianDigits(j.jy)}`,
+        from: gregorianToISO(start.gy, start.gm, start.gd),
+        to: gregorianToISO(end.gy, end.gm, end.gd),
+    }
+}
+
 export const todayJalali = (): string => {
     const now = new Date()
     const j = jalaali.toJalaali(now)

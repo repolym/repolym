@@ -143,22 +143,22 @@ ${mathRules}
     return base + '\n5. Respond in Persian. Use formal, respectful Persian with a touch of warmth.';
 }
 
+export function prepareChatMessages(data: unknown) {
+    const { messages, userId, complexity } = validateChatRequest(data);
+    const requestedLang = detectRequestedLanguage(messages);
+    const systemPrompt = getSmartSystemPrompt(requestedLang || 'persian');
+    const finalMessages = messages.some(m => m.role === 'system')
+        ? messages.map(m => m.role === 'system' ? { role: 'system', content: systemPrompt } : m)
+        : [{ role: 'system', content: systemPrompt }, ...messages];
+
+    return { messages: finalMessages, userId, complexity };
+}
+
 export async function handleChat(data: unknown) {
     try {
-        const { messages, userId, complexity } = validateChatRequest(data);
-        const requestedLang = detectRequestedLanguage(messages);
-        const systemPrompt = getSmartSystemPrompt(requestedLang || 'persian');
+        const { messages: finalMessages, userId, complexity } = prepareChatMessages(data);
 
         const model = complexity === 'advanced' ? 'deepseek-r1' : 'deepseek-chat';
-
-        let finalMessages = messages;
-        const systemIndex = messages.findIndex(m => m.role === 'system');
-        if (systemIndex !== -1) {
-            finalMessages = [...messages];
-            finalMessages[systemIndex] = { role: 'system', content: systemPrompt };
-        } else {
-            finalMessages = [{ role: 'system', content: systemPrompt }, ...messages];
-        }
 
         const result = await chatWithFallback(finalMessages, {
             maxTokens: 1024,

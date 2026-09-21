@@ -14,6 +14,7 @@ import {
   Home,
   UserCog,
   CalendarDays,
+  Archive,
   CheckSquare,
   Zap,
   Users,
@@ -30,6 +31,7 @@ const studentNavGroups = [
     label: 'مدیریت جلسات',
     items: [
       { to: '/study', label: 'مطالعات من', icon: Clock },
+      { to: '/history', label: 'آرشیو ماه‌ها', icon: Archive },
     ],
   },
   {

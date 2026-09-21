@@ -3,7 +3,7 @@ import { useStudySessions } from '../../../hooks/useStudySessions';
 import { Subject, StudySession } from '../../../types/database';
 import { HistoryFilters } from './HistoryFilters';
 import { HistoryList } from './HistoryList';
-import { daysAgo, today } from '../../../utils/date-utils';
+import { today, getCurrentJalaliMonthRange } from '../../../utils/date-utils';
 import { SessionForm } from '../../sessions/SessionForm';
 import { useToast } from '../../../context/ToastContext';
 
@@ -16,7 +16,7 @@ export const HistorySection: React.FC<Props> = ({ userId, subjects }) => {
     const { showToast } = useToast();
 
     const [filters, setFilters] = useState({
-        dateRange: { from: daysAgo(30), to: today() },
+        dateRange: { from: getCurrentJalaliMonthRange().from, to: today() },
         subjectId: null as string | null,
         tags: '',
         search: '',

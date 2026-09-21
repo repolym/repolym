@@ -139,6 +139,10 @@ export class OpenRouterProvider {
                         model: modelId,
                     });
 
+                    if (!result.content?.trim()) {
+                        throw new Error(`OpenRouter returned an empty response for model ${modelId}`);
+                    }
+
                     return {
                         content: result.content,
                         usage: result.usage,
@@ -213,36 +217,39 @@ export class OpenRouterProvider {
         const decoder = new TextDecoder();
         let fullContent = '';
         let usage: any = null;
+        let buffer = '';
+
+        const processLine = (line: string) => {
+            if (!line.startsWith('data: ')) return;
+            const data = line.slice(6).trim();
+            if (!data || data === '[DONE]') return;
+
+            try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                if (delta) {
+                    fullContent += delta;
+                    onChunk?.(delta);
+                }
+                if (parsed.usage) usage = parsed.usage;
+            } catch {
+                // A network chunk can split a JSON line; the outer buffer handles that case.
+            }
+        };
 
         try {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') continue;
-
-                        try {
-                            const parsed = JSON.parse(data);
-                            const delta = parsed.choices?.[0]?.delta?.content;
-                            if (delta) {
-                                fullContent += delta;
-                                onChunk?.(delta);
-                            }
-                            if (parsed.usage) {
-                                usage = parsed.usage;
-                            }
-                        } catch (e) {
-                            // Ignore parse errors for incomplete JSON
-                        }
-                    }
-                }
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split(/\r?\n/);
+                buffer = lines.pop() || '';
+                for (const line of lines) processLine(line);
             }
+
+            buffer += decoder.decode();
+            if (buffer.trim()) processLine(buffer);
         } finally {
             reader.releaseLock();
         }

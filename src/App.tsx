@@ -29,6 +29,7 @@ import { RegisterPage } from './components/auth/RegisterForm'
 import ConsultantRegisterPage from './components/auth/ConsultantRegisterPage'
 import { DashboardPage } from './components/dashboard/DashboardPage'
 import { StudySessionsPage } from './components/study/StudySessionsPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { GoalsPage } from './components/goals/GoalsPage'
 import { TestsPage } from './components/tests/TestsPage'
 import { ProfilePage } from './components/profile/ProfilePage'
@@ -158,6 +159,7 @@ const App: React.FC = () => {
                   {/* Student routes */}
                   <Route path="/dashboard" element={<StudentLayout><DashboardPage /></StudentLayout>} />
                   <Route path="/study" element={<StudentLayout><StudySessionsPage /></StudentLayout>} />
+                  <Route path="/history" element={<StudentLayout><HistoryPage /></StudentLayout>} />
                   <Route path="/goals" element={<StudentLayout><GoalsPage /></StudentLayout>} />
                   <Route path="/tests" element={<StudentLayout><TestsPage /></StudentLayout>} />
                   <Route path="/profile" element={<StudentLayout><ProfilePage /></StudentLayout>} />

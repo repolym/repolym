@@ -1,5 +1,5 @@
 import { logger } from './utils/logger.ts';
-import { handleChat } from './routes/chat.ts';
+import { handleChat, prepareChatMessages } from './routes/chat.ts';
 import { handleAnalyze } from './routes/analyze.ts';
 import { handleRecommend } from './routes/recommend.ts';
 import { handleSummarize } from './routes/summarize.ts';
@@ -29,7 +29,7 @@ function sendSSE(controller: ReadableStreamDefaultController, data: any) {
 }
 
 export async function handleStreamChat(data: any, userId: string) {
-    const { messages, complexity } = data;
+    const { messages, complexity } = prepareChatMessages(data);
 
     const openrouter = new OpenRouterProvider();
     const stream = new ReadableStream({
@@ -38,7 +38,6 @@ export async function handleStreamChat(data: any, userId: string) {
                 sendSSE(controller, { type: 'status', message: 'در حال پردازش...' });
 
                 let fullContent = '';
-                let lastChunkTime = Date.now();
 
                 const result = await openrouter.chatStream(
                     messages,
@@ -49,14 +48,17 @@ export async function handleStreamChat(data: any, userId: string) {
                         onChunk: (chunk: string) => {
                             fullContent += chunk;
                             sendSSE(controller, { type: 'chunk', content: chunk });
-                            lastChunkTime = Date.now();
                         }
                     }
                 );
 
+                if (!result.content?.trim()) {
+                    throw new Error('مدل هوش مصنوعی پاسخ خالی برگرداند.');
+                }
+
                 sendSSE(controller, {
                     type: 'done',
-                    content: fullContent,
+                    content: result.content,
                     model: result.model,
                     usage: result.usage,
                 });

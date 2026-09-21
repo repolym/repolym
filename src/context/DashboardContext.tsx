@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { daysAgo, today } from '../utils/date-utils'
+import { today, getCurrentJalaliMonthRange } from '../utils/date-utils'
 
 interface DateRange {
   from: string
@@ -16,7 +16,7 @@ interface DashboardContextType {
 const STORAGE_KEY = 'olympiad_dashboard_prefs'
 
 const defaultRange = (): DateRange => ({
-  from: daysAgo(90),
+  from: getCurrentJalaliMonthRange().from,
   to: today(),
 })
 
@@ -31,7 +31,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // اگر محدوده ذخیره‌شده مربوط به روز دیگری باشد (مثلاً کاربر یک شب با تب
         // باز مانده)، آن را نادیده می‌گیریم — وگرنه «تا تاریخ» برای همیشه روی
         // یک روز قدیمی ثابت می‌ماند و داده‌های جدید هرگز نمایش داده نمی‌شوند.
-        if (parsed.dateRange?.to === today()) {
+        const currentMonthStart = getCurrentJalaliMonthRange().from
+        if (parsed.dateRange?.to === today() && parsed.dateRange?.from === currentMonthStart) {
           return parsed.dateRange
         }
       }

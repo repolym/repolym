@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import type { StudySession } from '../../types/database'
-import { formatMinutes, getWeekStart, getMonthStart, today } from '../../utils/date-utils'
+import { formatMinutes, getWeekStart, getCurrentJalaliMonthRange, today } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Skeleton } from '../common/Loading'
 import { Clock, TrendingUp, Calendar, Target } from 'lucide-react'
@@ -24,7 +24,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ sessions, loading }) => 
   const stats = useMemo(() => {
     const todayStr = today()
     const weekStart = getWeekStart()
-    const monthStart = getMonthStart()
+    const monthStart = getCurrentJalaliMonthRange().from
 
     const todayMins = sessions.filter((s) => s.date === todayStr).reduce((s, x) => s + x.duration_minutes, 0)
     const weekMins = sessions.filter((s) => s.date >= weekStart).reduce((s, x) => s + x.duration_minutes, 0)
