@@ -1,7 +1,8 @@
 // src/services/leaderboardService.ts
 import { supabase } from '../config/supabase'
 import { queryDeduplicator } from '../utils/query-deduplicator'
-import { today } from '../utils/date-utils'
+import { today, getLeaderboardWindow } from '../utils/date-utils'
+import type { LeaderboardWindowType } from '../utils/date-utils'
 import type { LeaderboardSnapshot } from '../types/leaderboard'
 import { logger } from '../utils/logger'
 
@@ -19,12 +20,12 @@ export const leaderboardService = {
             forceRefresh?: boolean
             referenceDate?: string
             limit?: number
-            window?: string
+            window?: LeaderboardWindowType
             metric?: string
         }
     ): Promise<LeaderboardSnapshot> {
         const referenceDate = options?.referenceDate ?? today()
-        const window = options?.window || 'month'
+        const window: LeaderboardWindowType = options?.window || 'month'
         const metric = options?.metric || 'smart' // composite score by default
         const key = cacheKey(olympiadId, referenceDate, window, metric)
 
@@ -35,12 +36,15 @@ export const leaderboardService = {
         return queryDeduplicator.dedupedQuery<LeaderboardSnapshot>(
             key,
             async () => {
+                const range = getLeaderboardWindow(window, referenceDate)
                 const { data, error } = await supabase.rpc('get_olympiad_leaderboard', {
                     p_olympiad_id: olympiadId,
                     p_today: referenceDate,
                     p_limit: options?.limit ?? 50,
                     p_window_type: window,
                     p_metric: metric, // include metric to avoid ambiguity
+                    p_window_start: range.start,
+                    p_window_end: range.end,
                 })
 
                 if (error) {
@@ -56,7 +60,7 @@ export const leaderboardService = {
         )
     },
 
-    invalidate(olympiadId: string, referenceDate: string = today(), window: string = 'month', metric: string = 'smart') {
+    invalidate(olympiadId: string, referenceDate: string = today(), window: LeaderboardWindowType = 'month', metric: string = 'smart') {
         queryDeduplicator.invalidate(cacheKey(olympiadId, referenceDate, window, metric))
     },
 }

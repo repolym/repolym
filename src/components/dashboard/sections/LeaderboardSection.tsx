@@ -15,6 +15,8 @@ import {
     AlertCircle
 } from 'lucide-react'
 import { toPersianDigits } from '../../../utils/jalali'
+import { today, getLeaderboardWindow, getCurrentJalaliMonthRange } from '../../../utils/date-utils'
+import type { LeaderboardWindowType } from '../../../utils/date-utils'
 import { Avatar } from '../../common/Avatar'
 
 interface LeaderboardSectionProps {
@@ -82,21 +84,24 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
     const [error, setError] = useState<string | null>(null)
     const [scope, setScope] = useState<'my_olympiad' | 'global'>('my_olympiad')
     const [activeTab, setActiveTab] = useState<TabId>('study')
-    const [windowType, setWindowType] = useState<'today' | 'week' | 'month' | 'all'>('month')
+    const [windowType, setWindowType] = useState<LeaderboardWindowType>('month')
 
     const fetchLeaderboard = async () => {
         try {
             setLoading(true)
             setError(null)
             const targetOlympiad = scope === 'my_olympiad' ? olympiadId : null
-            const todayStr = new Date().toISOString().split('T')[0]
+            const todayStr = today()
+            const range = getLeaderboardWindow(windowType, todayStr)
 
             const { data, error } = await supabase.rpc('get_olympiad_leaderboard', {
                 p_olympiad_id: targetOlympiad,
                 p_today: todayStr,
                 p_limit: 50,
                 p_window_type: windowType,
-                p_metric: activeTab
+                p_metric: activeTab,
+                p_window_start: range.start,
+                p_window_end: range.end
             })
 
             if (error) throw error
@@ -152,7 +157,14 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
         return rankIndex < 3 ? titles[rankIndex] : titles[3]
     }
 
-    const periodLabels = { today: 'امروز', week: 'این هفته', month: 'این ماه', all: 'همه زمان‌ها' }
+    const currentMonthName = getCurrentJalaliMonthRange().monthName
+    const periodLabels: Record<LeaderboardWindowType, string> = {
+        today: 'امروز',
+        yesterday: 'دیروز',
+        week: 'این هفته',
+        month: currentMonthName,
+        all: 'همه زمان‌ها'
+    }
 
     if (error) {
         return (
@@ -209,12 +221,13 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userId, 
                 <div className="flex items-center gap-2">
                     <select
                         value={windowType}
-                        onChange={(e) => setWindowType(e.target.value as any)}
+                        onChange={(e) => setWindowType(e.target.value as LeaderboardWindowType)}
                         className="bg-surface-2 border border-border rounded-lg px-3 py-1.5 text-xs font-bold text-text-secondary outline-none cursor-pointer"
                     >
                         <option value="today">امروز</option>
-                        <option value="week">هفته اخیر</option>
-                        <option value="month">ماه اخیر</option>
+                        <option value="yesterday">دیروز</option>
+                        <option value="week">این هفته (از شنبه)</option>
+                        <option value="month">این ماه ({currentMonthName})</option>
                         <option value="all">همه زمان‌ها</option>
                     </select>
 

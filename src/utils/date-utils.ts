@@ -89,6 +89,42 @@ export const getWeekEnd = (dateStr?: string): string => {
 
 export const getMonthStart = (): string => getCurrentJalaliMonthRange().from;
 
+// ---------------------------------------------------------------------------
+// بازه‌های لیدربورد
+// ---------------------------------------------------------------------------
+export type LeaderboardWindowType = 'today' | 'yesterday' | 'week' | 'month' | 'all';
+
+// شروع هفته در تقویم ایران: شنبه
+export const getSaturdayWeekStart = (dateStr: string = today()): string => {
+  const d = new Date(dateStr + 'T00:00:00');
+  const daysSinceSaturday = (d.getDay() + 1) % 7; // شنبه=۰ ، یکشنبه=۱ ، ... ، جمعه=۶
+  d.setDate(d.getDate() - daysSinceSaturday);
+  return toLocalISODate(d);
+};
+
+export const getLeaderboardWindow = (
+  windowType: LeaderboardWindowType,
+  referenceDate: string = today()
+): { start: string; end: string } => {
+  switch (windowType) {
+    case 'today':
+      return { start: referenceDate, end: referenceDate };
+    case 'yesterday': {
+      const yesterday = addDays(referenceDate, -1);
+      return { start: yesterday, end: yesterday };
+    }
+    case 'week':
+      return { start: getSaturdayWeekStart(referenceDate), end: referenceDate };
+    case 'month':
+      return {
+        start: getJalaliMonthRange(new Date(referenceDate + 'T00:00:00')).from,
+        end: referenceDate,
+      };
+    default:
+      return { start: '2000-01-01', end: referenceDate };
+  }
+};
+
 export const isToday = (date: string): boolean => date === today();
 
 export const isSameDay = (date1: string, date2: string): boolean => date1 === date2;

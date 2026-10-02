@@ -5,10 +5,11 @@ import type { LeaderboardSnapshot } from '../types/leaderboard'
 import { formatError } from '../utils/error-handler'
 import { logger } from '../utils/logger'
 import { today } from '../utils/date-utils'
+import type { LeaderboardWindowType } from '../utils/date-utils'
 
 interface UseLeaderboardParams {
     olympiadId: string | null
-    window?: 'today' | 'week' | 'month' | 'all'
+    window?: LeaderboardWindowType
     limit?: number
     metric?: string // 'study' | 'consistency' | 'sleep' | 'phone' | 'smart'
 }
