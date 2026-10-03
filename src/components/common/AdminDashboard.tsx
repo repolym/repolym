@@ -241,7 +241,7 @@ export const AdminDashboard: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatMinutes(v)} />
-                <Tooltip formatter={(value: any) => formatMinutes(value)} labelFormatter={(label) => formatDate(label)} />
+                <Tooltip formatter={(value: any) => formatMinutes(value)} labelFormatter={(label: any) => formatDate(String(label))} />
                 <Area type="monotone" dataKey="minutes" stroke="#6366f1" fill="url(#studyGradient)" strokeWidth={2} />
                 <Line type="monotone" dataKey="average" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 5" />
               </AreaChart>

@@ -90,7 +90,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { user } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { theme } = useTheme()
+  const { effectiveTheme } = useTheme()
 
   // Determine navigation based on user role
   const navGroups = useMemo(() => {
@@ -101,10 +101,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, [user])
 
   // Determine if logo should be inverted (dark mode)
-  const resolvedTheme = theme === 'system'
-    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : theme;
-  const invertLogo = resolvedTheme === 'dark';
+  const invertLogo = effectiveTheme === 'dark';
 
   // Check if current user is consultant
   const isConsultant = user?.role === 'ai_olympiad_consultant'

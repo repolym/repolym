@@ -67,12 +67,23 @@ const RootHandler: React.FC = () => {
   return <Navigate to="/dashboard" replace />
 }
 
+// Consultants have no student pages: send them back to their own area
+const NotForConsultant: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth()
+  if (user?.role === 'ai_olympiad_consultant') {
+    return <Navigate to="/admin/ai/users" replace />
+  }
+  return <>{children}</>
+}
+
 // ---------- Student Layout ----------
 const StudentLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AuthGuard>
-    <DashboardProvider>
-      <AppShell>{children}</AppShell>
-    </DashboardProvider>
+    <NotForConsultant>
+      <DashboardProvider>
+        <AppShell>{children}</AppShell>
+      </DashboardProvider>
+    </NotForConsultant>
   </AuthGuard>
 )
 
@@ -102,8 +113,8 @@ const ConsultantLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 const App: React.FC = () => {
   return (
     <HashRouter>
-      <ThemeProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
           <ToastProvider>
             <ErrorBoundary>
               <AnimatePresence mode="wait">
@@ -127,7 +138,8 @@ const App: React.FC = () => {
                   <Route path="/admin/insights" element={<AdminLayout><InsightsPage /></AdminLayout>} />
                   <Route path="/admin/consultant-tokens" element={<AdminLayout><ConsultantTokenManager /></AdminLayout>} />
 
-                  {/* AI Olympiad Consultant - Only users page */}
+                  {/* AI Olympiad Consultant - read-only student pages */}
+                  <Route path="/admin/ai" element={<Navigate to="/admin/ai/users" replace />} />
                   <Route path="/admin/ai/users" element={<ConsultantLayout><UserManagement /></ConsultantLayout>} />
                   <Route path="/admin/ai/users/:userId" element={<ConsultantLayout><UserDetail /></ConsultantLayout>} />
                   <Route path="/admin/ai/users/:userId/session/:sessionId" element={<ConsultantLayout><StudySessionDetails /></ConsultantLayout>} />
@@ -177,8 +189,8 @@ const App: React.FC = () => {
             </ErrorBoundary>
             <ToastContainer />
           </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </HashRouter>
   )
 }

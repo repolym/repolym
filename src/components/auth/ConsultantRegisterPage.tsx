@@ -34,7 +34,7 @@ export const ConsultantRegisterPage: React.FC = () => {
 
             try {
                 const { data, error: rpcError } = await supabase
-                    .rpc('consume_consultant_registration_token', { p_token: token });
+                    .rpc('check_consultant_registration_token', { p_token: token });
 
                 if (rpcError) {
                     console.error('Token verification error:', rpcError);
@@ -85,7 +85,8 @@ export const ConsultantRegisterPage: React.FC = () => {
         setError(null);
 
         try {
-            // Sign up with consultant role - no name, no subjects
+            // The token is consumed and the consultant role is granted by the
+            // database when the account is created (works with email confirmation too).
             const { requiresEmailConfirmation } = await signUp(
                 email.trim(),
                 'مشاور AI', // placeholder name, will be updated if needed
@@ -93,7 +94,7 @@ export const ConsultantRegisterPage: React.FC = () => {
                 {
                     olympiadId: 'ai',
                     subjects: [],
-                    role: 'ai_olympiad_consultant',
+                    consultantToken: token,
                 }
             );
 
@@ -105,8 +106,13 @@ export const ConsultantRegisterPage: React.FC = () => {
                 navigate('/admin/ai/users', { replace: true });
             }
         } catch (err) {
-            setError(formatError(err));
-            showToast(formatError(err), 'error');
+            const raw = err instanceof Error ? err.message : String(err);
+            // The database rejects an unknown / used / expired token with a generic error
+            const message = /database error|consultant registration token/i.test(raw)
+                ? 'این لینک ثبت‌نام معتبر نیست یا قبلاً استفاده شده است'
+                : formatError(err);
+            setError(message);
+            showToast(message, 'error');
         } finally {
             setLoading(false);
         }

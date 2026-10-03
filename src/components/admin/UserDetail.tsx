@@ -15,6 +15,7 @@ import { Select } from '../common/Input';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { PhoneUsageSubmissions } from './PhoneUsageSubmissions';
+import { StudentExtraDetails } from './StudentExtraDetails';
 import {
     BarChart,
     Bar,
@@ -69,13 +70,15 @@ export const UserDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [dateFrom, setDateFrom] = useState(daysAgo(30));
+    const isConsultant = currentUser?.role === 'ai_olympiad_consultant';
+    const basePath = isConsultant ? '/admin/ai/users' : '/admin/users';
+
+    // Consultants start with the full history; admins keep the last 30 days
+    const [dateFrom, setDateFrom] = useState(isConsultant ? '' : daysAgo(30));
     const [dateTo, setDateTo] = useState(today());
     const [subjectFilter, setSubjectFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'sessions' | 'metrics'>('sessions');
-
-    const isConsultant = currentUser?.role === 'ai_olympiad_consultant';
 
     const subjects = useMemo(() => {
         const subMap = new Map<string, string>();
@@ -133,11 +136,23 @@ export const UserDetail: React.FC = () => {
                         return;
                     }
                 }
+                // Page through all sessions (the API returns at most 1000 rows per request)
+                const fetchAllSessions = async () => {
+                    const pageSize = 1000;
+                    const all: any[] = [];
+                    for (let offset = 0; offset < 20000; offset += pageSize) {
+                        const chunk = await adminService.getUserSessions(userId, pageSize, offset);
+                        all.push(...chunk);
+                        if (chunk.length < pageSize) break;
+                    }
+                    return all;
+                };
+
                 const [userData, sessionsData, metricsData, weeklyMetrics] = await Promise.all([
                     adminService.getUserById(userId),
-                    adminService.getUserSessions(userId, 500, 0),
-                    adminAnalyticsService.getUserDailyMetrics(userId, daysAgo(90), today()),
-                    adminAnalyticsService.getUserWeeklyMetrics(userId, 8),
+                    fetchAllSessions(),
+                    adminAnalyticsService.getUserDailyMetrics(userId, isConsultant ? '2000-01-01' : daysAgo(90), today()),
+                    adminAnalyticsService.getUserWeeklyMetrics(userId, isConsultant ? 16 : 8),
                 ]);
                 if (userData) {
                     setUser({
@@ -202,7 +217,7 @@ export const UserDetail: React.FC = () => {
     };
 
     const handleViewSession = (sessionId: string) => {
-        navigate(`/admin/users/${userId}/session/${sessionId}`);
+        navigate(`${basePath}/${userId}/session/${sessionId}`);
     };
 
     if (loading) {
@@ -223,7 +238,7 @@ export const UserDetail: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
                     {error || 'کاربر یافت نشد'}
                 </div>
-                <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
+                <Link to={basePath} className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
                     <ArrowRight className="w-4 h-4" />
                     بازگشت به لیست کاربران
                 </Link>
@@ -237,7 +252,7 @@ export const UserDetail: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
                     شما دسترسی به این کاربر را ندارید.
                 </div>
-                <Link to="/admin/users" className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
+                <Link to={basePath} className="mt-4 inline-flex items-center gap-2 text-accent hover:text-accent-hover">
                     <ArrowRight className="w-4 h-4" />
                     بازگشت به لیست کاربران
                 </Link>
@@ -276,7 +291,7 @@ export const UserDetail: React.FC = () => {
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold text-text-primary">پروفایل کاربر</h1>
-                    <Link to="/admin/users" className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
+                    <Link to={basePath} className="text-sm text-accent hover:text-accent-hover flex items-center gap-1">
                         <ArrowRight className="w-4 h-4" />
                         بازگشت
                     </Link>
@@ -433,6 +448,24 @@ export const UserDetail: React.FC = () => {
                             className="px-3 py-2 border border-border rounded-xl bg-surface-2 text-sm text-text-primary"
                         />
                     </div>
+                    <div className="flex gap-1 bg-surface-3 p-1 rounded-xl">
+                        {[
+                            { label: 'همه', from: '' },
+                            { label: '۷ روز', from: daysAgo(7) },
+                            { label: '۳۰ روز', from: daysAgo(30) },
+                            { label: '۹۰ روز', from: daysAgo(90) },
+                        ].map(r => (
+                            <button
+                                key={r.label}
+                                onClick={() => { setDateFrom(r.from); setDateTo(today()); }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${dateFrom === r.from
+                                    ? 'bg-surface-1 text-accent shadow-sm'
+                                    : 'text-text-secondary hover:text-text-primary'}`}
+                            >
+                                {r.label}
+                            </button>
+                        ))}
+                    </div>
                     <Select
                         value={subjectFilter}
                         onChange={(e) => setSubjectFilter(e.target.value)}
@@ -564,6 +597,9 @@ export const UserDetail: React.FC = () => {
                     }
                 </div>
             </div>
+
+            {/* Tests, goals, plans, todos, streak, baseline survey */}
+            <StudentExtraDetails userId={userId!} />
         </div>
     );
 };

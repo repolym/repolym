@@ -10,7 +10,8 @@ import type { OlympiadSubject } from '../config/olympiads';
 interface OnboardingData {
   olympiadId: string;
   subjects: OlympiadSubject[];
-  role?: 'student' | 'admin' | 'ai_olympiad_consultant';
+  /** One-time consultant registration token. The role itself is granted by the database trigger. */
+  consultantToken?: string;
 }
 
 interface AuthContextType {
@@ -62,11 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       onboarding_completed: true,
       preferences: { ...(current?.preferences ?? {}), olympiad_id: onboarding.olympiadId },
     };
-
-    if (onboarding.role === 'ai_olympiad_consultant') {
-      updateData.has_completed_baseline_survey = true;
-      updateData.role = 'ai_olympiad_consultant';
-    }
 
     const { error: updateError } = await supabase
       .from('users')
@@ -218,8 +214,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (onboarding?.olympiadId) {
         options.data.olympiad_id = onboarding.olympiadId;
       }
-      if (onboarding?.role) {
-        options.data.role = onboarding.role;
+      if (onboarding?.consultantToken) {
+        options.data.consultant_token = onboarding.consultantToken;
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -229,6 +225,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) throw new Error(formatError(error));
+
+      // Supabase hides duplicate emails when "Confirm email" is on: it returns a
+      // fake user with an empty identities array and does not touch the existing
+      // account's password. Detect that instead of pretending the signup worked.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new Error('این ایمیل قبلاً ثبت شده است. از ایمیل دیگری استفاده کنید یا وارد شوید.');
+      }
 
       if (data.user && data.session) {
         setSession(data.session);

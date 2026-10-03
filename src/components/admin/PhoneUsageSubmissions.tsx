@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext'
 import { formatDate } from '../../utils/date-utils'
 import { toPersianDigits } from '../../utils/jalali'
 import { Button } from '../common/Button'
+import { useAuth } from '../../context/AuthContext'
 
 interface Submission {
     id: string
@@ -17,6 +18,9 @@ interface Submission {
 
 export const PhoneUsageSubmissions: React.FC<{ userId: string }> = ({ userId }) => {
     const { showToast } = useToast()
+    const { user: currentUser } = useAuth()
+    // Consultants can look at reports but not approve / reject them
+    const canReview = currentUser?.role !== 'ai_olympiad_consultant'
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -75,8 +79,10 @@ export const PhoneUsageSubmissions: React.FC<{ userId: string }> = ({ userId }) 
                                     {sub.admin_note && <p className="text-xs text-text-secondary">یادداشت: {sub.admin_note}</p>}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <img src={getScreenshotUrl(sub.screenshot_path)} alt="گزارش" className="h-12 w-12 object-cover rounded" />
-                                    {sub.status === 'pending' && (
+                                    <a href={getScreenshotUrl(sub.screenshot_path)} target="_blank" rel="noreferrer" title="مشاهده تصویر کامل">
+                                        <img src={getScreenshotUrl(sub.screenshot_path)} alt="گزارش" className="h-12 w-12 object-cover rounded" />
+                                    </a>
+                                    {canReview && sub.status === 'pending' && (
                                         <>
                                             <Button variant="primary" size="sm" onClick={() => handleReview(sub.id, 'approved', '')}>تأیید</Button>
                                             <Button variant="danger" size="sm" onClick={() => {

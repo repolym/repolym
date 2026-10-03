@@ -4,7 +4,7 @@ export interface User {
   email: string
   name: string
   is_admin: boolean
-  role: 'student' | 'admin' | 'ai_olympiad_consultant'
+  role: 'student' | 'admin' | 'ai_olympiad_consultant' | null
   olympiad_id: string | null
   onboarding_completed: boolean
   has_completed_baseline_survey: boolean

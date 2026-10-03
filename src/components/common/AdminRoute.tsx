@@ -50,7 +50,10 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children, allowConsultan
     }, [user, allowConsultant]);
 
     if (isLoading || checking) return <PageLoader />;
-    if (!user || !isAuthorized) return <Navigate to="/dashboard" replace />;
+    if (!user || !isAuthorized) {
+        const fallback = user?.role === 'ai_olympiad_consultant' ? '/admin/ai/users' : '/dashboard';
+        return <Navigate to={fallback} replace />;
+    }
     return <>{children}</>;
 };
 

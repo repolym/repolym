@@ -309,7 +309,7 @@ export const UserManagement: React.FC = () => {
                                 users.map((user) => {
                                     const risk = riskScores[user.id];
                                     // Skip non-students for consultant
-                                    if (isConsultant && user.role !== 'student') return null;
+                                    if (isConsultant && (user.role ?? 'student') !== 'student') return null;
                                     // Skip admins for consultant (already filtered by API)
                                     if (isConsultant && user.is_admin) return null;
 

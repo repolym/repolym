@@ -56,9 +56,12 @@ export const adminService = {
             query = query.eq('is_admin', filters.isAdmin)
         }
 
-        // Consultant only sees AI Olympiad students
+        // Consultant only sees AI Olympiad students (role may be NULL for older accounts)
         if (isConsult) {
-            query = query.eq('olympiad_id', 'ai').eq('role', 'student')
+            query = query
+                .eq('olympiad_id', 'ai')
+                .eq('is_admin', false)
+                .or('role.is.null,role.eq.student')
         } else if (filters?.olympiadId) {
             query = query.eq('olympiad_id', filters.olympiadId)
         }
@@ -84,7 +87,10 @@ export const adminService = {
 
         if (isConsult) {
             // Consultant can only see AI Olympiad students
-            query = query.eq('olympiad_id', 'ai').eq('role', 'student')
+            query = query
+                .eq('olympiad_id', 'ai')
+                .eq('is_admin', false)
+                .or('role.is.null,role.eq.student')
         }
 
         const { data, error } = await query.single()
@@ -156,7 +162,7 @@ export const adminService = {
                 .select('olympiad_id, role')
                 .eq('id', userId)
                 .single()
-            if (!userData || userData.olympiad_id !== 'ai' || userData.role !== 'student') {
+            if (!userData || userData.olympiad_id !== 'ai' || (userData.role ?? 'student') !== 'student') {
                 throw new AdminServiceError('شما دسترسی به این جلسات مطالعه را ندارید')
             }
         }
@@ -471,7 +477,7 @@ export const adminService = {
             const map = new Map<string, { name: string; total_minutes: number; sessions_count: number }>()
             sessions?.forEach((s: any) => {
                 const user = s.users
-                if (!user || user.olympiad_id !== 'ai' || user.role !== 'student') return
+                if (!user || user.olympiad_id !== 'ai' || (user.role ?? 'student') !== 'student') return
                 const uid = s.user_id
                 if (!map.has(uid)) {
                     map.set(uid, { name: user.name || 'ناشناس', total_minutes: 0, sessions_count: 0 })

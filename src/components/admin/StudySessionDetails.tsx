@@ -134,7 +134,7 @@ export const StudySessionDetails: React.FC = () => {
     const { userId, sessionId } = useParams<{ userId: string; sessionId: string }>();
     const { user } = useAuth();
     const { showToast } = useToast();
-    const { theme } = useTheme();
+    const { effectiveTheme } = useTheme();
 
     const [session, setSession] = useState<SessionDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -144,7 +144,7 @@ export const StudySessionDetails: React.FC = () => {
     const isAdmin = user?.is_admin || user?.role === 'admin';
     const isConsultant = user?.role === 'ai_olympiad_consultant';
 
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const isDark = effectiveTheme === 'dark';
     const codeStyle = isDark ? vscDarkPlus : vs;
 
     // ============================================================
@@ -177,7 +177,12 @@ export const StudySessionDetails: React.FC = () => {
                     .single();
 
                 if (fetchError) {
-                    throw new Error(fetchError.message);
+                    // PGRST116 = no row (missing, or hidden by access rules)
+                    throw new Error(
+                        fetchError.code === 'PGRST116'
+                            ? 'جلسه مطالعه یافت نشد یا دسترسی به آن ندارید'
+                            : fetchError.message
+                    );
                 }
 
                 if (!data) {
@@ -192,7 +197,7 @@ export const StudySessionDetails: React.FC = () => {
                         .eq('id', userId)
                         .single();
 
-                    if (userError || !userData || userData.olympiad_id !== 'ai' || userData.role !== 'student') {
+                    if (userError || !userData || userData.olympiad_id !== 'ai' || (userData.role ?? 'student') !== 'student') {
                         throw new Error('شما دسترسی به این جلسه مطالعه را ندارید');
                     }
                 }
